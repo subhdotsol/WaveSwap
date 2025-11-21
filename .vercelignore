@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+bun.lock
+
+# Development files
+.env.local
+.env.development
+.vscode
+.claude
+.git
+.gitignore
+
+# Build artifacts
+.next
+dist
+target
+*.tsbuildinfo
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+apps/docs
+README.md
+CONFIDENTIAL_TOKENS.md
+
+# Scripts and tooling
+scripts
+.husky
+
+# Configuration files
+.prettierrc
+.eslintrc.json
+docker-compose.yml
+bun-workspace.toml
+
+# Cache and temp files
+*.log
+.DS_Store
+*.pid
+*.seed
+*.pid.lock
+
+# Package directories that aren't the web app
+apps/backend
+packages
