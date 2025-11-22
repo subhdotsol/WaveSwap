@@ -1,24 +1,11 @@
 {
-  "buildCommand": "cd ../.. && bun run build:packages && cd apps/web && bun run build",
+  "buildCommand": "bun run build",
   "outputDirectory": ".next",
-  "installCommand": "cd ../.. && bun install",
+  "installCommand": "bun install",
   "framework": "nextjs",
-  "rootDirectory": "apps/web",
-  "devCommand": "cd ../.. && bun run dev:web",
-  "env": {
-    "NEXT_PUBLIC_WAVESWAP_API_URL": "@waveswap-api-url",
-    "NEXT_PUBLIC_SOLANA_NETWORK": "@solana-network",
-    "NEXT_PUBLIC_ENCIFFER_API_URL": "@encifher-api-url"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_WAVESWAP_API_URL": "@waveswap-api-url",
-      "NEXT_PUBLIC_SOLANA_NETWORK": "@solana-network",
-      "NEXT_PUBLIC_ENCIFFER_API_URL": "@encifher-api-url"
-    }
-  },
+  "devCommand": "bun run dev",
   "functions": {
-    "src/app/api/v1/**/*.ts": {
+    "app/api/v1/**/*.ts": {
       "runtime": "nodejs18.x"
     }
   },
@@ -68,16 +55,6 @@
           "value": "camera=(), microphone=(), geolocation=()"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/v1/swap/:path*",
-      "destination": "/api/v1/swap/:path*"
-    },
-    {
-      "source": "/api/v1/encifher/:path*",
-      "destination": "/api/v1/encifher/:path*"
     }
   ]
 }
