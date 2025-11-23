@@ -17,9 +17,7 @@
   "dependencies": {
     "@headlessui/react": "^2.0.0",
     "@heroicons/react": "^2.0.0",
-    "@waveswap/sdk": "workspace:*",
-    "@waveswap/ui": "workspace:*",
-    "@jup-ag/api": "^6.0.46",
+        "@jup-ag/api": "^6.0.46",
     "@solana/spl-token": "^0.4.14",
     "@solana/spl-token-registry": "^0.2.4574",
     "@solana/wallet-adapter-base": "^0.9.23",

@@ -4,8 +4,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  transpilePackages: ['@waveswap/ui', '@waveswap/sdk'],
-
+  
   // External packages for server components
   serverExternalPackages: ['@solana/web3.js', '@solana/spl-token'],
 
