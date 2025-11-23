@@ -1,10 +1,9 @@
 {
-  "buildCommand": "bun run build",
-  "outputDirectory": ".next",
+  "buildCommand": "cd apps/web && bun run build",
+  "outputDirectory": "apps/web/.next",
   "installCommand": "bun install",
   "framework": "nextjs",
-  "devCommand": "bun run dev",
-  "root": "apps/web",
+  "devCommand": "cd apps/web && bun run dev",
   "functions": {
     "src/app/api/v1/**/*.ts": {
       "runtime": "nodejs18.x"
