@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: waveswap-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-waveswap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-waveswap_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - waveswap-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-waveswap}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and job queues
+  redis:
+    image: redis:7-alpine
+    container_name: waveswap-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - waveswap-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: redis-server --appendonly yes
+
+  # Solana Validator (devnet mock for local development)
+  solana-validator:
+    image: solanalabs/solana:1.18.0
+    container_name: waveswap-solana
+    ports:
+      - "8899:8899"   # RPC Port
+      - "8900:8900"   # WebSocket Port
+      - "9900:9900"   # RPC PubSub Port
+    volumes:
+      - solana_data:/solana
+    networks:
+      - waveswap-network
+    restart: unless-stopped
+    command: >
+      solana-test-validator
+      --url https://api.devnet.solana.com
+      --rpc-port 8899
+      --ws-port 8900
+      --enable-rpc-transaction-history
+      --reset
+    healthcheck:
+      test: ["CMD", "solana", "cluster-version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API Server
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: waveswap-backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-waveswap}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-waveswap_dev}
+      REDIS_URL: redis://redis:6379
+      SOLANA_RPC_ENDPOINT: http://solana-validator:8899
+      API_PORT: 3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./packages:/app/packages
+      - /app/apps/backend/node_modules
+      - /app/packages/*/node_modules
+    networks:
+      - waveswap-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      solana-validator:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["bun", "run", "dev"]
+
+  # Web Application
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: waveswap-web
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_SOLANA_RPC_ENDPOINT: http://solana-validator:8899
+      NEXT_PUBLIC_SOLANA_NETWORK: devnet
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      - /app/apps/web/node_modules
+      - /app/packages/*/node_modules
+    networks:
+      - waveswap-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    command: ["bun", "run", "dev"]
+
+  # Documentation Site
+  docs:
+    build:
+      context: .
+      dockerfile: apps/docs/Dockerfile
+    container_name: waveswap-docs
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./apps/docs:/app/apps/docs
+      - ./packages:/app/packages
+      - /app/apps/docs/node_modules
+      - /app/packages/*/node_modules
+    networks:
+      - waveswap-network
+    restart: unless-stopped
+    command: ["bun", "run", "start"]
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  solana_data:
+    driver: local
+
+networks:
+  waveswap-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

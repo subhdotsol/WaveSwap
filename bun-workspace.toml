@@ -1,0 +1,7 @@
+# WaveSwap Workspace Configuration
+
+[workspace]
+members = [
+    "apps/*",
+    "packages/*"
+]

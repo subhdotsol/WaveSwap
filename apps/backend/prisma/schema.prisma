@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  address     String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  swaps       Swap[]
+  sessions    Session[]
+
+  @@map("users")
+}
+
+model Swap {
+  id              String      @id @default(cuid())
+  userAddress     String
+  inputToken      String
+  outputToken     String
+  inputAmount     BigInt
+  outputAmount    BigInt?
+  feeBps          Int
+  privacyMode     Boolean     @default(true)
+  status          SwapStatus  @default(ENCRIPTED_PENDING)
+  routeId         Int?
+  slippageBps     Int
+  txHash          String?
+  intentId        String?     @unique
+  mxeRequestId    String?
+  mxeResultId     String?
+  arciumProof     String?     @db.Text
+  computationHash String?
+  error           String?     @db.Text
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  settledAt       DateTime?
+
+  // Relations
+  user            User        @relation(fields: [userAddress], references: [address], onDelete: Cascade)
+  stages          SwapStage[]
+
+  @@map("swaps")
+}
+
+model SwapStage {
+  id          String      @id @default(cuid())
+  swapId      String
+  name        String
+  status      StageStatus @default(PENDING)
+  startedAt   DateTime    @default(now())
+  completedAt DateTime?
+  error       String?     @db.Text
+
+  // Relations
+  swap        Swap        @relation(fields: [swapId], references: [id], onDelete: Cascade)
+
+  @@map("swap_stages")
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userAddress String
+  authToken   String   @unique
+  validUntil  DateTime
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userAddress], references: [address], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model QuoteCache {
+  id           String   @id @default(cuid())
+  inputToken   String
+  outputToken  String
+  inputAmount  BigInt
+  outputAmount BigInt
+  routeId      Int?
+  priceImpact  Float
+  feeBps       Int
+  cachedAt     DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([inputToken, outputToken, inputAmount])
+  @@map("quote_cache")
+}
+
+model RateLimit {
+  id           String   @id @default(cuid())
+  userAddress  String?
+  endpoint     String
+  requestCount Int      @default(0)
+  windowStart  DateTime @default(now())
+  windowEnd    DateTime
+
+  @@index([userAddress, endpoint])
+  @@map("rate_limits")
+}
+
+model TokenMetadata {
+  id          String   @id @default(cuid())
+  mint        String   @unique
+  symbol      String
+  name        String
+  decimals    Int
+  logoUri     String?
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("token_metadata")
+}
+
+model Route {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("routes")
+}
+
+// Enums
+enum SwapStatus {
+  ENCRYPTED_PENDING
+  ENCRYPTED_SETTLED
+  CANCELLED
+  FAILED
+  EXPIRED
+}
+
+enum StageStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  SKIPPED
+}
