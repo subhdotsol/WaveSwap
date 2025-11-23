@@ -261,7 +261,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
           <div className="flex gap-2">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'success' | 'pending' | 'failed')}
               className="px-4 py-2 rounded-lg bg-gray-800/60 border border-gray-700 text-white text-sm"
               style={{
                 border: '1px solid rgba(156, 163, 175, 0.2)',
@@ -278,7 +278,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
 
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'swap' | 'send' | 'receive')}
               className="px-4 py-2 rounded-lg bg-gray-800/60 border border-gray-700 text-white text-sm"
               style={{
                 border: '1px solid rgba(156, 163, 175, 0.2)',
