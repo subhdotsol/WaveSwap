@@ -8,10 +8,11 @@ interface AmountInputProps {
   placeholder?: string
   disabled?: boolean
   readOnly?: boolean
+  className?: string
 }
 
 const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
-  ({ value, onChange, placeholder = "0.00", disabled = false, readOnly = false }, ref) => {
+  ({ value, onChange, placeholder = "0.00", disabled = false, readOnly = false, className = "" }, ref) => {
     // Format the value for display
     const formatDisplayValue = (val: string) => {
       if (!val || val === '0' || val === '0.00') return ''
@@ -41,7 +42,7 @@ const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
           placeholder={placeholder}
           disabled={disabled}
           readOnly={readOnly}
-          className="glass-input w-full h-16 px-4 text-3xl font-bold text-left disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`glass-input w-full h-16 px-4 text-3xl font-bold text-left disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
           style={{
             fontFamily: 'Orbitron, sans-serif',
             color: 'var(--wave-text)',

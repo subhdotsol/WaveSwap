@@ -1,6 +1,7 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useWalletModal } from '@solana/wallet-adapter-react-ui'
 import { ArrowPathIcon, LockClosedIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { ReactNode } from 'react'
 import { SwapProgress, SwapStatus } from '@/types/token'
@@ -31,10 +32,12 @@ export function SwapButton({
   progress
 }: SwapButtonProps) {
   const { connected } = useWallet()
+  const { setVisible } = useWalletModal()
 
   const isValidAmount = inputAmount && parseFloat(inputAmount) > 0
   const hasBalance = true // TODO: Check actual balance from hook
-  const hasQuote = quote && quote.outputAmount > 0
+  // For privacy mode, consider quote valid even with outputAmount: '0' (will be filled by Encifher)
+  const hasQuote = quote && (privacyMode || quote.outputAmount > 0)
   const isProgressActive = progress && progress.status !== SwapStatus.IDLE && progress.status !== SwapStatus.COMPLETED
 
   let buttonContent: ReactNode = ''
@@ -131,23 +134,38 @@ export function SwapButton({
     }
   }
 
+  // Handle wallet connection
+  const handleConnectWallet = () => {
+    console.log('handleConnectWallet called:', { connected })
+
+    if (!connected) {
+      // Open wallet selection modal
+      console.log('Opening wallet selection modal')
+      setVisible(true)
+    }
+  }
+
   return (
     <button
       className={baseClass}
       style={buttonStyle}
       disabled={buttonDisabled}
       onClick={() => {
-        if (connected && canSwap && !loading && hasQuote && !isProgressActive) {
+        if (!connected) {
+          handleConnectWallet()
+        } else if (connected && canSwap && !loading && hasQuote && !isProgressActive) {
           onSwap()
+        } else if (isProgressActive) {
+          onCancel()
         }
       }}
       onMouseEnter={(e) => {
-        if (!buttonDisabled && hasQuote) {
+        if (!buttonDisabled) {
           e.currentTarget.style.boxShadow = '0 0 30px rgba(162, 89, 250, 0.6)';
         }
       }}
       onMouseLeave={(e) => {
-        if (!buttonDisabled && hasQuote) {
+        if (!buttonDisabled) {
           e.currentTarget.style.boxShadow = 'none';
         }
       }}

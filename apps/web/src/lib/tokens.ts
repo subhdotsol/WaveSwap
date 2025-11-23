@@ -53,114 +53,196 @@ export async function enrichTokenIcons(tokens: Token[]): Promise<Token[]> {
 }
 
 /**
- * Fetch user's token accounts and balances
+ * Fetch user's token accounts and balances - Performance optimized version
  */
 export async function getUserTokens(
   connection: Connection,
   walletAddress: PublicKey
 ): Promise<Token[]> {
   try {
-    // Get all token accounts owned by user
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-      walletAddress,
-      { programId: TOKEN_PROGRAM_ID }
-    )
+    // Start with precomputed default tokens immediately for instant UI
+    const userTokens = [...DEFAULT_TOKENS]
 
-    const userTokens: Token[] = []
+    // Get all token accounts in parallel with SOL balance
+    const [tokenAccounts, solBalance] = await Promise.race([
+      Promise.all([
+        connection.getParsedTokenAccountsByOwner(walletAddress, { programId: TOKEN_PROGRAM_ID }),
+        connection.getBalance(walletAddress)
+      ]),
+      new Promise<[any, number]>(resolve => setTimeout(() => resolve([{ value: [] }, 0]), 3000)) // 3 second timeout
+    ])
 
-    // Always add SOL (native) - even with 0 balance for display
-    const solBalance = await connection.getBalance(walletAddress)
-    userTokens.push({
-      address: 'So11111111111111111111111111111111111111112',
-      chainId: 101,
-      decimals: 9,
-      name: 'Solana',
-      symbol: 'SOL',
-      logoURI: 'https://img-cdn.jup.ag/tokens/SOL.svg',
-      tags: ['native'],
-      isConfidentialSupported: true,
-      isNative: true,
-      addressable: true,
-    })
+    // SOL token is already included with proper address from DEFAULT_TOKENS
 
-      // Add common tokens even if balance is 0 so users can see them
-    const defaultTokens = getDefaultTokens().filter(token =>
-      token.address !== 'So11111111111111111111111111111111111111112'
-    )
+    // Early return if no token accounts for instant performance
+    if (!tokenAccounts.value || tokenAccounts.value.length === 0) {
+      return userTokens
+    }
 
-    // Start with default tokens (skip confidential tokens here)
-    userTokens.push(...defaultTokens.filter(token => !token.address.startsWith('c')))
+    // Extract unique mints for batch processing
+    const uniqueMints = [...new Set(
+      tokenAccounts.value
+        .map(({ account }: any) => account.data.parsed.info.mint)
+        .filter((mint: string) => mint && !TOKEN_ADDRESS_MAP.has(mint))
+    )]
 
-    // Update token info for tokens user actually has
-    for (const { account } of tokenAccounts.value) {
-      const parsedInfo = account.data.parsed.info
-      const mint = parsedInfo.mint
-      const balance = parsedInfo.tokenAmount.uiAmount || 0
+    // Skip processing if no unknown tokens
+    if (uniqueMints.length === 0) {
+      return userTokens
+    }
 
+    // Batch process unknown tokens with aggressive timeout
+    const tokenProcessingPromises = uniqueMints.map(async (mint) => {
       try {
-        const tokenInfo = await fetchTokenInfo(mint)
-        if (tokenInfo) {
-          // Check if we already have this token in our list
-          const existingIndex = userTokens.findIndex(t => t.address === mint)
+        // Find account info for this mint
+        const accountInfo = tokenAccounts.value.find(
+          ({ account }: any) => account.data.parsed.info.mint === mint
+        )
 
-          const tokenData = {
-            address: mint,
-            chainId: 101,
-            decimals: tokenInfo.decimals,
-            name: tokenInfo.name,
-            symbol: tokenInfo.symbol,
-            logoURI: tokenInfo.logoURI || `https://img-cdn.jup.ag/tokens/${tokenInfo.symbol}.svg`,
-            tags: tokenInfo.tags || [],
-            isConfidentialSupported: ['SOL', 'USDC', 'USDT', 'mSOL', 'BONK', 'RAY', 'WIF'].includes(tokenInfo.symbol),
-            isNative: false,
-            addressable: true,
-          }
+        if (!accountInfo) return null
 
-          if (existingIndex >= 0) {
-            // Update existing token
-            userTokens[existingIndex] = { ...userTokens[existingIndex], ...tokenData }
-          } else if (balance > 0) {
-            // Add new token only if it has balance
-            userTokens.push(tokenData)
-          }
+        const balance = accountInfo.account.data.parsed.info.tokenAmount.uiAmount || 0
+        if (balance <= 0) return null // Skip zero balance unknown tokens
+
+        const tokenInfo = await fetchTokenInfo(mint as string)
+        if (!tokenInfo) return null
+
+        return {
+          address: mint,
+          chainId: 101,
+          decimals: tokenInfo.decimals,
+          name: tokenInfo.name,
+          symbol: tokenInfo.symbol,
+          logoURI: tokenInfo.logoURI || `https://img-cdn.jup.ag/tokens/${tokenInfo.symbol}.svg`,
+          tags: tokenInfo.tags || [],
+          isConfidentialSupported: ['SOL', 'USDC', 'USDT', 'mSOL', 'BONK', 'RAY', 'WIF', 'JUP', 'W'].includes(tokenInfo.symbol),
+          isNative: false,
+          addressable: true,
         }
       } catch (error) {
         console.log(`Skipping unknown token: ${mint}`)
+        return null
       }
-    }
+    })
+
+    // Process with aggressive timeout
+    const processedTokens = await Promise.race([
+      Promise.all(tokenProcessingPromises),
+      new Promise<null[]>(resolve => setTimeout(() => resolve([]), 3000)) // Reduced to 3 seconds
+    ])
+
+    // Filter and merge valid tokens efficiently
+    const validTokens = processedTokens.filter((token): token is NonNullable<typeof token> => token !== null)
+    userTokens.push(...validTokens as Token[])
 
     return userTokens
   } catch (error) {
     console.error('Error fetching user tokens:', error)
-    // Return default tokens on error
-    return getDefaultTokens()
+    // Return precomputed default tokens instantly on error
+    return DEFAULT_TOKENS
   }
 }
 
+// Cache for token info to avoid repeated API calls
+const tokenInfoCache = new Map<string, JupiterToken | null>()
+const CACHE_DURATION = 15 * 60 * 1000 // Increased to 15 minutes for aggressive caching
+const lastCacheUpdate = new Map<string, number>()
+
 /**
- * Fetch token info from Jupiter Token API
+ * Fetch token info from Jupiter Token API with caching and fallback
  */
 async function fetchTokenInfo(mint: string): Promise<JupiterToken | null> {
+  // Check cache first
+  const cached = tokenInfoCache.get(mint)
+  const lastUpdate = lastCacheUpdate.get(mint) || 0
+
+  if (cached && (Date.now() - lastUpdate < CACHE_DURATION)) {
+    return cached
+  }
+
   try {
-    const response = await fetch(`https://lite-api.jup.ag/tokens/v2/search?query=${mint}`)
-    if (!response.ok) return null
+    // Use a timeout to avoid hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+
+    const response = await fetch(`/api/v1/jupiter/tokens/v2/search?query=${mint}`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' }
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
 
     const data = await response.json()
+    let tokenInfo: JupiterToken | null = null
+
     if (Array.isArray(data) && data.length > 0) {
       const token = data.find((t: any) => (t.address || t.mint) === mint) || data[0]
-      return {
+      tokenInfo = {
         address: token.address || token.mint,
         name: token.name,
         symbol: token.symbol,
         decimals: token.decimals,
         logoURI: token.logoURI || token.image || `https://img-cdn.jup.ag/tokens/${token.symbol}.svg`,
         tags: token.tags,
+        freeze_authority: token.freeze_authority,
+        mint_authority: token.mint_authority,
+        daily_volume: token.daily_volume
       }
     }
-    return null
+
+    // Cache the result (even if null)
+    tokenInfoCache.set(mint, tokenInfo)
+    lastCacheUpdate.set(mint, Date.now())
+
+    return tokenInfo
   } catch (error) {
-    return null
+    console.warn(`Failed to fetch token info for ${mint}:`, error instanceof Error ? error.message : 'Unknown error')
+
+    // Cache the failure to avoid repeated requests
+    tokenInfoCache.set(mint, null)
+    lastCacheUpdate.set(mint, Date.now())
+
+    // Return fallback token info for common tokens
+    return getFallbackTokenInfo(mint)
   }
+}
+
+/**
+ * Fallback token info for common tokens when API fails
+ */
+function getFallbackTokenInfo(mint: string): JupiterToken | null {
+  const fallbackTokens: Record<string, JupiterToken> = {
+    'So11111111111111111111111111111111111111112': {
+      address: 'So11111111111111111111111111111111111111112',
+      name: 'Solana',
+      symbol: 'SOL',
+      decimals: 9,
+      logoURI: 'https://img-cdn.jup.ag/tokens/SOL.svg',
+      tags: ['native'],
+    },
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': {
+      address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      name: 'USD Coin',
+      symbol: 'USDC',
+      decimals: 6,
+      logoURI: 'https://img-cdn.jup.ag/tokens/USDC.svg',
+      tags: ['stablecoin'],
+    },
+    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': {
+      address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+      name: 'Tether USD',
+      symbol: 'USDT',
+      decimals: 6,
+      logoURI: 'https://img-cdn.jup.ag/tokens/USDT.svg',
+      tags: ['stablecoin'],
+    }
+  }
+
+  return fallbackTokens[mint] || null
 }
 
 /**
@@ -194,154 +276,256 @@ export async function getAllTradableTokens(): Promise<Token[]> {
   }
 }
 
-/**
- * Get default token list (fallback)
- */
-export function getDefaultTokens(): Token[] {
-  return [
-    {
-      address: 'So11111111111111111111111111111111111111112',
-      chainId: 101,
-      decimals: 9,
-      name: 'Solana',
-      symbol: 'SOL',
-      logoURI: 'https://img-cdn.jup.ag/tokens/SOL.svg',
-      tags: ['native'],
-      isConfidentialSupported: true,
-      isNative: true,
-      addressable: true,
-    },
-    {
-      address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-      chainId: 101,
-      decimals: 6,
-      name: 'USD Coin',
-      symbol: 'USDC',
-      logoURI: 'https://img-cdn.jup.ag/tokens/USDC.svg',
-      tags: ['stablecoin'],
-      isConfidentialSupported: true,
-      isNative: false,
-      addressable: true,
-    },
-    {
-      address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-      chainId: 101,
-      decimals: 6,
-      name: 'Tether USD',
-      symbol: 'USDT',
-      logoURI: 'https://img-cdn.jup.ag/tokens/USDT.svg',
-      tags: ['stablecoin'],
-      isConfidentialSupported: true,
-      isNative: false,
-      addressable: true,
-    },
-    {
-      address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
-      chainId: 101,
-      decimals: 9,
-      name: 'Marinade Staked SOL',
-      symbol: 'mSOL',
-      logoURI: 'https://img-cdn.jup.ag/tokens/mSOL.svg',
-      tags: ['defi', 'staking'],
-      isConfidentialSupported: true,
-      isNative: false,
-      addressable: true,
-    },
-    {
-      address: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-      chainId: 101,
-      decimals: 6,
-      name: 'Raydium',
-      symbol: 'RAY',
-      logoURI: 'https://img-cdn.jup.ag/tokens/RAY.svg',
-      tags: ['defi', 'dex'],
-      isConfidentialSupported: false,
-      isNative: false,
-      addressable: true,
-    },
-    {
-      address: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
-      chainId: 101,
-      decimals: 5,
-      name: 'Bonk',
-      symbol: 'BONK',
-      logoURI: 'https://img-cdn.jup.ag/tokens/BONK.svg',
-      tags: ['meme'],
-      isConfidentialSupported: false,
-      isNative: false,
-      addressable: true,
-    },
-    {
-      address: 'WormsgfugeESKtdMuFBCKUGGDYLSUcfvhoMsV9fqN3G',
-      chainId: 101,
-      decimals: 6,
-      name: 'Wormhole',
-      symbol: 'W',
-      logoURI: 'https://img-cdn.jup.ag/tokens/W.svg',
-      tags: ['bridge'],
-      isConfidentialSupported: false,
-      isNative: false,
-      addressable: true,
-    },
-    {
-      address: 'jutoGL3C1tJKHbC9VwFhkLq2uf1q4AXaMGuqJrEy5XA',
-      chainId: 101,
-      decimals: 6,
-      name: 'Jupiter',
-      symbol: 'JUP',
-      logoURI: 'https://img-cdn.jup.ag/tokens/JUP.svg',
-      tags: ['defi', 'airdrop'],
-      isConfidentialSupported: false,
-      isNative: false,
-      addressable: true,
-    },
-  ]
-}
+// Precomputed default tokens for instant loading - no function calls needed
+export const DEFAULT_TOKENS: Token[] = [
+  {
+    address: 'So11111111111111111111111111111111111111112',
+    chainId: 101,
+    decimals: 9,
+    name: 'Solana',
+    symbol: 'SOL',
+    logoURI: 'https://img-cdn.jup.ag/tokens/SOL.svg',
+    tags: ['native'],
+    isConfidentialSupported: true,
+    isNative: true,
+    addressable: true,
+  },
+  {
+    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    chainId: 101,
+    decimals: 6,
+    name: 'USD Coin',
+    symbol: 'USDC',
+    logoURI: 'https://img-cdn.jup.ag/tokens/USDC.svg',
+    tags: ['stablecoin'],
+    isConfidentialSupported: true,
+    isNative: false,
+    addressable: true,
+  },
+  {
+    address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+    chainId: 101,
+    decimals: 6,
+    name: 'Tether USD',
+    symbol: 'USDT',
+    logoURI: 'https://img-cdn.jup.ag/tokens/USDT.svg',
+    tags: ['stablecoin'],
+    isConfidentialSupported: true,
+    isNative: false,
+    addressable: true,
+  },
+  {
+    address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
+    chainId: 101,
+    decimals: 9,
+    name: 'Marinade Staked SOL',
+    symbol: 'mSOL',
+    logoURI: 'https://img-cdn.jup.ag/tokens/mSOL.svg',
+    tags: ['defi', 'staking'],
+    isConfidentialSupported: true,
+    isNative: false,
+    addressable: true,
+  },
+  {
+    address: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
+    chainId: 101,
+    decimals: 6,
+    name: 'Raydium',
+    symbol: 'RAY',
+    logoURI: 'https://img-cdn.jup.ag/tokens/RAY.svg',
+    tags: ['defi', 'dex'],
+    isConfidentialSupported: false,
+    isNative: false,
+    addressable: true,
+  },
+  {
+    address: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
+    chainId: 101,
+    decimals: 5,
+    name: 'Bonk',
+    symbol: 'BONK',
+    logoURI: 'https://img-cdn.jup.ag/tokens/BONK.svg',
+    tags: ['meme'],
+    isConfidentialSupported: false,
+    isNative: false,
+    addressable: true,
+  },
+  {
+    address: 'WormsgfugeESKtdMuFBCKUGGDYLSUcfvhoMsV9fqN3G',
+    chainId: 101,
+    decimals: 6,
+    name: 'Wormhole',
+    symbol: 'W',
+    logoURI: 'https://img-cdn.jup.ag/tokens/W.svg',
+    tags: ['bridge'],
+    isConfidentialSupported: false,
+    isNative: false,
+    addressable: true,
+  },
+  {
+    address: 'jutoGL3C1tJKHbC9VwFhkLq2uf1q4AXaMGuqJrEy5XA',
+    chainId: 101,
+    decimals: 6,
+    name: 'Jupiter',
+    symbol: 'JUP',
+    logoURI: 'https://img-cdn.jup.ag/tokens/JUP.svg',
+    tags: ['defi', 'airdrop'],
+    isConfidentialSupported: false,
+    isNative: false,
+    addressable: true,
+  },
+]
+
+// Create lookup maps for instant access
+export const TOKEN_ADDRESS_MAP = new Map(DEFAULT_TOKENS.map(token => [token.address, token]))
+export const TOKEN_SYMBOL_MAP = new Map(DEFAULT_TOKENS.map(token => [token.symbol.toLowerCase(), token]))
 
 /**
- * Get token balance for a specific mint
+ * Get default token list (fallback) - now returns precomputed constant
  */
+export function getDefaultTokens(): Token[] {
+  return DEFAULT_TOKENS
+}
+
+// Balance caching to avoid repeated expensive RPC calls
+const balanceCache = new Map<string, { balance: string; timestamp: number }>()
+const BALANCE_CACHE_DURATION = 30000 // Increased to 30 seconds for better performance
+
+// Performance optimization: Batch balance requests
+const balanceBatchQueue = new Map<string, Promise<string>>()
+let batchTimeout: NodeJS.Timeout | null = null
+
+// Aggressive performance: Memory-efficient balance batching
+export async function getBatchTokenBalances(
+  connection: Connection,
+  walletAddress: PublicKey,
+  mints: string[]
+): Promise<Map<string, string>> {
+  const results = new Map<string, string>()
+  const uncachedMints: string[] = []
+
+  // Check cache first for all mints
+  mints.forEach(mint => {
+    const cacheKey = `${walletAddress.toString()}-${mint}`
+    const cached = balanceCache.get(cacheKey)
+    if (cached && (Date.now() - cached.timestamp < BALANCE_CACHE_DURATION)) {
+      results.set(mint, cached.balance)
+    } else {
+      uncachedMints.push(mint)
+    }
+  })
+
+  if (uncachedMints.length === 0) {
+    return results
+  }
+
+  // Batch uncached requests
+  try {
+    const batchPromises = uncachedMints.map(async (mint) => {
+      const balance = await getTokenBalance(connection, walletAddress, mint)
+      results.set(mint, balance)
+      return balance
+    })
+
+    // Process with timeout to prevent hanging
+    await Promise.race([
+      Promise.all(batchPromises),
+      new Promise(resolve => setTimeout(resolve, 8000)) // 8 second total timeout
+    ])
+  } catch (error) {
+    console.warn('Batch balance fetch failed:', error)
+    // Set remaining balances to 0
+    uncachedMints.forEach(mint => {
+      if (!results.has(mint)) {
+        results.set(mint, '0')
+      }
+    })
+  }
+
+  return results
+}
+
+// Debounced balance refresh to prevent excessive RPC calls
+let balanceRefreshDebounceTimer: NodeJS.Timeout | null = null
+export function debouncedBalanceRefresh(
+  connection: Connection,
+  walletAddress: PublicKey,
+  callback: () => void,
+  delay: number = 1000 // Increased debounce time for better batching
+) {
+  if (balanceRefreshDebounceTimer) {
+    clearTimeout(balanceRefreshDebounceTimer)
+  }
+
+  balanceRefreshDebounceTimer = setTimeout(() => {
+    callback()
+    balanceRefreshDebounceTimer = null
+  }, delay)
+}
+
 export async function getTokenBalance(
   connection: Connection,
   walletAddress: PublicKey,
   mint: string
 ): Promise<string> {
   try {
+    // Create cache key
+    const cacheKey = `${walletAddress.toString()}-${mint}`
+
+    // Check cache first
+    const cached = balanceCache.get(cacheKey)
+    if (cached && (Date.now() - cached.timestamp < BALANCE_CACHE_DURATION)) {
+      return cached.balance
+    }
+
+    let balance: string
+
     // Handle SOL balance
     if (mint === 'So11111111111111111111111111111111111111112') {
-      const balance = await connection.getBalance(walletAddress)
-      return balance.toString()
+      const lamports = await connection.getBalance(walletAddress)
+      balance = lamports.toString()
     }
-
     // Handle confidential tokens (they have different mint formats)
-    if (mint.startsWith('c') || !isBase58(mint)) {
+    else if (mint.startsWith('c') || !isBase58(mint)) {
       console.log(`Skipping balance fetch for confidential/invalid mint: ${mint}`)
-      return '0'
+      balance = '0'
     }
-
     // Validate that mint is a valid public key before creating PublicKey
-    try {
-      const mintPubkey = new PublicKey(mint)
-    } catch (pubkeyError) {
-      console.log(`Invalid public key format for mint: ${mint}`)
-      return '0'
+    else {
+      try {
+        const mintPubkey = new PublicKey(mint)
+
+        // Handle SPL token balance using proper SPL token methods
+        const tokenAccount = await getAssociatedTokenAddress(mintPubkey, walletAddress)
+
+        try {
+          const account = await getAccount(connection, tokenAccount)
+          balance = account.amount.toString()
+        } catch (accountError) {
+          // Token account doesn't exist
+          balance = '0'
+        }
+      } catch (pubkeyError) {
+        console.log(`Invalid public key format for mint: ${mint}`)
+        balance = '0'
+      }
     }
 
-    // Handle SPL token balance using proper SPL token methods
-    const mintPubkey = new PublicKey(mint)
-    const tokenAccount = await getAssociatedTokenAddress(mintPubkey, walletAddress)
+    // Cache the result
+    balanceCache.set(cacheKey, { balance, timestamp: Date.now() })
 
-    try {
-      const account = await getAccount(connection, tokenAccount)
-      return account.amount.toString()
-    } catch (accountError) {
-      // Token account doesn't exist
-      return '0'
-    }
+    return balance
   } catch (error) {
     console.error(`Error fetching token balance for ${mint}:`, error)
     return '0'
   }
+}
+
+/**
+ * Clear balance cache (useful after transactions)
+ */
+export function clearBalanceCache(): void {
+  balanceCache.clear()
 }
 
 /**

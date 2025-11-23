@@ -16,7 +16,7 @@ interface TokenSelectorProps {
   balances?: Map<string, string>
 }
 
-const JUPITER_SEARCH_API = 'https://lite-api.jup.ag/tokens/v2/search'
+const JUPITER_SEARCH_API = '/api/v1/jupiter/tokens/v2/search'
 const JUPITER_CDN = 'https://img-cdn.jup.ag/tokens'
 
 export function TokenSelector({

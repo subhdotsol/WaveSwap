@@ -68,11 +68,20 @@ export class SwapExecutionService {
       return this.defiClient
     }
 
-    const rpcUrl = process.env.NEXT_PUBLIC_HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com'
+    // Use more reliable RPC endpoints for Encifher
+    const rpcUrl = this.config.connection.rpcEndpoint || 'https://api.mainnet-beta.solana.com'
+
+    console.log('Initializing DefiClient with RPC URL:', rpcUrl)
 
     // Encifher SDK works without any API key!
-    const config: DefiClientConfig = { rpcUrl, mode: 'Mainnet', encifherKey: '' }
+    const config: DefiClientConfig = {
+      rpcUrl,
+      mode: 'Mainnet',
+      encifherKey: '' // Empty string as confirmed by user
+    }
+
     this.defiClient = new DefiClient(config)
+    console.log('DefiClient initialized successfully')
     return this.defiClient
   }
 
@@ -116,7 +125,7 @@ export class SwapExecutionService {
         orderDetails: {
           inMint: request.inputToken.address,
           outMint: request.outputToken.address,
-          amountIn: Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken.decimals)).toString(),
+          amountIn: Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken?.decimals || 9)).toString(),
           senderPubkey: this.config.userPublicKey,
           receiverPubkey: this.config.userPublicKey,
           message: 'Private swap via WaveSwap'
@@ -205,7 +214,7 @@ export class SwapExecutionService {
       const quoteParams: JupiterQuoteParams = {
         inputMint: request.inputToken.address,
         outputMint: request.outputToken.address,
-        amount: this.formatAmount(request.inputAmount, request.inputToken.decimals),
+        amount: this.formatAmount(request.inputAmount, request.inputToken?.decimals || 9),
         slippageBps: request.slippageBps || 50,
         userPublicKey: this.config.userPublicKey.toString(),
         onlyDirectRoutes: false,
@@ -360,7 +369,7 @@ export class SwapExecutionService {
     const defiClient = await this.initializeDefiClient()
 
     // Convert amount to base units
-    const amountInBaseUnits = Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken.decimals))
+    const amountInBaseUnits = Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken?.decimals || 9))
 
     const privateQuote = await defiClient.getSwapQuote({
       inMint: request.inputToken.address,
@@ -369,7 +378,7 @@ export class SwapExecutionService {
     })
 
     // Convert back to display units
-    const expectedOutDisplay = parseFloat((privateQuote as any).expectedOutAmount) / Math.pow(10, request.outputToken.decimals)
+    const expectedOutDisplay = parseFloat((privateQuote as any).expectedOutAmount) / Math.pow(10, request.outputToken?.decimals || 9)
 
     return {
       inputMint: request.inputToken.address,
@@ -394,11 +403,11 @@ export class SwapExecutionService {
       // Create token object for Encifher SDK
       const token: EncifherToken = {
         tokenMintAddress: request.inputToken.address,
-        decimals: request.inputToken.decimals
+        decimals: request.inputToken?.decimals || 9
       }
 
       // Convert amount to base units
-      const amountInBaseUnits = Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken.decimals))
+      const amountInBaseUnits = Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken?.decimals || 9))
 
       const depositParams: DepositParams = {
         token,
@@ -408,13 +417,40 @@ export class SwapExecutionService {
 
       console.log('Encifher deposit params:', depositParams)
 
-      // Get deposit transaction from Encifher
-      const depositTxn = await defiClient.getDepositTxn(depositParams)
-      console.log('Encifher deposit transaction created successfully')
+      try {
+        // Get deposit transaction from Encifher
+        const depositTxn = await defiClient.getDepositTxn(depositParams)
+        console.log('Encifher deposit transaction created successfully')
 
-      const signedTx = await this.config.signTransaction(depositTxn)
+        const signedTx = await this.config.signTransaction(depositTxn)
+        return signedTx
+      } catch (fetchError: any) {
+        console.error('Encifher SDK fetch error details:', {
+          name: fetchError?.name,
+          message: fetchError?.message,
+          cause: fetchError?.cause,
+          stack: fetchError?.stack
+        })
 
-      return signedTx
+        // Provide more specific error handling
+        if (fetchError?.message?.includes('fetch') || fetchError?.name?.includes('FetchError')) {
+          throw new Error('Network error: Unable to connect to Encifher service. Please check your network connection and try again.')
+        } else if (fetchError?.message?.includes('timeout')) {
+          throw new Error('Timeout: Encifher service is taking too long to respond. Please try again.')
+        } else if (fetchError?.message?.includes('400') || fetchError?.message?.includes('Bad Request')) {
+          throw new Error('Invalid request: The deposit parameters are invalid.')
+        } else if (fetchError?.message?.includes('401') || fetchError?.message?.includes('Unauthorized')) {
+          throw new Error('Authentication error: Invalid Encifher configuration.')
+        } else if (fetchError?.message?.includes('404') || fetchError?.message?.includes('Not Found')) {
+          throw new Error('Service error: Encifher service endpoint not found.')
+        } else if (fetchError?.message?.includes('429') || fetchError?.message?.includes('Too Many Requests')) {
+          throw new Error('Rate limited: Too many requests to Encifher service. Please wait and try again.')
+        } else if (fetchError?.message?.includes('500') || fetchError?.message?.includes('Internal Server Error')) {
+          throw new Error('Service error: Encifher service is experiencing issues. Please try again later.')
+        } else {
+          throw new Error(`Encifher SDK error: ${fetchError?.message || 'Unknown error occurred'}`)
+        }
+      }
     } catch (error) {
       console.error('Error in Encifher private pool deposit:', error)
       throw new Error(`Failed to deposit to private pool: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -428,7 +464,7 @@ export class SwapExecutionService {
     const defiClient = await this.initializeDefiClient()
 
     // Convert amount to base units
-    const amountInBaseUnits = Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken.decimals))
+    const amountInBaseUnits = Math.floor(parseFloat(request.inputAmount) * Math.pow(10, request.inputToken?.decimals || 9))
 
     console.log('Creating Encifher private swap transaction:', {
       inMint: request.inputToken.address,

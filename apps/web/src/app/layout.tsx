@@ -1,8 +1,9 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Space_Grotesk, Outfit, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { CustomWalletProvider } from '@/components/providers/WalletProvider'
 import { WaveSwapProvider } from '@/components/providers/WaveSwapProvider'
+import { NoSSRProvider } from '@/components/providers/NoSSRProvider'
 
 // Professional font stack for UI
 const inter = Inter({
@@ -62,11 +63,12 @@ export const metadata: Metadata = {
     description: 'Swap SPL tokens privately with encrypted amounts on Solana',
     images: ['/og-image.png'],
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({
@@ -77,13 +79,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${spaceGrotesk.variable} ${inter.variable} ${outfit.variable} ${geistMono.variable}`}>
       <body className="font-inter antialiased">
-        <CustomWalletProvider>
-          <WaveSwapProvider>
-            <div className="min-h-screen bg-background text-foreground">
-              {children}
-            </div>
-          </WaveSwapProvider>
-        </CustomWalletProvider>
+        <NoSSRProvider>
+          <CustomWalletProvider>
+            <WaveSwapProvider>
+              <div className="min-h-screen bg-background text-foreground">
+                {children}
+              </div>
+            </WaveSwapProvider>
+          </CustomWalletProvider>
+        </NoSSRProvider>
       </body>
     </html>
   )

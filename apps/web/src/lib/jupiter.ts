@@ -108,7 +108,7 @@ export class JupiterAPI {
    */
   async getQuote(params: JupiterQuoteParams): Promise<JupiterQuoteResponse> {
     const maxRetries = 3
-    const retryDelay = 1000 // 1 second
+    const retryDelay = 2000 // 2 seconds
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -137,7 +137,7 @@ export class JupiterAPI {
 
         // Add delay between retries to avoid rate limiting
         if (attempt > 1) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt))
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt * 2))
         }
 
         // Server-side compatible fetch for Jupiter API

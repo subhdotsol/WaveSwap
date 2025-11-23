@@ -9,7 +9,7 @@ import { PublicKey } from '@solana/web3.js'
 import { Token } from '@/types/token'
 import { getUserTokens, getDefaultTokens } from '@/lib/tokens'
 
-const JUPITER_TOKEN_SEARCH_API = 'https://lite-api.jup.ag/tokens/v2/search'
+const JUPITER_TOKEN_SEARCH_API = '/api/v1/jupiter/tokens/v2/search'
 
 export function useTokenList(walletAddress: PublicKey | null) {
   const { connection } = useConnection()
@@ -48,23 +48,41 @@ export function useTokenList(walletAddress: PublicKey | null) {
     }
   }, [walletAddress, connection])
 
-  // Search tokens from Jupiter API
+  // Search tokens from Jupiter API with fallback logic
   const searchTokens = useCallback(async (query: string): Promise<Token[]> => {
     if (!query || query.length < 2) {
       return allTokens
     }
 
     try {
-      const response = await fetch(`${JUPITER_TOKEN_SEARCH_API}?query=${encodeURIComponent(query)}`)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+
+      const response = await fetch(`${JUPITER_TOKEN_SEARCH_API}?query=${encodeURIComponent(query)}`, {
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+
+      // Handle circuit breaker and other error responses gracefully
       if (!response.ok) {
-        return allTokens.filter(t => 
+        console.warn(`Jupiter search API error: ${response.status}, falling back to local search`)
+        return allTokens.filter(t =>
           t.symbol.toLowerCase().includes(query.toLowerCase()) ||
           t.name.toLowerCase().includes(query.toLowerCase())
         )
       }
 
       const data = await response.json()
-      
+
+      // Check for error responses from our proxy
+      if (data.error) {
+        console.warn(`Jupiter search proxy error: ${data.error}, falling back to local search`)
+        return allTokens.filter(t =>
+          t.symbol.toLowerCase().includes(query.toLowerCase()) ||
+          t.name.toLowerCase().includes(query.toLowerCase())
+        )
+      }
+
       if (Array.isArray(data)) {
         return data.slice(0, 20).map((token: any) => ({
           address: token.address,
@@ -80,10 +98,15 @@ export function useTokenList(walletAddress: PublicKey | null) {
         }))
       }
     } catch (error) {
-      console.error('Error searching tokens:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Jupiter search API timeout, falling back to local search')
+      } else {
+        console.error('Error searching tokens:', error)
+      }
     }
 
-    return allTokens.filter(t => 
+    // Always fall back to local search
+    return allTokens.filter(t =>
       t.symbol.toLowerCase().includes(query.toLowerCase()) ||
       t.name.toLowerCase().includes(query.toLowerCase())
     )

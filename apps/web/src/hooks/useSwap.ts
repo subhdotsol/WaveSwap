@@ -10,10 +10,11 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey, Connection, Transaction, VersionedTransaction } from '@solana/web3.js'
 import { createSwapService, SwapServiceConfig, SwapRequest, SwapUtils as ServiceSwapUtils } from '@/services/swap'
 import { JupiterAPI, JupiterUtils } from '@/lib/jupiter'
-import { DefiClient, DefiClientConfig } from 'encifher-swap-sdk'
+import { EncifherClient, EncifherUtils, DefiClient, DefiClientConfig } from '@/lib/encifher'
+import { PrivateSwapService } from '@/lib/privateSwapService'
 import { Token, SwapQuote, SwapStatus, SwapProgress, SwapMode, getAvailableTokens } from '@/types/token'
 import { COMMON_TOKENS, CONFIDENTIAL_TOKENS } from '@/types/token'
-import { getUserTokens, getDefaultTokens, getTokenBalance, enrichTokenIcons } from '@/lib/tokens'
+import { getUserTokens, getDefaultTokens, getTokenBalance, enrichTokenIcons, clearBalanceCache } from '@/lib/tokens'
 import { parseError, WaveSwapError } from '@/lib/errors'
 
 export interface SwapState {
@@ -48,7 +49,14 @@ export interface SwapActions {
 export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): SwapState & SwapActions {
   const { connection } = useConnection()
   const { signTransaction, signAllTransactions } = useWallet()
+
+  // TEMP DEBUG: Allow normal testing by temporarily disabling privacy override
+  // const debugPrivacyMode = true // TEMP: Commented out to test normal operation
+  const debugPrivacyMode = privacyMode // Use actual privacy mode for testing
+  console.log('useSwap: Original privacyMode:', privacyMode, '-> Debug override:', debugPrivacyMode)
   const swapServiceRef = useRef<any>(null)
+  const privateSwapServiceRef = useRef<PrivateSwapService | null>(null)
+  const encifherClientRef = useRef<EncifherClient | null>(null)
 
   // Core swap state - Initialize with empty tokens, will be populated by useEffect
   const [inputToken, setInputToken] = useState<Token | null>(null)
@@ -58,6 +66,16 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
   const [swapMode, setSwapMode] = useState<SwapMode>(privacyMode ? SwapMode.PRIVATE : SwapMode.NORMAL)
   const [quote, setQuote] = useState<SwapQuote | null>(null)
   const [balances, setBalances] = useState<Map<string, string>>(new Map())
+
+  // Sync swapMode with privacyMode prop changes
+  useEffect(() => {
+    const newSwapMode = privacyMode ? SwapMode.PRIVATE : SwapMode.NORMAL
+    console.log('useSwap: privacyMode prop changed, updating swapMode from', swapMode, 'to', newSwapMode)
+    setSwapMode(newSwapMode)
+
+    // Clear existing quote when switching modes
+    setQuote(null)
+  }, [privacyMode])
 
   // UI state
   const [isLoading, setIsLoading] = useState(false)
@@ -92,19 +110,21 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       try {
         const jupiterApi = JupiterAPI.createClient(connection)
 
-        // Initialize DefiClient for Encifher (no API key required!)
-        const config: DefiClientConfig = {
-          rpcUrl: connection.rpcEndpoint,
-          mode: 'Mainnet', // or 'Devnet' depending on environment
-          encifherKey: '' // Empty string if not required
+        // Initialize Encifher client using our wrapper
+        const encifherClient = new EncifherClient(connection)
+        encifherClientRef.current = encifherClient
+        if (EncifherUtils.isConfigured()) {
+          const config = EncifherUtils.getConfig()!
+          encifherClient.initialize(config).catch(console.error)
         }
-        const defiClient = new DefiClient(config)
+
+        // Initialize PrivateSwapService for enhanced private swap flow
+        privateSwapServiceRef.current = new PrivateSwapService(connection, encifherClient)
 
         // Integrated wallet adapter with Encifher support
         swapServiceRef.current = createSwapService({
           connection,
           jupiterApi,
-          defiClient,
           userPublicKey: publicKey,
           signTransaction: async (tx: Transaction | VersionedTransaction) => {
             if (!signTransaction) {
@@ -149,7 +169,10 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
   // Update swap mode when privacy mode changes
   useEffect(() => {
-    setSwapMode(privacyMode ? SwapMode.PRIVATE : SwapMode.NORMAL)
+    console.log('useSwap: privacyMode changed:', privacyMode, '-> using debug override:', debugPrivacyMode)
+    const newMode = debugPrivacyMode ? SwapMode.PRIVATE : SwapMode.NORMAL
+    console.log('useSwap: setting swapMode to:', newMode)
+    setSwapMode(newMode)
   }, [privacyMode])
 
   // In confidential mode, we use regular tokens with Encifher privacy wrapper
@@ -284,7 +307,20 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
   
   const getQuote = useCallback(async () => {
+    console.log('[getQuote] Called with privacyMode:', swapMode, 'SwapMode.PRIVATE:', SwapMode.PRIVATE)
+
+    // Always fetch quotes - even in privacy mode we need price estimation
+    // The API will route to Encifher or Jupiter based on privacyMode parameter
+
+    // Prevent multiple rapid quote requests
+    const now = Date.now()
+    if (now - (getQuote as any).lastCall < 1000) { // 1 second debounce
+      console.log('Quote request debounced, skipping...')
+      return
+    }
+    (getQuote as any).lastCall = now
     if (!inputToken || !outputToken || !inputAmount || !publicKey) {
+      setError('Missing required parameters for quote')
       return
     }
 
@@ -305,8 +341,9 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       setIsLoading(true)
       setError(null)
 
-      // Format amount as integer (smallest unit)
-      const amountInSmallestUnit = Math.floor(parsedAmount * Math.pow(10, inputToken.decimals))
+      // Format amount as integer (smallest unit) with fallback decimals
+      const inputDecimals = inputToken.decimals || 9
+      const amountInSmallestUnit = Math.floor(parsedAmount * Math.pow(10, inputDecimals))
       
       // Map confidential tokens to their base tokens for Jupiter
       const jupiterInputMint = getJupiterToken(inputToken)
@@ -323,35 +360,46 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         originalOutputMint: outputToken.address
       })
 
-      // In privacy mode, we use Encifher SDK directly through swap service
-      // In normal mode, we use Jupiter API
-      if (swapMode === 'private') {
-        console.log('Using Encifher for private swap quote')
-        // The quote will be handled by the swap service
-        setQuote({
-          inputMint: jupiterInputMint,
-          outputMint: jupiterOutputMint,
-          inputAmount: amountInSmallestUnit.toString(),
-          outputAmount: '0', // Will be filled by Encifher
-          priceImpactPct: 0,
-          routePlan: []
-        })
-        setOutputAmount('0')
-        return
-      }
+      // In privacy mode, we get a Jupiter quote first for estimation, then use Encifher for execution
+      // In normal mode, we use Jupiter API directly
+      console.log('getQuote: swapMode is:', swapMode, '(privacyMode:', privacyMode, ')')
+      console.log('getQuote: privacyMode type:', typeof privacyMode, 'value:', privacyMode)
+      console.log('getQuote: privacyMode.toString():', privacyMode.toString())
+      console.log('getQuote: privacyMode === true:', privacyMode === true)
+      console.log('getQuote: Boolean(privacyMode):', Boolean(privacyMode))
 
-      // Use API route for normal Jupiter swaps
-      const response = await fetch(`/api/v1/swap/quote?` + new URLSearchParams({
+      // Get Jupiter quote for price estimation (both for privacy and normal mode)
+      const quoteUrl = `/api/v1/swap/quote?` + new URLSearchParams({
         inputMint: jupiterInputMint,
         outputMint: jupiterOutputMint,
         amount: amountInSmallestUnit.toString(),
         userPublicKey: publicKey.toString(),
-        privacyMode: 'false'
-      }))
+        privacyMode: privacyMode.toString() // Use actual privacyMode prop
+      })
+
+      console.log('[useSwap] Fetching quote with URL:', quoteUrl)
+      console.log('[useSwap] Privacy mode value:', privacyMode, 'type:', typeof privacyMode)
+
+      const response = await fetch(quoteUrl)
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(errorData.error || `HTTP ${response.status}`)
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error('[useSwap] API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: quoteUrl,
+          errorText
+        })
+
+        let errorMessage = `HTTP ${response.status}`
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          errorMessage = errorText || errorMessage
+        }
+
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -363,6 +411,24 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
       const jupiterQuote = data.quote
 
+      if (swapMode === 'private') {
+        console.log('Using Jupiter quote as estimate for Encifher private swap')
+        // Use Jupiter quote as estimate, but mark for private execution
+        const privateQuote = {
+          ...jupiterQuote,
+          privacyMode: true,
+          privacySupported: true,
+          routing: 'confidential'
+        }
+        setQuote(privateQuote)
+
+        // Calculate output amount for display
+        const outputAmountHuman = parseFloat(jupiterQuote.outAmount) / Math.pow(10, outputToken.decimals || 9)
+        setOutputAmount(outputAmountHuman.toFixed(6))
+        return
+      }
+
+      // Normal mode - use Jupiter quote directly
       const newQuote: SwapQuote = {
         inputMint: jupiterQuote.inputMint,
         outputMint: jupiterQuote.outputMint,
@@ -374,13 +440,48 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
       setQuote(newQuote)
 
-      // Calculate output amount
-      const output = parseFloat(newQuote.outputAmount) / Math.pow(10, outputToken.decimals)
-      setOutputAmount(output.toFixed(outputToken.decimals).replace(/\.?0+$/, ''))
+      // Calculate output amount with fallback decimals
+      const outputDecimals = outputToken.decimals || 9
+      const output = parseFloat(newQuote.outputAmount) / Math.pow(10, outputDecimals)
+      setOutputAmount(output.toFixed(outputDecimals).replace(/\.?0+$/, ''))
 
     } catch (error) {
       console.error('Error getting quote:', error)
-      
+
+      // Handle rate limit errors more gracefully
+      if (error instanceof Error) {
+        let errorMessage = error.message
+        let shouldRetry = false
+        let retryDelay = 3000
+
+        // Check for various rate limit and service unavailable errors
+        if (error.message.includes('Rate limit exceeded') ||
+            error.message.includes('429') ||
+            error.message.includes('Jupiter API returned status 429') ||
+            error.message.includes('Swap service is experiencing high demand') ||
+            error.message.includes('Private swap service is temporarily unavailable')) {
+
+          errorMessage = error.message.includes('Private swap service')
+            ? 'Private swap service is experiencing high demand. Please try again shortly.'
+            : 'Swap service is experiencing high demand. Please wait a moment and try again.'
+
+          shouldRetry = true
+          retryDelay = 4000 // Longer delay for privacy mode
+        }
+
+        setError(errorMessage)
+
+        // Retry logic for rate limiting
+        if (shouldRetry && inputAmount && parseFloat(inputAmount) > 0 && inputToken && outputToken && publicKey) {
+          setTimeout(() => {
+            setError(null)
+            getQuote()
+          }, retryDelay)
+        }
+        return
+      }
+
+      // For non-rate-limit errors, use the regular error parser
       const parsedError = parseError(error)
       setStructuredError(parsedError)
       setError(parsedError.message)
@@ -390,7 +491,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
   }, [inputToken, outputToken, inputAmount, publicKey, swapMode])
 
   const swap = useCallback(async () => {
-    if (!swapServiceRef.current || !inputToken || !outputToken || !inputAmount) {
+    if (!inputToken || !outputToken || !inputAmount || !publicKey) {
       const err = new Error('Missing swap parameters')
       const parsedError = parseError(err)
       setStructuredError(parsedError)
@@ -404,14 +505,6 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       setStructuredError(null)
       setProgress(null)
 
-      const request: SwapRequest = {
-        inputToken,
-        outputToken,
-        inputAmount,
-        privacyMode: swapMode === 'private',
-        privacyProvider: swapMode === 'private' ? 'encifher' : undefined
-      }
-
       console.log('Executing swap:', {
         inputToken: inputToken.symbol,
         outputToken: outputToken.symbol,
@@ -420,7 +513,230 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         provider: swapMode === 'private' ? 'Encifher' : 'Jupiter'
       })
 
-      await swapServiceRef.current.executeSwap(request)
+      // Private swap mode - use Encifher direct integration
+      if (swapMode === SwapMode.PRIVATE) {
+        console.log('[Private Swap] Executing private swap with Encifher...')
+
+        // Update progress for private swap
+        setProgress({
+          status: 'pending' as any,
+          message: 'Preparing private swap transaction...',
+          currentStep: 0,
+          totalSteps: 3
+        })
+
+        try {
+          // Get the Encifher client - create on-demand if not available
+          let encifherClient = encifherClientRef.current
+          if (!encifherClient) {
+            console.log('[Private Swap] Creating Encifher client on-demand...')
+            encifherClient = new EncifherClient(connection)
+            encifherClientRef.current = encifherClient
+          }
+
+          // Ensure client is initialized
+          if (!encifherClient.isReady()) {
+            // Try to initialize if not already done
+            if (EncifherUtils.isConfigured()) {
+              const config = EncifherUtils.getConfig()!
+              await encifherClient.initialize(config)
+            } else {
+              throw new Error('Encifher client not ready - missing configuration')
+            }
+          }
+
+          // Convert amount to base units
+          const amountInBaseUnits = Math.floor(parseFloat(inputAmount) * Math.pow(10, inputToken.decimals))
+
+          console.log('[Private Swap] Swap parameters:', {
+            inputToken: inputToken.address,
+            outputToken: outputToken.address,
+            inputAmount: inputAmount,
+            amountInBaseUnits: amountInBaseUnits.toString(),
+            decimals: inputToken.decimals
+          })
+
+          // Create private swap transaction
+          setProgress({
+            status: 'pending' as any,
+            message: 'Creating private swap transaction...',
+            currentStep: 1,
+            totalSteps: 3
+          })
+
+          console.log('[Private Swap] About to call createPrivateSwap...')
+          const { transaction } = await encifherClient.createPrivateSwap({
+            inMint: inputToken.address,
+            outMint: outputToken.address,
+            amountIn: amountInBaseUnits.toString(),
+            senderPubkey: publicKey,
+            receiverPubkey: publicKey
+          })
+
+          console.log('[Private Swap] Transaction created successfully')
+          console.log('[Private Swap] Transaction details:', {
+            instructions: transaction.instructions.length,
+            signers: transaction.signatures.length,
+            feePayer: transaction.feePayer?.toBase58(),
+            recentBlockhash: transaction.recentBlockhash
+          })
+
+          setProgress({
+            status: 'pending' as any,
+            message: 'Please sign the transaction in your wallet...',
+            currentStep: 2,
+            totalSteps: 3
+          })
+
+          // Sign transaction using wallet adapter
+          if (signTransaction) {
+            const signedTransaction = await signTransaction(transaction)
+            console.log('[Private Swap] Transaction signed, executing through Encifher...')
+
+            setProgress({
+              status: 'pending' as any,
+              message: 'Executing private swap through Encifher privacy system...',
+              currentStep: 3,
+              totalSteps: 4
+            })
+
+            try {
+              // Execute the signed transaction through Encifher's privacy system
+              console.log('[Private Swap] Executing through Encifher privacy system...')
+              const executeResponse = await encifherClient.executePrivateSwap(
+                signedTransaction.serialize().toString('base64'),
+                {
+                  inMint: inputToken.address,
+                  outMint: outputToken.address,
+                  amountIn: amountInBaseUnits.toString(),
+                  senderPubkey: publicKey,
+                  receiverPubkey: publicKey,
+                  message: 'WaveSwap private transaction'
+                }
+              )
+
+              console.log('[Private Swap] Encifher execution response:', executeResponse)
+
+              setProgress({
+                status: 'pending' as any,
+                message: 'Private swap submitted to privacy network...',
+                currentStep: 4,
+                totalSteps: 4
+              })
+
+              // Poll for order completion
+              const orderStatusId = executeResponse.orderStatusIdentifier
+              console.log('[Private Swap] Polling for order completion:', orderStatusId)
+
+              let attempts = 0
+              const maxAttempts = 30 // 5 minutes with 10-second intervals
+              const pollInterval = 10000 // 10 seconds
+
+              const pollOrderStatus = async (): Promise<void> => {
+                try {
+                  attempts++
+                  console.log(`[Private Swap] Checking order status (attempt ${attempts}/${maxAttempts})...`)
+
+                  const status = await encifherClient.getOrderStatus(orderStatusId)
+                  console.log('[Private Swap] Order status:', status)
+
+                  if (status.status === 'completed') {
+                    console.log('[Private Swap] Private swap completed successfully!')
+                    setProgress({
+                      status: 'completed' as any,
+                      message: `Private swap completed! Order ID: ${orderStatusId.slice(0, 8)}...`,
+                      currentStep: 4,
+                      totalSteps: 4
+                    })
+
+                    // Clear progress after showing completion
+                    setTimeout(() => {
+                      setProgress(null)
+                    }, 5000)
+                    return
+                  }
+
+                  if (status.status === 'failed') {
+                    console.error('[Private Swap] Private swap failed:', status.details)
+                    throw new Error(`Private swap failed: ${status.details?.error || 'Unknown error'}`)
+                  }
+
+                  // Still pending, continue polling
+                  if (attempts < maxAttempts) {
+                    setTimeout(pollOrderStatus, pollInterval)
+                  } else {
+                    throw new Error('Private swap timed out - please check your transaction history')
+                  }
+
+                } catch (error) {
+                  console.error('[Private Swap] Error polling order status:', error)
+                  throw error
+                }
+              }
+
+              // Start polling after a short delay
+              setTimeout(pollOrderStatus, 2000)
+
+            } catch (encifherError) {
+              console.error('[Private Swap] Encifher execution failed:', encifherError)
+
+              // Fallback to direct execution if Encifher execution fails
+              console.log('[Private Swap] Falling back to direct transaction execution...')
+              setProgress({
+                status: 'pending' as any,
+                message: 'Executing transaction directly...',
+                currentStep: 3,
+                totalSteps: 3
+              })
+
+              const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+                skipPreflight: false,
+                preflightCommitment: 'confirmed'
+              })
+
+              console.log('[Private Swap] Fallback transaction sent:', signature)
+
+              await connection.confirmTransaction(signature, 'confirmed')
+
+              console.log('[Private Swap] Fallback transaction confirmed:', signature)
+
+              setProgress({
+                status: 'completed' as any,
+                message: `Transaction completed! Signature: ${signature.slice(0, 8)}...`,
+                currentStep: 3,
+                totalSteps: 3
+              })
+
+              // Clear progress after showing completion
+              setTimeout(() => {
+                setProgress(null)
+              }, 5000)
+            }
+
+          } else {
+            throw new Error('Wallet signing function not available')
+          }
+
+        } catch (error) {
+          console.error('[Private Swap] Error:', error)
+          setProgress(null)
+          throw error
+        }
+
+      } else if (swapServiceRef.current) {
+        // Use regular swap service for normal mode
+        const request: SwapRequest = {
+          inputToken,
+          outputToken,
+          inputAmount,
+          privacyMode: false,
+          privacyProvider: undefined
+        }
+
+        await swapServiceRef.current.executeSwap(request)
+      } else {
+        throw new Error('Swap service not available')
+      }
 
     } catch (error) {
       console.error('Error executing swap:', error)
@@ -431,13 +747,16 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       setIsLoading(false)
       setProgress(null)
     }
-  }, [inputToken, outputToken, inputAmount, swapMode])
+  }, [inputToken, outputToken, inputAmount, swapMode, publicKey])
 
   const refreshBalances = useCallback(async () => {
     if (!publicKey || !connection) {
       setBalances(new Map())
       return
     }
+
+    // Clear balance cache to force fresh data
+    clearBalanceCache()
 
     try {
       // Get user's tokens from wallet
@@ -508,7 +827,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       if (inputAmount && parseFloat(inputAmount) > 0 && inputToken && outputToken && publicKey) {
         getQuote()
       }
-    }, 800)
+    }, 1500) // Increased from 800ms to 1.5s to avoid rate limiting
 
     return () => clearTimeout(timer)
   }, [inputAmount, inputToken, outputToken, publicKey, getQuote])

@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import Tabs from './ui/Tabs'
 import { SwapComponent } from './SwapComponent'
 import { NetworkSelector } from './SwapComponent/NetworkSelector'
-import { WalletConnectButton } from './SwapComponent/WalletConnectButton'
+import { SimpleWalletButton } from './SwapComponent/SimpleWalletButton'
 import Settings from './Settings'
+import { HistoryTab } from './HistoryTab'
 
 // Import icons for each tab
 import {
@@ -31,12 +32,21 @@ function TabContent({ tabId, privacyMode }: TabContentProps) {
 
     case 'bridge':
       return (
-        <div className="max-w-md mx-auto">
-          <div className="bg-gray-900/60 backdrop-blur-2xl rounded-3xl border border-gray-800/60 shadow-2xl p-8">
-            <div className="text-center py-16">
-              <ArrowsRightLeftIcon className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Bridge Coming Soon</h3>
-              <p className="text-gray-400">Cross-chain asset transfer functionality will be available in the next release.</p>
+        <div className="w-full max-w-xl mx-auto">
+          <div className="glass-panel p-8">
+            <div className="text-center py-12">
+              <div className="relative inline-flex items-center justify-center w-16 h-16 mb-6">
+                <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-pulse" />
+                <ArrowsRightLeftIcon className="h-8 w-8 text-blue-400 relative z-10" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">Bridge Coming Soon</h3>
+              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
+                Cross-chain asset transfer functionality will be available in the next release.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-blue-400">In Development</span>
+              </div>
             </div>
           </div>
         </div>
@@ -44,36 +54,8 @@ function TabContent({ tabId, privacyMode }: TabContentProps) {
 
     case 'history':
       return (
-        <div className="max-w-md mx-auto">
-          <div className="bg-gray-900/60 backdrop-blur-2xl rounded-3xl border border-gray-800/60 shadow-2xl p-8">
-            <div className="text-center py-16">
-              <div className="flex justify-center mb-4">
-                <div className="relative">
-                  <ClockIcon className="h-16 w-16 text-gray-600" />
-                  {privacyMode && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-gray-950 flex items-center justify-center">
-                      <ShieldCheckIcon className="h-2 w-2 text-white" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {privacyMode ? 'Private Transaction History' : 'Transaction History'}
-              </h3>
-              <p className="text-gray-400 text-sm mb-2">
-                {privacyMode
-                  ? 'Your confidential swap history will appear here once you start trading.'
-                  : 'Your swap history will appear here once you start trading.'
-                }
-              </p>
-              {privacyMode && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 mt-2">
-                  <ShieldCheckIcon className="h-3 w-3 text-emerald-400" />
-                  <span className="text-xs font-medium text-emerald-400">Amounts Hidden</span>
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="w-full flex justify-center">
+          <HistoryTab privacyMode={privacyMode} />
         </div>
       )
 
@@ -85,6 +67,9 @@ function TabContent({ tabId, privacyMode }: TabContentProps) {
 export function AppTabs() {
   const [activeTab, setActiveTab] = useState('swap')
   const [privacyMode, setPrivacyMode] = useState(true) // ON by default
+
+  // Debug privacy mode
+  console.log('AppTabs: privacyMode =', privacyMode)
 
   const tabs = [
     {
@@ -115,10 +100,10 @@ export function AppTabs() {
   }, [privacyMode])
 
   return (
-    <div className="w-full">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/20 border-b border-gray-800/50">
-        <div className="container mx-auto px-6 py-4">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/30 border-b border-gray-800/50">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -135,33 +120,36 @@ export function AppTabs() {
             </div>
 
             {/* Right side controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <NetworkSelector />
               <Settings
                 privacyMode={privacyMode}
                 onPrivacyModeChange={setPrivacyMode}
               />
-              <WalletConnectButton />
+              <SimpleWalletButton />
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 py-8">
-        <div className="w-full max-w-6xl mx-auto">
-          <Tabs
-            tabs={tabs}
-            defaultTab="swap"
-            onTabChange={setActiveTab}
-            className="mb-8"
-          />
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="w-full max-w-5xl mx-auto">
+          {/* Tab Navigation with constrained width */}
+          <div className="w-full max-w-xl mx-auto mb-8">
+            <Tabs
+              tabs={tabs}
+              defaultTab="swap"
+              onTabChange={setActiveTab}
+              className="w-full"
+            />
+          </div>
 
+          {/* Tab Content */}
           <TabContent tabId={activeTab} privacyMode={privacyMode} />
         </div>
       </main>
-
-      </div>
+    </div>
   )
 }
 

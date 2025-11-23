@@ -9,11 +9,20 @@ import {
   TrustWalletAdapter,
   LedgerWalletAdapter,
 } from '@solana/wallet-adapter-wallets'
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { config } from '@/lib/config'
 
-// Require styles for wallet adapter
-require('@solana/wallet-adapter-react-ui/styles.css')
+// Component to handle dynamic style import
+function WalletStyles() {
+  useEffect(() => {
+    // Dynamic import with type assertion to avoid TypeScript errors
+    import('@solana/wallet-adapter-react-ui/styles.css' as any).catch(() => {
+      // Ignore if styles can't be loaded
+      console.warn('Could not load wallet adapter styles')
+    })
+  }, [])
+  return null
+}
 
 export function CustomWalletProvider({ children }: { children: React.ReactNode }) {
   const network = WalletAdapterNetwork.Mainnet
@@ -32,7 +41,8 @@ export function CustomWalletProvider({ children }: { children: React.ReactNode }
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <SolanaWalletProvider wallets={wallets} autoConnect>
+      <WalletStyles />
+      <SolanaWalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </SolanaWalletProvider>
     </ConnectionProvider>

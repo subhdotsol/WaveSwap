@@ -66,10 +66,38 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
   return (
     <div className={`w-full ${className}`}>
       <div
-        className="flex items-center justify-center p-1 bg-gray-800/40 rounded-2xl border border-gray-700/50"
+        className="relative flex items-center justify-center p-1 rounded-2xl overflow-hidden"
+        style={{
+          background: `
+            linear-gradient(135deg,
+              rgba(30, 30, 45, 0.6) 0%,
+              rgba(45, 45, 65, 0.4) 50%,
+              rgba(30, 30, 45, 0.6) 100%
+            ),
+            radial-gradient(circle at 50% 50%,
+              rgba(162, 89, 250, 0.02) 0%,
+              transparent 50%
+            )
+          `,
+          border: '1px solid rgba(162, 89, 250, 0.1)',
+          backdropFilter: 'blur(20px) saturate(1.8)',
+          boxShadow: `
+            0 8px 32px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 0 0 1px rgba(162, 89, 250, 0.05)
+          `
+        }}
         role="tablist"
         aria-orientation="horizontal"
       >
+        {/* Noise grain overlay */}
+        <div
+          className="absolute inset-0 opacity-3 pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
+            filter: 'contrast(1.3) brightness(1.1)'
+          }}
+        />
         {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id
           const isDisabled = tab.disabled
@@ -87,36 +115,66 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
               onClick={() => !isDisabled && handleTabChange(tab.id)}
               onKeyDown={(e) => !isDisabled && handleKeyDown(e, tab.id)}
               className={`
-                relative flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm
-                transition-all duration-200 ease-out
-                focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2 focus:ring-offset-gray-900
-                ${isSelected
-                  ? 'bg-gray-900 text-white border border-gray-600/50 shadow-lg'
-                  : isDisabled
-                  ? 'text-gray-600 cursor-not-allowed'
-                  : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50'
-                }
+                relative flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm z-10
+                transition-all duration-300 ease-out
+                focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:ring-offset-2 focus:ring-offset-transparent
+                hover:scale-[1.02] active:scale-[0.98]
               `}
+              style={{
+                background: isSelected
+                  ? `
+                    linear-gradient(135deg,
+                      rgba(162, 89, 250, 0.2) 0%,
+                      rgba(162, 89, 250, 0.1) 50%,
+                      rgba(162, 89, 250, 0.2) 100%
+                    ),
+                    radial-gradient(circle at 30% 30%,
+                      rgba(162, 89, 250, 0.15) 0%,
+                      transparent 50%
+                    )
+                  `
+                  : 'transparent',
+                border: isSelected
+                  ? '1px solid rgba(162, 89, 250, 0.3)'
+                  : '1px solid transparent',
+                backdropFilter: isSelected ? 'blur(12px) saturate(1.5)' : 'none',
+                boxShadow: isSelected
+                  ? `
+                    0 8px 24px rgba(162, 89, 250, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                  `
+                  : 'none',
+                fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                fontWeight: isSelected ? 600 : 500,
+                letterSpacing: '0.025em'
+              }}
             >
               {tab.icon && (
-                <span className={`
-                  ${isSelected ? 'text-blue-400' : 'text-gray-500'}
-                  transition-colors duration-200
-                `}>
+                <span style={{
+                  color: isSelected ? 'rgba(162, 89, 250, 0.9)' : 'rgba(156, 163, 175, 0.8)',
+                  transition: 'all 0.3s ease',
+                  filter: isSelected ? 'drop-shadow(0 0 8px rgba(162, 89, 250, 0.4))' : 'none'
+                }}>
                   {tab.icon}
                 </span>
               )}
 
-              <span className={`
-                ${isSelected ? 'font-semibold' : 'font-medium'}
-                ${isSelected ? 'text-white' : ''}
-              `}>
+              <span style={{
+                color: isSelected ? 'rgba(255, 255, 255, 0.95)' : 'rgba(156, 163, 175, 0.9)',
+                textShadow: isSelected ? '0 0 10px rgba(162, 89, 250, 0.3)' : 'none'
+              }}>
                 {tab.label}
               </span>
 
-              {/* Selected indicator */}
+              {/* Selected indicator glow */}
               {isSelected && (
-                <div className="absolute inset-x-0 -bottom-px h-0.5 bg-blue-500 rounded-full" />
+                <div
+                  className="absolute inset-0 rounded-xl opacity-20 pointer-events-none"
+                  style={{
+                    background: 'radial-gradient(circle at 50% 50%, rgba(162, 89, 250, 0.3) 0%, transparent 70%)',
+                    filter: 'blur(8px)'
+                  }}
+                />
               )}
             </button>
           )
