@@ -8,6 +8,7 @@ import { AmountInput } from './AmountInput'
 import { SwapButton } from './SwapButton'
 import { useSwap } from '@/hooks/useSwap'
 import { Token, SwapStatus } from '@/types/token'
+import { useThemeConfig, createGlassStyles } from '@/lib/theme'
 
 interface SwapComponentProps {
   privacyMode: boolean
@@ -22,6 +23,7 @@ const RECOMMENDED_TOKENS = [
 
 export function SwapComponent({ privacyMode }: SwapComponentProps) {
   const { publicKey } = useWallet()
+  const theme = useThemeConfig()
 
   const {
     inputToken,
@@ -123,8 +125,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     try {
       await swap()
     } catch (error) {
-      console.error('Swap failed:', error)
-      // Error is already handled by useSwap hook
+      // Swap failed - error is already handled by useSwap hook
     }
   }
 
@@ -204,9 +205,23 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         {/* Privacy Mode Indicator */}
         {privacyMode && (
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-xs font-medium text-emerald-400">Privacy Mode Active</span>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-sm"
+              style={{
+                background: `${theme.colors.success}10`,
+                border: `1px solid ${theme.colors.success}20`,
+              }}
+            >
+              <div
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: theme.colors.success }}
+              />
+              <span
+                className="text-xs font-medium"
+                style={{ color: theme.colors.success }}
+              >
+                Privacy Mode Active
+              </span>
             </div>
           </div>
         )}
@@ -217,26 +232,26 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
           style={{
             background: `
               linear-gradient(135deg,
-                rgba(30, 30, 45, 0.85) 0%,
-                rgba(45, 45, 65, 0.8) 25%,
-                rgba(30, 30, 45, 0.85) 50%,
-                rgba(45, 45, 65, 0.8) 75%,
-                rgba(30, 30, 45, 0.85) 100%
+                ${theme.colors.surface}ee 0%,
+                ${theme.colors.surfaceHover}cc 25%,
+                ${theme.colors.surface}ee 50%,
+                ${theme.colors.surfaceHover}cc 75%,
+                ${theme.colors.surface}ee 100%
               ),
               radial-gradient(circle at 25% 25%,
-                rgba(162, 89, 250, 0.05) 0%,
+                ${theme.colors.primary}08 0%,
                 transparent 50%
               ),
               radial-gradient(circle at 75% 75%,
-                rgba(16, 185, 129, 0.03) 0%,
+                ${theme.colors.success}03 0%,
                 transparent 50%
               )
             `,
-            border: '1px solid rgba(162, 89, 250, 0.15)',
+            border: `1px solid ${theme.colors.primary}15`,
             backdropFilter: 'blur(24px) saturate(1.8)',
             boxShadow: `
-              0 20px 60px rgba(0, 0, 0, 0.4),
-              0 8px 24px rgba(162, 89, 250, 0.08),
+              0 20px 60px ${theme.colors.shadowHeavy},
+              0 8px 24px ${theme.colors.primary}08,
               inset 0 1px 0 rgba(255, 255, 255, 0.1),
               inset 0 -1px 0 rgba(0, 0, 0, 0.2)
             `
@@ -257,27 +272,30 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
               style={{
                 background: `
                   linear-gradient(135deg,
-                    rgba(162, 89, 250, 0.1) 0%,
-                    rgba(162, 89, 250, 0.05) 50%,
-                    rgba(162, 89, 250, 0.1) 100%
+                    ${theme.colors.primary}10 0%,
+                    ${theme.colors.primary}05 50%,
+                    ${theme.colors.primary}10 100%
                   )
                 `,
-                border: '1px solid rgba(162, 89, 250, 0.2)',
+                border: `1px solid ${theme.colors.primary}20`,
                 backdropFilter: 'blur(16px) saturate(1.5)',
                 boxShadow: `
-                  0 8px 32px rgba(0, 0, 0, 0.2),
+                  0 8px 32px ${theme.colors.shadow},
                   inset 0 1px 0 rgba(255, 255, 255, 0.1)
                 `
               }}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-bold" style={{ color: 'var(--wave-purple)' }}>
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: theme.colors.primary }}
+                >
                   {progress.message}
                 </span>
                 <button
                   onClick={cancelSwap}
                   className="text-xs font-medium transition-colors px-2 py-1 rounded-md hover:bg-black/20"
-                  style={{ color: '#EF4444' }}
+                  style={{ color: theme.colors.error }}
                 >
                   Cancel
                 </button>
@@ -287,8 +305,8 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                   className="h-2 rounded-full transition-all duration-300"
                   style={{
                     width: `${(progress.currentStep / progress.totalSteps) * 100}%`,
-                    background: 'var(--wave-purple)',
-                    boxShadow: '0 0 10px rgba(162, 89, 250, 0.5)'
+                    background: theme.colors.primary,
+                    boxShadow: `0 0 10px ${theme.colors.primary}50`
                   }}
                 />
               </div>
@@ -298,7 +316,10 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         {/* You Send Section */}
         <div className="relative z-10 space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-bold tracking-wide text-gray-300">
+            <label
+              className="text-sm font-bold tracking-wide"
+              style={{ color: theme.colors.textSecondary }}
+            >
               You Send
             </label>
             <div className="flex items-center gap-2">
@@ -311,12 +332,30 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                     setInputAmount(amountWithFees.toString())
                     clearQuote()
                   }}
-                  className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 rounded-md hover:bg-blue-500/10"
+                  className="text-xs font-medium transition-colors px-2 py-1 rounded-md"
+                  style={{
+                    color: theme.colors.primary,
+                    '&:hover': {
+                      color: theme.colors.primaryHover,
+                      backgroundColor: `${theme.colors.primary}10`
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = theme.colors.primaryHover
+                    e.currentTarget.style.backgroundColor = `${theme.colors.primary}10`
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = theme.colors.primary
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
                 >
                   MAX
                 </button>
               )}
-              <span className="text-xs text-gray-500">
+              <span
+                className="text-xs"
+                style={{ color: theme.colors.textMuted }}
+              >
                 Balance: {displayInputBalance}
               </span>
             </div>
@@ -352,25 +391,41 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         <div className="flex justify-center -my-2 z-10">
           <button
             onClick={handleTokenSwitch}
-            className="glass-card p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 bg-gray-800/50 border border-gray-700 hover:border-gray-600"
+            className="p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 border"
+            style={{
+              ...createGlassStyles(theme),
+              borderColor: theme.colors.border
+            }}
             disabled={isLoading || isProgressActive}
           >
-            <ArrowsUpDownIcon className="h-5 w-5 text-blue-400" />
+            <ArrowsUpDownIcon
+              className="h-5 w-5"
+              style={{ color: theme.colors.primary }}
+            />
           </button>
         </div>
 
         {/* You Receive Section */}
         <div className="relative z-10 space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-bold tracking-wide text-gray-300">
+            <label
+              className="text-sm font-bold tracking-wide"
+              style={{ color: theme.colors.textSecondary }}
+            >
               You Receive
             </label>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">
+              <span
+                className="text-xs"
+                style={{ color: theme.colors.textMuted }}
+              >
                 Balance: {displayOutputBalance}
               </span>
               {quote && outputAmount && (
-                <span className="text-xs text-green-400">
+                <span
+                  className="text-xs"
+                  style={{ color: theme.colors.success }}
+                >
                   ✓
                 </span>
               )}
@@ -411,27 +466,35 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
             style={{
               background: `
                 linear-gradient(135deg,
-                  rgba(16, 185, 129, 0.08) 0%,
-                  rgba(16, 185, 129, 0.04) 50%,
-                  rgba(16, 185, 129, 0.08) 100%
+                  ${theme.colors.success}08 0%,
+                  ${theme.colors.success}04 50%,
+                  ${theme.colors.success}08 100%
                 ),
                 radial-gradient(circle at 50% 0%,
-                  rgba(16, 185, 129, 0.02) 0%,
+                  ${theme.colors.success}02 0%,
                   transparent 50%
                 )
               `,
-              border: '1px solid rgba(16, 185, 129, 0.15)',
+              border: `1px solid ${theme.colors.success}15`,
               backdropFilter: 'blur(20px) saturate(1.6)',
               boxShadow: `
-                0 12px 40px rgba(0, 0, 0, 0.25),
+                0 12px 40px ${theme.colors.shadow},
                 inset 0 1px 0 rgba(255, 255, 255, 0.08),
-                0 0 0 1px rgba(16, 185, 129, 0.05)
+                0 0 0 1px ${theme.colors.success}05
               `
             }}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">Rate</span>
-              <span className="text-sm font-semibold text-white">
+              <span
+                className="text-xs font-medium"
+                style={{ color: theme.colors.textMuted }}
+              >
+                Rate
+              </span>
+              <span
+                className="text-sm font-semibold"
+                style={{ color: theme.colors.textPrimary }}
+              >
                 {displayInputToken && displayOutputToken && displayOutputTokenConfidential && quote ? (() => {
                   try {
                     const inputDecimals = displayInputToken.decimals || 6
@@ -460,7 +523,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
 
                     return `1 ${displayInputToken.symbol} = ${exchangeRate.toFixed(6)} ${displayOutputTokenConfidential.symbol}`
                   } catch (error) {
-                    console.error('Price calculation error:', error)
+                    // Price calculation failed - fallback to placeholder
                     return `1 ${displayInputToken.symbol} = --- ${displayOutputTokenConfidential.symbol}`
                   }
                 })() : '---'
@@ -468,20 +531,34 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">Price Impact</span>
               <span
-                className={`text-sm font-semibold ${
-                  priceImpact > 5 ? 'text-red-400' :
-                  priceImpact > 2 ? 'text-yellow-400' :
-                  'text-green-400'
-                }`}
+                className="text-xs font-medium"
+                style={{ color: theme.colors.textMuted }}
+              >
+                Price Impact
+              </span>
+              <span
+                className="text-sm font-semibold"
+                style={{
+                  color: priceImpact > 5 ? theme.colors.error :
+                         priceImpact > 2 ? theme.colors.warning :
+                         theme.colors.success
+                }}
               >
                 {typeof priceImpact === 'number' && !isNaN(priceImpact) ? priceImpact.toFixed(2) : '0.00'}%
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">Minimum Received</span>
-              <span className="text-sm font-semibold text-white">
+              <span
+                className="text-xs font-medium"
+                style={{ color: theme.colors.textMuted }}
+              >
+                Minimum Received
+              </span>
+              <span
+                className="text-sm font-semibold"
+                style={{ color: theme.colors.textPrimary }}
+              >
                 {displayOutputTokenConfidential && outputAmount && quote ? (() => {
                   try {
                     const outputDecimals = displayOutputToken?.decimals || 9
@@ -502,15 +579,34 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">Network Fee</span>
-              <span className="text-sm font-semibold text-white">
+              <span
+                className="text-xs font-medium"
+                style={{ color: theme.colors.textMuted }}
+              >
+                Network Fee
+              </span>
+              <span
+                className="text-sm font-semibold"
+                style={{ color: theme.colors.textPrimary }}
+              >
                 ~0.000005 SOL
               </span>
             </div>
             {privacyMode && (
-              <div className="flex items-center justify-between pt-2 border-t border-gray-700">
-                <span className="text-xs font-medium text-emerald-400">Privacy Fee</span>
-                <span className="text-sm font-semibold text-emerald-400">
+              <div
+                className="flex items-center justify-between pt-2"
+                style={{ borderTop: `1px solid ${theme.colors.border}` }}
+              >
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: theme.colors.success }}
+                >
+                  Privacy Fee
+                </span>
+                <span
+                  className="text-sm font-semibold"
+                  style={{ color: theme.colors.success }}
+                >
                   ~0.1%
                 </span>
               </div>
@@ -521,27 +617,41 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         {/* Error Display */}
         {error && (
           <div
-            className="glass-card flex items-start gap-3 p-4"
+            className="flex items-start gap-3 p-4 rounded-xl"
             style={{
-              borderColor: error.includes('User rejected') || error.includes('cancelled') ? 'rgba(59, 130, 246, 0.3)' : 'rgba(239, 68, 68, 0.3)',
-              backgroundColor: error.includes('User rejected') || error.includes('cancelled') ? 'rgba(59, 130, 246, 0.05)' : 'rgba(239, 68, 68, 0.05)'
+              ...createGlassStyles(theme),
+              borderColor: error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}30` : `${theme.colors.error}30`,
+              backgroundColor: error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}05` : `${theme.colors.error}05`
             }}
           >
             <ExclamationTriangleIcon
               className="h-5 w-5 flex-shrink-0 mt-0.5"
-              style={{ color: error.includes('User rejected') || error.includes('cancelled') ? '#3B82F6' : '#EF4444' }}
+              style={{ color: error.includes('User rejected') || error.includes('cancelled') ? theme.colors.primary : theme.colors.error }}
             />
             <div className="flex-1">
-              <p className="text-sm font-bold" style={{ color: error.includes('User rejected') || error.includes('cancelled') ? '#93C5FD' : '#FCA5A5' }}>
+              <p
+                className="text-sm font-bold"
+                style={{
+                  color: error.includes('User rejected') || error.includes('cancelled')
+                    ? theme.colors.primary
+                    : theme.colors.error
+                }}
+              >
                 {error}
               </p>
               {error.includes('User rejected') && (
-                <p className="text-xs mt-1 opacity-70" style={{ color: 'var(--wave-text)' }}>
+                <p
+                  className="text-xs mt-1 opacity-70"
+                  style={{ color: theme.colors.textSecondary }}
+                >
                   You can safely continue using the swap interface.
                 </p>
               )}
               {error.includes('insufficient') && (
-                <p className="text-xs mt-1 opacity-70" style={{ color: 'var(--wave-text)' }}>
+                <p
+                  className="text-xs mt-1 opacity-70"
+                  style={{ color: theme.colors.textSecondary }}
+                >
                   Please check your wallet balance and try a smaller amount.
                 </p>
               )}
@@ -555,7 +665,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                       }
                     }}
                     className="text-xs font-bold transition-opacity hover:opacity-70"
-                    style={{ color: 'var(--wave-purple)' }}
+                    style={{ color: theme.colors.primary }}
                   >
                     Try Again
                   </button>
@@ -563,7 +673,11 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                 <button
                   onClick={clearError}
                   className="text-xs font-medium transition-opacity hover:opacity-70"
-                  style={{ color: error.includes('User rejected') || error.includes('cancelled') ? '#3B82F6' : '#EF4444' }}
+                  style={{
+                    color: error.includes('User rejected') || error.includes('cancelled')
+                      ? theme.colors.primary
+                      : theme.colors.error
+                  }}
                 >
                   Dismiss
                 </button>
@@ -589,18 +703,33 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         </div>
 
         {/* Security & Info Footer */}
-        <div className="mt-6 pt-4 border-t border-gray-700">
-          <div className="flex items-center justify-center gap-6 text-xs text-gray-500">
+        <div
+          className="mt-6 pt-4"
+          style={{ borderTop: `1px solid ${theme.colors.border}` }}
+        >
+          <div
+            className="flex items-center justify-center gap-6 text-xs"
+            style={{ color: theme.colors.textMuted }}
+          >
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+              <div
+                className="w-3 h-3 rounded-full animate-pulse"
+                style={{ backgroundColor: theme.colors.success }}
+              />
               <span>Audited</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-blue-500 rounded-full" />
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: theme.colors.primary }}
+              />
               <span>Encrypted</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-purple-500 rounded-full" />
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: theme.colors.primary }}
+              />
               <span>{privacyMode ? 'Private' : 'Public'} Route</span>
             </div>
           </div>
@@ -609,7 +738,10 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
 
       {/* Disclaimer */}
       <div className="mt-4 text-center">
-        <p className="text-xs text-gray-500 max-w-md mx-auto">
+        <p
+          className="text-xs max-w-md mx-auto"
+          style={{ color: theme.colors.textMuted }}
+        >
           {privacyMode
             ? "Private swaps use enhanced encryption to protect transaction privacy. Fees may be higher than public swaps."
             : "Public swaps are executed on-chain transparently. All transaction details are publicly visible."

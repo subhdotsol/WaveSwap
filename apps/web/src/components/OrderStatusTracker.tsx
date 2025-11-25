@@ -127,7 +127,7 @@ export function OrderStatusTracker({
       case 'pending':
         return <ClockIcon className="w-5 h-5 text-blue-400 animate-spin" />
       default:
-        return <ClockIcon className="w-5 h-5 text-gray-400" />
+        return <ClockIcon className="w-5 h-5" style={{ color: 'var(--wave-text-muted)' }} />
     }
   }
 
@@ -140,7 +140,7 @@ export function OrderStatusTracker({
       case 'pending':
         return 'border-blue-500/20 bg-blue-500/10'
       default:
-        return 'border-gray-500/20 bg-gray-500/10'
+        return 'border-gray-500/20'
     }
   }
 
@@ -153,16 +153,16 @@ export function OrderStatusTracker({
             {getStatusIcon()}
             <div>
               <h3 className="text-lg font-semibold text-white">Private Transaction</h3>
-              <p className="text-sm text-gray-300 capitalize">{status.status}</p>
+              <p className="text-sm capitalize" style={{ color: 'var(--wave-text-secondary)' }}>{status.status}</p>
             </div>
           </div>
 
           <div className="text-right">
-            <p className="text-sm font-medium text-gray-300">
+            <p className="text-sm font-medium" style={{ color: 'var(--wave-text-secondary)' }}>
               {status.estimatedTime}
             </p>
             {status.timestamp && (
-              <p className="text-xs text-gray-400">
+              <p className="text-xs" style={{ color: 'var(--wave-text-muted)' }}>
                 {new Date(status.timestamp).toLocaleTimeString()}
               </p>
             )}
@@ -172,10 +172,10 @@ export function OrderStatusTracker({
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-300">Progress</span>
-            <span className="text-sm text-gray-300">{status.progress}%</span>
+            <span className="text-sm" style={{ color: 'var(--wave-text-secondary)' }}>Progress</span>
+            <span className="text-sm" style={{ color: 'var(--wave-text-secondary)' }}>{status.progress}%</span>
           </div>
-          <div className="w-full bg-gray-700/50 rounded-full h-2">
+          <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--wave-glass-border)' }}>
             <div
               className={`h-2 rounded-full transition-all duration-500 ${
                 status.status === 'completed'
@@ -191,65 +191,65 @@ export function OrderStatusTracker({
 
         {/* Status Message */}
         <div className="flex items-start gap-3">
-          <ExclamationTriangleIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-gray-300">{status.message}</p>
+          <ExclamationTriangleIcon className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--wave-text-muted)' }} />
+          <p className="text-sm" style={{ color: 'var(--wave-text-secondary)' }}>{status.message}</p>
         </div>
 
         {/* Order ID */}
-        <div className="mt-4 p-3 bg-gray-800/40 rounded-xl">
-          <p className="text-xs text-gray-400 mb-1">Order Identifier</p>
-          <p className="text-xs font-mono text-gray-300 break-all">{orderStatusIdentifier}</p>
+        <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: 'var(--wave-glass-bg)' }}>
+          <p className="text-xs mb-1" style={{ color: 'var(--wave-text-muted)' }}>Order Identifier</p>
+          <p className="text-xs font-mono break-all" style={{ color: 'var(--wave-text-secondary)' }}>{orderStatusIdentifier}</p>
         </div>
       </div>
 
       {/* Information Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/60 p-4">
+        <div className="backdrop-blur-xl rounded-xl border p-4" style={{ backgroundColor: 'var(--wave-glass-bg)', borderColor: 'var(--wave-glass-border)' }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
               <ClockIcon className="w-4 h-4 text-blue-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Processing Time</p>
-              <p className="text-xs text-gray-400">Usually 2-5 minutes</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--wave-text-primary)' }}>Processing Time</p>
+              <p className="text-xs" style={{ color: 'var(--wave-text-muted)' }}>Usually 2-5 minutes</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/60 p-4">
+        <div className="backdrop-blur-xl rounded-xl border p-4" style={{ backgroundColor: 'var(--wave-glass-bg)', borderColor: 'var(--wave-glass-border)' }}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
               <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Privacy Level</p>
-              <p className="text-xs text-gray-400">Maximum encryption</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--wave-text-primary)' }}>Privacy Level</p>
+              <p className="text-xs" style={{ color: 'var(--wave-text-muted)' }}>Maximum encryption</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/60 p-4">
+        <div className="backdrop-blur-xl rounded-xl border p-4" style={{ backgroundColor: 'var(--wave-glass-bg)', borderColor: 'var(--wave-glass-border)' }}>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
               </svg>
             </div>
             <div>
-              <p className="text-sm font-medium text-white">Security</p>
-              <p className="text-xs text-gray-400">Zero-knowledge proofs</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--wave-text-primary)' }}>Security</p>
+              <p className="text-xs" style={{ color: 'var(--wave-text-muted)' }}>Zero-knowledge proofs</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Additional Information */}
-      <div className="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/60 p-4">
+      <div className="backdrop-blur-xl rounded-xl border p-4" style={{ backgroundColor: 'var(--wave-glass-bg)', borderColor: 'var(--wave-glass-border)' }}>
         <div className="flex items-start gap-3">
           <ExclamationTriangleIcon className="w-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-gray-300">
+          <div className="text-sm" style={{ color: 'var(--wave-text-secondary)' }}>
             <p className="font-medium text-yellow-400 mb-1">Important Note</p>
-            <p className="text-gray-400">
+            <p style={{ color: 'var(--wave-text-muted)' }}>
               Private transactions may take longer than public transactions as they require additional encryption and privacy protocols.
               The status will update automatically as your transaction progresses through the Encifher network.
             </p>

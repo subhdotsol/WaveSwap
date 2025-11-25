@@ -15,15 +15,13 @@ import {
   AdjustmentsHorizontalIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useThemeConfig, createGlassStyles } from '@/lib/theme'
 
-interface SettingsProps {
-  privacyMode: boolean
-  onPrivacyModeChange: (enabled: boolean) => void
-}
-
-export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
+export function Settings() {
+  const { theme, setLightTheme, setDarkTheme, setOrcaTheme } = useTheme()
+  const themeConfig = useThemeConfig()
   const [isOpen, setIsOpen] = useState(false)
-  const [darkMode, setDarkMode] = useState(true)
   const [notifications, setNotifications] = useState(true)
   const [slippage, setSlippage] = useState('3')
   const [deadline, setDeadline] = useState('30')
@@ -51,23 +49,13 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2.5 overflow-hidden rounded-xl transition-all duration-300 border-0 flex items-center gap-2 z-10"
         style={{
-          background: `
-            linear-gradient(135deg,
-              rgba(107, 114, 128, 0.8) 0%,
-              rgba(75, 85, 99, 0.8) 50%,
-              rgba(107, 114, 128, 0.8) 100%
-            ),
-            radial-gradient(circle at 30% 30%,
-              rgba(162, 89, 250, 0.1) 0%,
-              transparent 50%
-            )
-          `,
-          border: '1px solid rgba(107, 114, 128, 0.3)',
+          ...createGlassStyles(themeConfig),
+          border: `1px solid ${themeConfig.colors.border}`,
           backdropFilter: 'blur(16px) saturate(1.8)',
           boxShadow: `
-            0 8px 32px rgba(0, 0, 0, 0.2),
+            0 8px 32px ${themeConfig.colors.shadow},
             inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 0 1px rgba(162, 89, 250, 0.1)
+            0 0 0 1px ${themeConfig.colors.primary}10
           `
         }}
         onMouseEnter={(e) => {
@@ -137,17 +125,22 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                 rgba(30, 30, 45, 0.95) 100%
               ),
               radial-gradient(circle at 25% 25%,
-                rgba(162, 89, 250, 0.05) 0%,
+                rgba(33, 188, 255, 0.05) 0%,
+                transparent 50%
+              ),
+              radial-gradient(circle at 75% 75%,
+                rgba(16, 185, 129, 0.03) 0%,
                 transparent 50%
               )
             `,
-            border: '1px solid rgba(162, 89, 250, 0.15)',
+            border: '1px solid rgba(33, 188, 255, 0.15)',
             backdropFilter: 'blur(24px) saturate(1.8)',
             boxShadow: `
-              0 20px 60px rgba(0, 0, 0, 0.4),
-              0 8px 24px rgba(162, 89, 250, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1),
-              inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+              0 25px 70px rgba(0, 0, 0, 0.5),
+              0 12px 32px rgba(33, 188, 255, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(33, 188, 255, 0.1)
             `,
             zIndex: 50
           }}
@@ -165,22 +158,22 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
           <div className="relative z-10 p-4 border-b border-gray-700/50" style={{
             background: `
               linear-gradient(135deg,
-                rgba(162, 89, 250, 0.1) 0%,
-                rgba(162, 89, 250, 0.05) 50%,
-                rgba(162, 89, 250, 0.1) 100%
+                rgba(33, 188, 255, 0.1) 0%,
+                rgba(33, 188, 255, 0.05) 50%,
+                rgba(33, 188, 255, 0.1) 100%
               )
             `,
             backdropFilter: 'blur(12px) saturate(1.5)'
           }}>
             <div className="flex items-center gap-3">
               <div className="rounded-lg p-2" style={{
-                background: 'rgba(162, 89, 250, 0.2)',
-                border: '1px solid rgba(162, 89, 250, 0.3)'
+                background: 'rgba(33, 188, 255, 0.2)',
+                border: '1px solid rgba(33, 188, 255, 0.3)'
               }}>
-                <Cog6ToothIcon className="h-5 w-5 text-purple-400" style={{ filter: 'drop-shadow(0 0 8px rgba(162, 89, 250, 0.4))' }} />
+                <Cog6ToothIcon className="h-5 w-5 text-blue-400" style={{ filter: 'drop-shadow(0 0 8px rgba(33, 188, 255, 0.4))' }} />
               </div>
               <h2 className="text-lg font-semibold text-white" style={{
-                fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                fontFamily: 'var(--font-helvetica)',
                 fontWeight: 600,
                 letterSpacing: '0.025em'
               }}>Settings</h2>
@@ -189,65 +182,27 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
 
           {/* Settings Content */}
           <div className="relative z-10 p-4 space-y-6 max-h-96 overflow-y-auto">
-            {/* Privacy & Security */}
+            {/* Trading Preferences */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-3">
-                <ShieldCheckIcon className="h-4 w-4 text-emerald-400" />
-                <h3 className="text-xs font-medium text-emerald-400 uppercase tracking-wider" style={{
-                  fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                <AdjustmentsHorizontalIcon className="h-4 w-4 text-blue-400" />
+                <h3 className="text-xs font-medium text-blue-400 uppercase tracking-wider" style={{
+                  fontFamily: 'var(--font-helvetica)',
                   letterSpacing: '0.05em'
-                }}>Privacy & Security</h3>
-              </div>
-
-              {/* Privacy Mode */}
-              <div className="flex items-center justify-between p-3 rounded-xl" style={{
-                background: 'rgba(16, 185, 129, 0.05)',
-                border: '1px solid rgba(16, 185, 129, 0.1)'
-              }}>
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg p-2" style={{
-                    background: 'rgba(16, 185, 129, 0.2)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)'
-                  }}>
-                    <SparklesIcon className="h-4 w-4 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-white text-sm" style={{
-                      fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-                      fontWeight: 500
-                    }}>Privacy Mode</h4>
-                    <p className="text-xs text-gray-400">Enhanced privacy for all transactions</p>
-                  </div>
-                </div>
-
-                <Switch
-                  checked={privacyMode}
-                  onChange={(checked) => {
-                    onPrivacyModeChange(checked)
-                  }}
-                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-transparent"
-                  style={{
-                    backgroundColor: privacyMode ? '#10b981' : '#374151'
-                  }}
-                >
-                  <span className="sr-only">Enable privacy mode</span>
-                  <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${privacyMode ? 'translate-x-5' : 'translate-x-1'}`}
-                  />
-                </Switch>
+                }}>Trading Preferences</h3>
               </div>
 
               {/* Expert Mode */}
               <div className="flex items-center justify-between p-3 rounded-xl" style={{
-                background: 'rgba(239, 68, 68, 0.05)',
-                border: '1px solid rgba(239, 68, 68, 0.1)'
+                background: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.1)'
               }}>
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg p-2" style={{
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)'
+                    background: 'rgba(59, 130, 246, 0.2)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)'
                   }}>
-                    <ChartBarIcon className="h-4 w-4 text-red-400" />
+                    <ChartBarIcon className="h-4 w-4 text-blue-400" />
                   </div>
                   <div>
                     <h4 className="font-medium text-white text-sm">Expert Mode</h4>
@@ -258,9 +213,9 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                 <Switch
                   checked={expertMode}
                   onChange={setExpertMode}
-                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-transparent"
+                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent"
                   style={{
-                    backgroundColor: expertMode ? '#ef4444' : '#374151'
+                    backgroundColor: expertMode ? 'rgba(59, 130, 246, 0.8)' : 'rgba(55, 65, 81, 0.8)'
                   }}
                 >
                   <span className="sr-only">Enable expert mode</span>
@@ -271,12 +226,115 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
               </div>
             </div>
 
-            {/* Trading Preferences */}
+            {/* Theme Selection */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-3">
+                <SunIcon className="h-4 w-4 text-yellow-400" />
+                <h3 className="text-xs font-medium text-yellow-400 uppercase tracking-wider" style={{
+                  fontFamily: 'var(--font-helvetica)',
+                  letterSpacing: '0.05em'
+                }}>Theme</h3>
+              </div>
+
+              {/* Theme Options */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={setLightTheme}
+                  className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 ${
+                    theme === 'light'
+                      ? 'border-yellow-400/50'
+                      : 'border-gray-600/50 hover:border-yellow-400/30'
+                  }`}
+                  style={{
+                    background: theme === 'light'
+                      ? 'rgba(251, 191, 36, 0.1)'
+                      : 'rgba(55, 65, 81, 0.3)',
+                    backdropFilter: 'blur(8px) saturate(1.2)'
+                  }}
+                >
+                  <SunIcon className={`h-5 w-5 ${
+                    theme === 'light' ? 'text-yellow-400' : 'text-gray-400'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    theme === 'light' ? 'text-yellow-400' : 'text-gray-400'
+                  }`} style={{
+                    fontFamily: 'var(--font-helvetica)'
+                  }}>
+                    Light
+                  </span>
+                  {theme === 'light' && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" />
+                  )}
+                </button>
+
+                <button
+                  onClick={setDarkTheme}
+                  className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'border-blue-400/50'
+                      : 'border-gray-600/50 hover:border-blue-400/30'
+                  }`}
+                  style={{
+                    background: theme === 'dark'
+                      ? 'rgba(59, 130, 246, 0.1)'
+                      : 'rgba(55, 65, 81, 0.3)',
+                    backdropFilter: 'blur(8px) saturate(1.2)'
+                  }}
+                >
+                  <MoonIcon className={`h-5 w-5 ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-gray-400'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    theme === 'dark' ? 'text-blue-400' : 'text-gray-400'
+                  }`} style={{
+                    fontFamily: 'var(--font-helvetica)'
+                  }}>
+                    Dark
+                  </span>
+                  {theme === 'dark' && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full" />
+                  )}
+                </button>
+
+                <button
+                  onClick={setOrcaTheme}
+                  className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 ${
+                    theme === 'orca'
+                      ? 'border-gray-400/50'
+                      : 'border-gray-600/50 hover:border-gray-400/30'
+                  }`}
+                  style={{
+                    background: theme === 'orca'
+                      ? 'rgba(156, 163, 175, 0.1)'
+                      : 'rgba(55, 65, 81, 0.3)',
+                    backdropFilter: 'blur(8px) saturate(1.2)'
+                  }}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 ${
+                    theme === 'orca'
+                      ? 'bg-gray-400 border-gray-400'
+                      : 'border-gray-400'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    theme === 'orca' ? 'text-gray-400' : 'text-gray-400'
+                  }`} style={{
+                    fontFamily: 'var(--font-helvetica)'
+                  }}>
+                    Orca
+                  </span>
+                  {theme === 'orca' && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-gray-400 rounded-full" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Slippage & Deadline */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-3">
                 <AdjustmentsHorizontalIcon className="h-4 w-4 text-blue-400" />
                 <h3 className="text-xs font-medium text-blue-400 uppercase tracking-wider" style={{
-                  fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                  fontFamily: 'var(--font-helvetica)',
                   letterSpacing: '0.05em'
                 }}>Trading Preferences</h3>
               </div>
@@ -287,7 +345,7 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                 border: '1px solid rgba(59, 130, 246, 0.1)'
               }}>
                 <label className="block text-sm font-medium text-white mb-2" style={{
-                  fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif"
+                  fontFamily: 'var(--font-helvetica)'
                 }}>Slippage Tolerance</label>
                 <div className="flex items-center gap-2">
                   <input
@@ -299,7 +357,7 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                       border: '1px solid rgba(156, 163, 175, 0.2)',
                       background: 'rgba(30, 30, 45, 0.6)',
                       backdropFilter: 'blur(8px) saturate(1.2)',
-                      fontFamily: "'JetBrains Mono', monospace"
+                      fontFamily: 'var(--font-mono)'
                     }}
                     min="0.1"
                     max="50"
@@ -316,7 +374,7 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                 border: '1px solid rgba(59, 130, 246, 0.1)'
               }}>
                 <label className="block text-sm font-medium text-white mb-2" style={{
-                  fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif"
+                  fontFamily: 'var(--font-helvetica)'
                 }}>Transaction Deadline</label>
                 <div className="flex items-center gap-2">
                   <input
@@ -328,7 +386,7 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                       border: '1px solid rgba(156, 163, 175, 0.2)',
                       background: 'rgba(30, 30, 45, 0.6)',
                       backdropFilter: 'blur(8px) saturate(1.2)',
-                      fontFamily: "'JetBrains Mono', monospace"
+                      fontFamily: 'var(--font-mono)'
                     }}
                     min="1"
                     max="60"
@@ -343,24 +401,24 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
             {/* Interface */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-3">
-                <BellIcon className="h-4 w-4 text-purple-400" />
-                <h3 className="text-xs font-medium text-purple-400 uppercase tracking-wider" style={{
-                  fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                <BellIcon className="h-4 w-4 text-blue-400" />
+                <h3 className="text-xs font-medium text-blue-400 uppercase tracking-wider" style={{
+                  fontFamily: 'var(--font-helvetica)',
                   letterSpacing: '0.05em'
                 }}>Interface</h3>
               </div>
 
               {/* Notifications */}
               <div className="flex items-center justify-between p-3 rounded-xl" style={{
-                background: 'rgba(168, 85, 247, 0.05)',
-                border: '1px solid rgba(168, 85, 247, 0.1)'
+                background: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.1)'
               }}>
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg p-2" style={{
-                    background: 'rgba(168, 85, 247, 0.2)',
-                    border: '1px solid rgba(168, 85, 247, 0.3)'
+                    background: 'rgba(59, 130, 246, 0.2)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)'
                   }}>
-                    <BellIcon className="h-4 w-4 text-purple-400" />
+                    <BellIcon className="h-4 w-4 text-blue-400" />
                   </div>
                   <div>
                     <h4 className="font-medium text-white text-sm">Notifications</h4>
@@ -371,9 +429,9 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                 <Switch
                   checked={notifications}
                   onChange={setNotifications}
-                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent"
+                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent"
                   style={{
-                    backgroundColor: notifications ? '#a855f7' : '#374151'
+                    backgroundColor: notifications ? 'var(--wave-azul)' : '#374151'
                   }}
                 >
                   <span className="sr-only">Enable notifications</span>
@@ -393,7 +451,7 @@ export function Settings({ privacyMode, onPrivacyModeChange }: SettingsProps) {
                 <InformationCircleIcon className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-xs text-gray-300" style={{
-                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+                    fontFamily: 'var(--font-helvetica)'
                   }}>
                     Configure your trading preferences and privacy settings to optimize your WaveSwap experience.
                   </p>

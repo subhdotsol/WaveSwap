@@ -242,15 +242,15 @@ export function TokenSelectorNew({
               rgba(30, 30, 45, 0.95) 100%
             ),
             radial-gradient(circle at 30% 30%,
-              rgba(162, 89, 250, 0.1) 0%,
+              rgba(33, 188, 255, 0.1) 0%,
               transparent 50%
             )
           `,
-          border: '1px solid rgba(162, 89, 250, 0.3)',
+          border: '1px solid rgba(33, 188, 255, 0.3)',
           backdropFilter: 'blur(20px) saturate(1.8)',
           boxShadow: `
             0 8px 32px rgba(0, 0, 0, 0.3),
-            0 4px 12px rgba(162, 89, 250, 0.1),
+            0 4px 12px rgba(33, 188, 255, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.1)
           `,
         }}
@@ -258,7 +258,7 @@ export function TokenSelectorNew({
           e.currentTarget.style.transform = 'translateY(-1px)'
           e.currentTarget.style.boxShadow = `
             0 12px 40px rgba(0, 0, 0, 0.4),
-            0 6px 16px rgba(162, 89, 250, 0.2),
+            0 6px 16px rgba(33, 188, 255, 0.2),
             inset 0 1px 0 rgba(255, 255, 255, 0.15)
           `
         }}
@@ -266,7 +266,7 @@ export function TokenSelectorNew({
           e.currentTarget.style.transform = 'translateY(0px)'
           e.currentTarget.style.boxShadow = `
             0 8px 32px rgba(0, 0, 0, 0.3),
-            0 4px 12px rgba(162, 89, 250, 0.1),
+            0 4px 12px rgba(33, 188, 255, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.1)
           `
         }}
@@ -294,7 +294,7 @@ export function TokenSelectorNew({
                 <div
                   className="absolute inset-0 rounded-full blur-xl opacity-30 pointer-events-none"
                   style={{
-                    background: 'radial-gradient(circle, rgba(162, 89, 250, 0.4) 0%, transparent 70%)'
+                    background: 'radial-gradient(circle, rgba(33, 188, 255, 0.4) 0%, transparent 70%)'
                   }}
                 />
               </div>
@@ -302,11 +302,11 @@ export function TokenSelectorNew({
                 <span
                   className="font-bold tracking-wide text-white/95"
                   style={{
-                    fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    fontFamily: 'var(--font-helvetica)',
                     fontSize: '0.95rem',
                     fontWeight: 600,
                     letterSpacing: '0.01em',
-                    textShadow: '0 0 10px rgba(162, 89, 250, 0.3)'
+                    textShadow: '0 0 10px rgba(33, 188, 255, 0.3)'
                   }}
                 >
                   {currentToken.symbol}
@@ -316,10 +316,10 @@ export function TokenSelectorNew({
           )}
         </div>
         <ChevronDownIcon
-          className="h-5 w-5 flex-shrink-0 transition-all duration-300 text-purple-300 group-hover:text-purple-200"
+          className="h-5 w-5 flex-shrink-0 transition-all duration-300 text-blue-300 group-hover:text-blue-200"
           style={{
             transform: isOpen ? 'rotate(180deg) translateY(1px)' : 'rotate(0deg)',
-            filter: 'drop-shadow(0 0 8px rgba(162, 89, 250, 0.4))'
+            filter: 'drop-shadow(0 0 8px rgba(33, 188, 255, 0.4))'
           }}
         />
       </button>
@@ -360,15 +360,15 @@ export function TokenSelectorNew({
                         rgba(25, 25, 40, 0.98) 100%
                       ),
                       radial-gradient(circle at 50% 10%,
-                        rgba(162, 89, 250, 0.08) 0%,
+                        rgba(33, 188, 255, 0.08) 0%,
                         transparent 50%
                       )
                     `,
-                    border: '1px solid rgba(162, 89, 250, 0.25)',
+                    border: '1px solid rgba(33, 188, 255, 0.25)',
                     boxShadow: `
                       0 50px 100px -20px rgba(0, 0, 0, 0.7),
                       0 25px 50px -12px rgba(0, 0, 0, 0.5),
-                      0 0 0 1px rgba(162, 89, 250, 0.2),
+                      0 0 0 1px rgba(33, 188, 255, 0.2),
                       inset 0 1px 0 rgba(255, 255, 255, 0.1)
                     `,
                     backdropFilter: 'blur(40px) saturate(1.5)'
@@ -384,17 +384,17 @@ export function TokenSelectorNew({
                   />
                   {/* Modal Header */}
                   <div className="relative flex items-center justify-between p-6 border-b" style={{
-                    borderColor: 'rgba(162, 89, 250, 0.15)',
-                    background: 'linear-gradient(to bottom, rgba(162, 89, 250, 0.05), transparent)'
+                    borderColor: 'rgba(33, 188, 255, 0.15)',
+                    background: 'linear-gradient(to bottom, rgba(33, 188, 255, 0.05), transparent)'
                   }}>
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse" />
+                      <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse" />
                       <Dialog.Title
                         className="text-xl font-bold text-white"
                         style={{
-                          fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                          fontFamily: 'var(--font-helvetica)',
                           letterSpacing: '0.025em',
-                          textShadow: '0 0 20px rgba(162, 89, 250, 0.3)'
+                          textShadow: '0 0 20px rgba(33, 188, 255, 0.3)'
                         }}
                       >
                         Select Token
@@ -413,7 +413,7 @@ export function TokenSelectorNew({
                   <div className="p-6 pb-4 relative">
                     <div className="relative group">
                       <MagnifyingGlassIcon
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-300/60 group-focus-within:text-purple-300 transition-colors"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-300/60 group-focus-within:text-blue-300 transition-colors"
                       />
                       <input
                         type="text"
@@ -423,19 +423,19 @@ export function TokenSelectorNew({
                         className="w-full pl-12 pr-4 py-4 rounded-2xl text-white/90 placeholder-white/40 text-sm font-medium transition-all duration-200"
                         style={{
                           background: 'rgba(10, 10, 20, 0.8)',
-                          border: '1px solid rgba(162, 89, 250, 0.3)',
-                          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                          border: '1px solid rgba(33, 188, 255, 0.3)',
+                          fontFamily: 'var(--font-helvetica)',
                           fontSize: '0.9rem',
                           outline: 'none',
                           boxShadow: '0 0 0 0 transparent'
                         }}
                         onFocus={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(162, 89, 250, 0.6)';
-                          e.currentTarget.style.boxShadow = '0 0 0 1px rgba(162, 89, 250, 0.3), inset 0 0 20px rgba(162, 89, 250, 0.1)';
+                          e.currentTarget.style.borderColor = 'rgba(33, 188, 255, 0.6)';
+                          e.currentTarget.style.boxShadow = '0 0 0 1px rgba(33, 188, 255, 0.3), inset 0 0 20px rgba(33, 188, 255, 0.1)';
                           e.currentTarget.style.background = 'rgba(10, 10, 20, 0.95)';
                         }}
                         onBlur={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(162, 89, 250, 0.3)';
+                          e.currentTarget.style.borderColor = 'rgba(33, 188, 255, 0.3)';
                           e.currentTarget.style.boxShadow = '0 0 0 0 transparent';
                           e.currentTarget.style.background = 'rgba(10, 10, 20, 0.8)';
                         }}
@@ -445,14 +445,14 @@ export function TokenSelectorNew({
                       <div
                         className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 blur-xl opacity-0 group-focus-within:opacity-40 transition-opacity rounded-full"
                         style={{
-                          background: 'radial-gradient(circle, rgba(162, 89, 250, 0.3) 0%, transparent 70%)'
+                          background: 'radial-gradient(circle, rgba(33, 188, 255, 0.3) 0%, transparent 70%)'
                         }}
                       />
                     </div>
                     {isSearching && (
                       <div className="mt-4 flex items-center justify-center gap-2">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
-                        <div className="text-sm font-medium text-purple-300">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
+                        <div className="text-sm font-medium text-blue-300">
                           Searching for tokens...
                         </div>
                       </div>
@@ -472,8 +472,8 @@ export function TokenSelectorNew({
                     {!searchQuery && tokensWithBalance.length > 0 && (
                       <div>
                         <div className="px-4 py-2 text-xs font-semibold" style={{
-                          color: 'rgba(162, 89, 250, 0.8)',
-                          fontFamily: 'Inter, system-ui, sans-serif'
+                          color: 'rgba(33, 188, 255, 0.8)',
+                          fontFamily: 'var(--font-helvetica)'
                         }}>
                           Your Tokens
                         </div>
@@ -493,8 +493,8 @@ export function TokenSelectorNew({
                       <div>
                         {tokensWithBalance.length > 0 && (
                           <div className="px-4 py-2 text-xs font-semibold mt-4" style={{
-                            color: 'rgba(162, 89, 250, 0.8)',
-                            fontFamily: 'Inter, system-ui, sans-serif'
+                            color: 'rgba(33, 188, 255, 0.8)',
+                            fontFamily: 'var(--font-helvetica)'
                           }}>
                             Popular Tokens
                           </div>
@@ -562,12 +562,12 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
       className="group relative w-full flex items-center justify-between p-4 transition-all duration-200 hover:translate-x-1"
       style={{
         background: isSelected
-          ? `linear-gradient(135deg, rgba(162, 89, 250, 0.2) 0%, rgba(162, 89, 250, 0.1) 100%)`
+          ? `linear-gradient(135deg, rgba(33, 188, 255, 0.2) 0%, rgba(33, 188, 255, 0.1) 100%)`
           : hasBalance
           ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)'
           : 'transparent',
         borderLeft: isSelected
-          ? '3px solid rgba(162, 89, 250, 0.6)'
+          ? '3px solid rgba(33, 188, 255, 0.6)'
           : hasBalance
           ? '3px solid rgba(16, 185, 129, 0.4)'
           : '2px solid transparent',
@@ -575,12 +575,12 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = isSelected
-          ? `linear-gradient(135deg, rgba(162, 89, 250, 0.25) 0%, rgba(162, 89, 250, 0.15) 100%)`
+          ? `linear-gradient(135deg, rgba(33, 188, 255, 0.25) 0%, rgba(33, 188, 255, 0.15) 100%)`
           : `linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%)`
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = isSelected
-          ? `linear-gradient(135deg, rgba(162, 89, 250, 0.2) 0%, rgba(162, 89, 250, 0.1) 100%)`
+          ? `linear-gradient(135deg, rgba(33, 188, 255, 0.2) 0%, rgba(33, 188, 255, 0.1) 100%)`
           : hasBalance
           ? `linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)`
           : 'transparent'
@@ -588,7 +588,7 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
     >
       {/* Selection indicator */}
       {isSelected && (
-        <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-purple-500 to-purple-600 opacity-60" />
+        <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500 to-blue-600 opacity-60" />
       )}
 
       <div className="flex items-center gap-3 flex-1">
@@ -604,7 +604,7 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
             className="absolute inset-0 rounded-full blur-md opacity-0 group-hover:opacity-30 transition-opacity"
             style={{
               background: isSelected
-                ? 'radial-gradient(circle, rgba(162, 89, 250, 0.5) 0%, transparent 70%)'
+                ? 'radial-gradient(circle, rgba(33, 188, 255, 0.5) 0%, transparent 70%)'
                 : 'radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, transparent 70%)'
             }}
           />
@@ -620,7 +620,7 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
             <span
               className="font-bold text-white/95 group-hover:text-white"
               style={{
-                fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                fontFamily: 'var(--font-helvetica)',
                 fontSize: '0.9rem',
                 fontWeight: 600,
                 letterSpacing: '0.025em'
@@ -639,7 +639,7 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
           <span
             className="text-xs font-medium text-gray-400/80 group-hover:text-gray-300"
             style={{
-              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+              fontFamily: 'var(--font-helvetica)',
               letterSpacing: '0.025em'
             }}
           >
@@ -651,7 +651,7 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
         <div
           className="font-bold text-white/90 group-hover:text-white mb-1"
           style={{
-            fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+            fontFamily: 'var(--font-helvetica)',
             fontSize: '0.85rem',
             fontWeight: 600,
             letterSpacing: '0.01em'

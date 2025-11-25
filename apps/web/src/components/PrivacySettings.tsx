@@ -67,40 +67,248 @@ export function PrivacySettings({
   return (
     <div className="space-y-6">
       {/* Privacy Mode Toggle */}
-      <div className="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-800/60 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div
+        className="relative p-6 rounded-2xl overflow-hidden"
+        style={{
+          background: `
+            linear-gradient(135deg,
+              rgba(30, 30, 45, 0.95) 0%,
+              rgba(45, 45, 65, 0.9) 25%,
+              rgba(30, 30, 45, 0.95) 50%,
+              rgba(45, 45, 65, 0.9) 75%,
+              rgba(30, 30, 45, 0.95) 100%
+            ),
+            radial-gradient(circle at 25% 25%,
+              rgba(16, 185, 129, 0.05) 0%,
+              transparent 50%
+            )
+          `,
+          border: '1px solid rgba(16, 185, 129, 0.15)',
+          backdropFilter: 'blur(24px) saturate(1.8)',
+          boxShadow: `
+            0 20px 60px rgba(0, 0, 0, 0.4),
+            0 8px 24px rgba(16, 185, 129, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.2)
+          `
+        }}
+      >
+        {/* Noise grain overlay */}
+        <div
+          className="absolute inset-0 opacity-4 pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='150' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='150' height='150' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
+            filter: 'contrast(1.2) brightness(1.1)'
+          }}
+        />
+
+        <div className="relative z-10 flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-full p-2">
-              <ShieldCheckIcon className="h-5 w-5 text-emerald-400" />
+            <div
+              className="rounded-full p-2.5"
+              style={{
+                background: privacyMode
+                  ? `
+                    linear-gradient(135deg,
+                      rgba(16, 185, 129, 0.2) 0%,
+                      rgba(16, 185, 129, 0.1) 50%,
+                      rgba(16, 185, 129, 0.2) 100%
+                    )
+                  `
+                  : `
+                    linear-gradient(135deg,
+                      rgba(33, 188, 255, 0.2) 0%,
+                      rgba(33, 188, 255, 0.1) 50%,
+                      rgba(33, 188, 255, 0.2) 100%
+                    )
+                  `,
+                border: privacyMode
+                  ? '1px solid rgba(16, 185, 129, 0.3)'
+                  : '1px solid rgba(33, 188, 255, 0.2)',
+                backdropFilter: 'blur(12px) saturate(1.5)',
+                boxShadow: privacyMode
+                  ? `
+                    0 8px 24px rgba(16, 185, 129, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                  `
+                  : `
+                    0 8px 24px rgba(33, 188, 255, 0.15),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.15)
+                  `
+              }}
+            >
+              <ShieldCheckIcon
+                className="h-5 w-5"
+                style={{
+                  color: privacyMode ? '#10b981' : '#21bbff',
+                  filter: privacyMode
+                    ? 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))'
+                    : 'drop-shadow(0 0 8px rgba(33, 188, 255, 0.4))'
+                }}
+              />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Privacy Mode</h3>
-              <p className="text-sm text-gray-400">
+              <h3
+                className="text-lg font-semibold"
+                style={{
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  fontFamily: 'var(--font-helvetica)',
+                  fontWeight: 600,
+                  letterSpacing: '0.025em'
+                }}
+              >
+                Privacy Mode
+              </h3>
+              <p
+                className="text-sm"
+                style={{
+                  color: privacyMode
+                    ? 'rgba(16, 185, 129, 0.9)'
+                    : 'rgba(156, 163, 175, 0.9)',
+                  textShadow: privacyMode
+                    ? '0 0 8px rgba(16, 185, 129, 0.3)'
+                    : 'none'
+                }}
+              >
                 {privacyMode ? 'Privacy features are enabled' : 'Using standard public transactions'}
               </p>
             </div>
           </div>
 
-          <Switch
-            checked={privacyMode}
-            onChange={onPrivacyModeChange}
-            className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                privacyMode ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </Switch>
+          <div className="relative">
+            <Switch
+              checked={privacyMode}
+              onChange={onPrivacyModeChange}
+              className="relative inline-flex h-7 w-13 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent z-10"
+              style={{
+                background: privacyMode
+                  ? `
+                    linear-gradient(135deg,
+                      rgba(16, 185, 129, 0.8) 0%,
+                      rgba(16, 185, 129, 0.6) 50%,
+                      rgba(16, 185, 129, 0.8) 100%
+                    )
+                  `
+                  : `
+                    linear-gradient(135deg,
+                      rgba(55, 65, 81, 0.9) 0%,
+                      rgba(75, 85, 99, 0.8) 50%,
+                      rgba(55, 65, 81, 0.9) 100%
+                    )
+                  `,
+                backdropFilter: 'blur(16px) saturate(1.5)',
+                border: privacyMode
+                  ? '1px solid rgba(16, 185, 129, 0.4)'
+                  : '1px solid rgba(55, 65, 81, 0.6)',
+                boxShadow: privacyMode
+                  ? `
+                    0 8px 24px rgba(16, 185, 129, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                  `
+                  : `
+                    0 8px 24px rgba(0, 0, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                  `,
+                focusRingColor: 'rgba(16, 185, 129, 0.5)'
+              }}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full transition-all duration-300 ${
+                  privacyMode ? 'translate-x-7' : 'translate-x-1'
+                }`}
+                style={{
+                  background: privacyMode
+                    ? `
+                      linear-gradient(135deg,
+                        rgba(255, 255, 255, 0.95) 0%,
+                        rgba(255, 255, 255, 0.85) 50%,
+                        rgba(255, 255, 255, 0.95) 100%
+                      )
+                    `
+                    : `
+                      linear-gradient(135deg,
+                        rgba(255, 255, 255, 0.8) 0%,
+                        rgba(255, 255, 255, 0.7) 50%,
+                        rgba(255, 255, 255, 0.8) 100%
+                      )
+                    `,
+                  boxShadow: privacyMode
+                    ? `
+                      0 4px 12px rgba(16, 185, 129, 0.4),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.8)
+                    `
+                    : `
+                      0 4px 12px rgba(0, 0, 0, 0.2),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.6)
+                    `
+                }}
+              />
+            </Switch>
+
+            {/* Toggle glow effect */}
+            {privacyMode && (
+              <div
+                className="absolute -inset-1 rounded-full opacity-20 pointer-events-none"
+                style={{
+                  background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.4) 0%, transparent 70%)',
+                  filter: 'blur(4px)'
+                }}
+              />
+            )}
+          </div>
         </div>
 
         {privacyMode && (
-          <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+          <div
+            className="relative mt-4 p-4 rounded-xl overflow-hidden"
+            style={{
+              background: `
+                linear-gradient(135deg,
+                  rgba(16, 185, 129, 0.15) 0%,
+                  rgba(16, 185, 129, 0.08) 50%,
+                  rgba(16, 185, 129, 0.15) 100%
+                ),
+                radial-gradient(circle at 30% 30%,
+                  rgba(16, 185, 129, 0.1) 0%,
+                  transparent 50%
+                )
+              `,
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              backdropFilter: 'blur(16px) saturate(1.5)',
+              boxShadow: `
+                0 8px 24px rgba(16, 185, 129, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1)
+              `
+            }}
+          >
             <div className="flex items-start gap-3">
-              <InformationCircleIcon className="h-5 w-5 text-emerald-400 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-emerald-300">
-                <p className="font-medium mb-1">Privacy Mode Active</p>
-                <p className="text-emerald-200/80">
+              <InformationCircleIcon
+                className="h-5 w-5 mt-0.5 flex-shrink-0"
+                style={{
+                  color: '#10b981',
+                  filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))'
+                }}
+              />
+              <div>
+                <p
+                  className="font-medium mb-1"
+                  style={{
+                    color: 'rgba(16, 185, 129, 0.95)',
+                    fontFamily: 'var(--font-helvetica)',
+                    fontWeight: 600,
+                    letterSpacing: '0.025em'
+                  }}
+                >
+                  Privacy Mode Active
+                </p>
+                <p
+                  style={{
+                    color: 'rgba(16, 185, 129, 0.8)',
+                    textShadow: '0 0 6px rgba(16, 185, 129, 0.2)',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.5'
+                  }}
+                >
                   Your transactions will be processed privately, hiding amounts, addresses, and transaction details from public view.
                 </p>
               </div>
@@ -147,7 +355,7 @@ export function PrivacySettings({
 
                     <div className={`px-2 py-1 rounded-lg text-xs font-medium ${
                       provider.privacyLevel === 'maximum'
-                        ? 'bg-purple-500/20 text-purple-400'
+                        ? 'bg-emerald-500/20 text-emerald-400'
                         : 'bg-blue-500/20 text-blue-400'
                     }`}>
                       {provider.privacyLevel === 'maximum' ? 'Maximum Privacy' : 'Standard Privacy'}

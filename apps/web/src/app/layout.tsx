@@ -1,39 +1,16 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Space_Grotesk, Outfit, Geist_Mono } from 'next/font/google'
 import './globals.css'
-import { CustomWalletProvider } from '@/components/providers/WalletProvider'
+import { SolanaWalletProvider } from '@/providers/SolanaWalletProvider'
 import { WaveSwapProvider } from '@/components/providers/WaveSwapProvider'
 import { NoSSRProvider } from '@/components/providers/NoSSRProvider'
 import PrivacyReminder from '@/components/PrivacyReminder'
 import { PrivacyProvider } from '@/contexts/PrivacyContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
+import { NearWalletProvider } from '@/providers/NearWalletProvider'
+import { WalletModalProvider } from '@/contexts/WalletModalContext'
+import { GlobalWalletModal } from '@/components/Wallets/GlobalWalletModal'
 
-// Professional font stack for UI
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap'
-})
-
-// Display font for headings and branding
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-space-grotesk',
-  display: 'swap'
-})
-
-// Modern wide font for display text
-const outfit = Outfit({
-  subsets: ['latin'],
-  variable: '--font-outfit',
-  display: 'swap'
-})
-
-// Developer-friendly monospace
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-geist-mono',
-  display: 'swap'
-})
+// Using local Helvetica Neue and JetBrains Mono fonts only
 
 export const metadata: Metadata = {
   title: 'WaveSwap - Privacy-Preserving DEX Aggregator',
@@ -79,20 +56,27 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`dark ${spaceGrotesk.variable} ${inter.variable} ${outfit.variable} ${geistMono.variable}`}>
-      <body className="font-inter antialiased">
-        <PrivacyProvider>
-          <NoSSRProvider>
-            <CustomWalletProvider>
-              <WaveSwapProvider>
-                <div className="min-h-screen bg-background text-foreground">
-                  {children}
-                  <PrivacyReminder />
-                </div>
-              </WaveSwapProvider>
-            </CustomWalletProvider>
-          </NoSSRProvider>
-        </PrivacyProvider>
+    <html lang="en">
+      <body className="antialiased">
+        <ThemeProvider>
+          <PrivacyProvider>
+            <WalletModalProvider>
+              <NoSSRProvider>
+                <NearWalletProvider>
+                  <SolanaWalletProvider>
+                    <WaveSwapProvider>
+                      <div className="min-h-screen text-foreground theme-background">
+                        {children}
+                        <PrivacyReminder />
+                        <GlobalWalletModal />
+                      </div>
+                      </WaveSwapProvider>
+                  </SolanaWalletProvider>
+                </NearWalletProvider>
+              </NoSSRProvider>
+            </WalletModalProvider>
+          </PrivacyProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

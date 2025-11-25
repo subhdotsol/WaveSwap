@@ -110,7 +110,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
       case 'failed':
         return 'text-red-400'
       default:
-        return 'text-gray-400'
+        return 'var(--wave-text-muted)'
     }
   }
 
@@ -152,14 +152,14 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-lg p-2" style={{
-              background: privacyMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-              border: privacyMode ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(59, 130, 246, 0.3)'
+              background: privacyMode ? 'var(--wave-emerald-light)' : 'var(--wave-primary-light)',
+              border: privacyMode ? '1px solid var(--wave-emerald)' : '1px solid var(--wave-primary)'
             }}>
               <ClockIcon className={`h-6 w-6 ${privacyMode ? 'text-emerald-400' : 'text-blue-400'}`} />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2" style={{
-                fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                fontFamily: 'var(--font-helvetica)',
                 fontWeight: 600,
                 letterSpacing: '0.025em'
               }}>
@@ -171,7 +171,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                   </div>
                 )}
               </h1>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm" style={{ color: 'var(--wave-text-muted)' }}>
                 {privacyMode
                   ? 'Your confidential swap history with enhanced privacy protection'
                   : 'Complete transaction history and trading activity'
@@ -184,32 +184,32 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
             <button
               className="p-2 rounded-lg transition-all duration-200"
               style={{
-                background: 'rgba(156, 163, 175, 0.1)',
-                border: '1px solid rgba(156, 163, 175, 0.2)'
+                background: 'var(--wave-glass-bg)',
+                border: '1px solid var(--wave-glass-border)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(156, 163, 175, 0.2)'
+                e.currentTarget.style.background = 'var(--wave-glass-border)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(156, 163, 175, 0.1)'
+                e.currentTarget.style.background = 'var(--wave-glass-bg)'
               }}
             >
-              <ChartBarIcon className="h-4 w-4 text-gray-400" />
+              <ChartBarIcon className="h-4 w-4" style={{ color: 'var(--wave-text-muted)' }} />
             </button>
             <button
               className="p-2 rounded-lg transition-all duration-200"
               style={{
-                background: 'rgba(156, 163, 175, 0.1)',
-                border: '1px solid rgba(156, 163, 175, 0.2)'
+                background: 'var(--wave-glass-bg)',
+                border: '1px solid var(--wave-glass-border)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(156, 163, 175, 0.2)'
+                e.currentTarget.style.background = 'var(--wave-glass-border)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(156, 163, 175, 0.1)'
+                e.currentTarget.style.background = 'var(--wave-glass-bg)'
               }}
             >
-              <CalendarIcon className="h-4 w-4 text-gray-400" />
+              <CalendarIcon className="h-4 w-4" style={{ color: 'var(--wave-text-muted)' }} />
             </button>
           </div>
         </div>
@@ -252,7 +252,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                 border: '1px solid rgba(156, 163, 175, 0.2)',
                 background: 'rgba(30, 30, 45, 0.6)',
                 backdropFilter: 'blur(8px) saturate(1.2)',
-                fontFamily: 'Inter, sans-serif'
+                fontFamily: 'var(--font-helvetica)'
               }}
             />
           </div>
@@ -267,7 +267,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                 border: '1px solid rgba(156, 163, 175, 0.2)',
                 background: 'rgba(30, 30, 45, 0.6)',
                 backdropFilter: 'blur(8px) saturate(1.2)',
-                fontFamily: 'Inter, sans-serif'
+                fontFamily: 'var(--font-helvetica)'
               }}
             >
               <option value="all">All Status</option>
@@ -284,7 +284,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                 border: '1px solid rgba(156, 163, 175, 0.2)',
                 background: 'rgba(30, 30, 45, 0.6)',
                 backdropFilter: 'blur(8px) saturate(1.2)',
-                fontFamily: 'Inter, sans-serif'
+                fontFamily: 'var(--font-helvetica)'
               }}
             >
               <option value="all">All Types</option>
@@ -326,7 +326,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                 <ClockIcon className="h-16 w-16 text-gray-600" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-2" style={{
-                fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif"
+                fontFamily: 'var(--font-helvetica)'
               }}>
                 {privacyMode ? 'Private Transaction History' : 'Transaction History'}
               </h3>
@@ -378,7 +378,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                     <div className="flex items-center gap-2">
                       {getStatusIcon(transaction.status)}
                       <span className={`text-sm font-medium ${getStatusColor(transaction.status)}`} style={{
-                        fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif"
+                        fontFamily: 'var(--font-helvetica)'
                       }}>
                         {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
                       </span>
@@ -388,7 +388,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className="text-sm font-semibold text-white" style={{
-                          fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif"
+                          fontFamily: 'var(--font-helvetica)'
                         }}>
                           {privacyMode && transaction.privacyLevel === 'private' ? '***' : transaction.fromToken.amount}
                         </p>
@@ -401,7 +401,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
 
                       <div className="text-right">
                         <p className="text-sm font-semibold text-white" style={{
-                          fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif"
+                          fontFamily: 'var(--font-helvetica)'
                         }}>
                           {privacyMode && transaction.privacyLevel === 'private' ? '***' : transaction.toToken.amount}
                         </p>
@@ -423,7 +423,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                     {/* Timestamp */}
                     <div className="text-right">
                       <p className="text-xs text-gray-400" style={{
-                        fontFamily: 'Inter, sans-serif'
+                        fontFamily: 'var(--font-helvetica)'
                       }}>
                         {formatTimestamp(transaction.timestamp)}
                       </p>
@@ -460,12 +460,10 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                   <div className="mt-3 pt-3 border-t border-gray-700/50">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-400">Price Impact</span>
-                      <span className={`font-medium ${
+                      <span className={`font-medium font-jetbrains ${
                         transaction.priceImpact > 1 ? 'text-red-400' :
                         transaction.priceImpact > 0.5 ? 'text-yellow-400' : 'text-green-400'
-                      }`} style={{
-                        fontFamily: "'JetBrains Mono', monospace"
-                      }}>
+                      }`}>
                         {transaction.priceImpact.toFixed(2)}%
                       </span>
                     </div>
@@ -491,7 +489,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
               `,
               border: '1px solid rgba(59, 130, 246, 0.3)',
               backdropFilter: 'blur(16px) saturate(1.8)',
-              fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+              fontFamily: 'var(--font-helvetica)',
               fontWeight: 500
             }}
             onMouseEnter={(e) => {

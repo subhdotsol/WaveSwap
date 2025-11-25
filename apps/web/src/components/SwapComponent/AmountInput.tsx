@@ -44,7 +44,7 @@ const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
           readOnly={readOnly}
           className={`glass-input w-full h-16 px-4 text-3xl font-bold text-left disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
           style={{
-            fontFamily: 'Orbitron, sans-serif',
+            fontFamily: 'var(--font-helvetica)',
             color: 'var(--wave-text)',
             cursor: readOnly ? 'default' : 'text',
             letterSpacing: '0.05em'

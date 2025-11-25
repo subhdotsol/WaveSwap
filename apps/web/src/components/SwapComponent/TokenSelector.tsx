@@ -143,7 +143,7 @@ export function TokenSelector({
           className="glass-card flex items-center gap-3 px-4 py-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px] h-14"
           style={{
             background: 'rgba(20, 20, 35, 0.8)',
-            border: '1px solid rgba(162, 89, 250, 0.2)',
+            border: '1px solid rgba(33, 188, 255, 0.2)',
             backdropFilter: 'blur(20px)',
           }}
           disabled={disabled}
@@ -158,7 +158,7 @@ export function TokenSelector({
                     className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2"
                     style={{
                       background: 'linear-gradient(135deg, rgba(20, 20, 35, 0.9), rgba(30, 30, 50, 0.9))',
-                      borderColor: 'rgba(162, 89, 250, 0.3)',
+                      borderColor: 'rgba(33, 188, 255, 0.3)',
                     }}
                   >
                     <TokenIcon
@@ -173,7 +173,7 @@ export function TokenSelector({
                       className="text-base font-bold leading-tight"
                       style={{
                         color: 'var(--wave-text)',
-                        fontFamily: 'Rajdhani, sans-serif',
+                        fontFamily: 'var(--font-helvetica)',
                         fontWeight: 700,
                         letterSpacing: '0.02em'
                       }}
@@ -185,7 +185,7 @@ export function TokenSelector({
                         className="text-xs opacity-70"
                         style={{
                           color: 'var(--wave-text)',
-                          fontFamily: 'Rajdhani, sans-serif'
+                          fontFamily: 'var(--font-helvetica)'
                         }}
                       >
                         Balance: {(() => {
@@ -206,7 +206,7 @@ export function TokenSelector({
           </div>
           <ChevronDownIcon
             className="h-5 w-5 flex-shrink-0 transition-transform duration-200 ui-open:rotate-180"
-            style={{ color: 'rgba(162, 89, 250, 0.8)' }}
+            style={{ color: 'rgba(33, 188, 255, 0.8)' }}
           />
         </Listbox.Button>
 
@@ -225,21 +225,21 @@ export function TokenSelector({
             style={{
               background: 'rgba(15, 15, 25, 0.98)',
               backdropFilter: 'blur(40px) saturate(180%)',
-              border: '1px solid rgba(162, 89, 250, 0.2)',
+              border: '1px solid rgba(33, 188, 255, 0.2)',
               borderRadius: '1rem',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(162, 89, 250, 0.3)',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(33, 188, 255, 0.3)',
               maxHeight: '420px'
             }}
           >
             {/* Search Input */}
             <div className="p-4 sticky top-0 z-10" style={{ 
               background: 'rgba(15, 15, 25, 0.95)',
-              borderBottom: '1px solid rgba(162, 89, 250, 0.15)' 
+              borderBottom: '1px solid rgba(33, 188, 255, 0.15)' 
             }}>
               <div className="relative">
                 <MagnifyingGlassIcon 
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5"
-                  style={{ color: 'var(--wave-purple)' }}
+                  style={{ color: 'var(--wave-azul)' }}
                 />
                 <input
                   type="text"
@@ -249,7 +249,7 @@ export function TokenSelector({
                   className="w-full pl-10 pr-4 py-3 rounded-lg text-sm"
                   style={{
                     background: 'rgba(25, 25, 40, 0.6)',
-                    border: '1px solid rgba(162, 89, 250, 0.2)',
+                    border: '1px solid rgba(33, 188, 255, 0.2)',
                     color: 'var(--wave-text)',
                     fontFamily: 'Rajdhani, sans-serif',
                     fontSize: '0.875rem',
@@ -258,11 +258,11 @@ export function TokenSelector({
                     transition: 'all 0.2s ease'
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(162, 89, 250, 0.5)';
-                    e.currentTarget.style.boxShadow = '0 0 15px rgba(162, 89, 250, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(33, 188, 255, 0.5)';
+                    e.currentTarget.style.boxShadow = '0 0 15px rgba(33, 188, 255, 0.2)';
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(162, 89, 250, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(33, 188, 255, 0.2)';
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                   onClick={(e) => e.stopPropagation()}
@@ -274,7 +274,7 @@ export function TokenSelector({
             {/* Token List */}
             <div className="py-2">
               {isSearching && (
-                <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--wave-purple)' }}>
+                <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--wave-azul)' }}>
                   <div className="animate-pulse">Searching tokens...</div>
                 </div>
               )}
@@ -307,13 +307,13 @@ export function TokenSelector({
                           className="cursor-pointer select-none mx-3 my-1 px-4 py-3 rounded-xl transition-all duration-200"
                           style={{
                             background: selected
-                              ? 'rgba(162, 89, 250, 0.15)'
+                              ? 'rgba(33, 188, 255, 0.15)'
                               : active
-                              ? 'rgba(162, 89, 250, 0.08)'
+                              ? 'rgba(33, 188, 255, 0.08)'
                               : 'transparent',
                             border: selected
-                              ? '1px solid rgba(162, 89, 250, 0.4)'
-                              : '1px solid rgba(162, 89, 250, 0.1)',
+                              ? '1px solid rgba(33, 188, 255, 0.4)'
+                              : '1px solid rgba(33, 188, 255, 0.1)',
                           }}
                         >
                           <div className="flex items-center justify-between">
@@ -324,7 +324,7 @@ export function TokenSelector({
                                 className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border"
                                 style={{
                                   background: 'linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 35, 0.9))',
-                                  borderColor: selected ? 'rgba(162, 89, 250, 0.4)' : 'rgba(162, 89, 250, 0.2)',
+                                  borderColor: selected ? 'rgba(33, 188, 255, 0.4)' : 'rgba(33, 188, 255, 0.2)',
                                   borderWidth: '1px'
                                 }}
                               >
@@ -345,7 +345,7 @@ export function TokenSelector({
                                     onError={(e) => {
                                       const parent = e.currentTarget.parentElement
                                       if (parent) {
-                                        parent.innerHTML = `<span style="font-size:1.125rem;font-weight:900;color:var(--wave-purple);font-family:Orbitron,sans-serif">${token.symbol.charAt(0)}</span>`
+                                        parent.innerHTML = `<span style="font-size:1.125rem;font-weight:900;color:var(--wave-azul);font-family:var(--font-helvetica)">${token.symbol.charAt(0)}</span>`
                                       }
                                     }}
                                   />
@@ -353,8 +353,8 @@ export function TokenSelector({
                                   <span 
                                     className="text-lg font-black"
                                     style={{ 
-                                      color: 'var(--wave-purple)',
-                                      fontFamily: 'Orbitron, sans-serif'
+                                      color: 'var(--wave-azul)',
+                                      fontFamily: 'var(--font-helvetica)'
                                     }}
                                   >
                                     {token.symbol.charAt(0)}
@@ -369,8 +369,8 @@ export function TokenSelector({
                                 <span 
                                   className="font-black text-base truncate"
                                   style={{ 
-                                    color: selected ? 'var(--wave-purple)' : 'var(--wave-text)',
-                                    fontFamily: 'Orbitron, sans-serif',
+                                    color: selected ? 'var(--wave-azul)' : 'var(--wave-text)',
+                                    fontFamily: 'var(--font-helvetica)',
                                     letterSpacing: '0.05em'
                                   }}
                                 >
@@ -379,7 +379,7 @@ export function TokenSelector({
                                 {showConfidentialIndicator && privacyMode && token.isConfidentialSupported && (
                                   <ShieldCheckIcon 
                                     className="h-3.5 w-3.5 flex-shrink-0" 
-                                    style={{ color: 'var(--wave-purple)' }}
+                                    style={{ color: 'var(--wave-azul)' }}
                                     title="Confidential" 
                                   />
                                 )}
@@ -400,12 +400,12 @@ export function TokenSelector({
                               <div className="flex items-center gap-3 flex-shrink-0">
                                 <div 
                                   className="text-sm font-bold"
-                                  style={{ color: 'var(--wave-purple)' }}
+                                  style={{ color: 'var(--wave-azul)' }}
                                 >
                                   {balance}
                                 </div>
                                 {selected && (
-                                  <CheckIcon className="h-5 w-5" style={{ color: 'var(--wave-purple)' }} />
+                                  <CheckIcon className="h-5 w-5" style={{ color: 'var(--wave-azul)' }} />
                                 )}
                               </div>
                             </div>
@@ -425,7 +425,7 @@ export function TokenSelector({
                       className="mx-4 my-3"
                       style={{ 
                         height: '1px',
-                        background: 'linear-gradient(90deg, transparent, rgba(162, 89, 250, 0.3), transparent)'
+                        background: 'linear-gradient(90deg, transparent, rgba(33, 188, 255, 0.3), transparent)'
                       }}
                     />
                   )}
@@ -443,14 +443,14 @@ export function TokenSelector({
                             className="cursor-pointer select-none px-4 py-3.5 mx-2 my-0.5 rounded-xl transition-all duration-150"
                             style={{
                               background: selected 
-                                ? 'rgba(162, 89, 250, 0.25)' 
+                                ? 'rgba(33, 188, 255, 0.25)' 
                                 : active 
-                                ? 'rgba(162, 89, 250, 0.12)' 
+                                ? 'rgba(33, 188, 255, 0.12)' 
                                 : 'transparent',
                               border: selected 
-                                ? '1px solid rgba(162, 89, 250, 0.6)'
+                                ? '1px solid rgba(33, 188, 255, 0.6)'
                                 : '1px solid transparent',
-                              boxShadow: selected ? '0 0 20px rgba(162, 89, 250, 0.4)' : 'none'
+                              boxShadow: selected ? '0 0 20px rgba(33, 188, 255, 0.4)' : 'none'
                             }}
                           >
                             <div className="flex items-center justify-between gap-4">
@@ -459,9 +459,9 @@ export function TokenSelector({
                                   className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
                                   style={{
                                     background: selected
-                                      ? 'linear-gradient(135deg, var(--wave-purple), rgba(162, 89, 250, 0.5))'
+                                      ? 'linear-gradient(135deg, var(--wave-azul), rgba(33, 188, 255, 0.5))'
                                       : 'rgba(30, 30, 45, 0.8)',
-                                    border: '1px solid rgba(162, 89, 250, 0.25)',
+                                    border: '1px solid rgba(33, 188, 255, 0.25)',
                                     padding: '2px'
                                   }}
                                 >
@@ -478,14 +478,14 @@ export function TokenSelector({
                                         onError={(e) => {
                                           const parent = e.currentTarget.parentElement
                                           if (parent) {
-                                            parent.innerHTML = `<span style="font-size:1rem;font-weight:900;color:var(--wave-purple);font-family:Orbitron,sans-serif">${token.symbol.charAt(0)}</span>`
+                                            parent.innerHTML = `<span style="font-size:1rem;font-weight:900;color:var(--wave-azul);font-family:var(--font-helvetica)">${token.symbol.charAt(0)}</span>`
                                           }
                                         }}
                                       />
                                     ) : (
                                       <span 
                                         className="text-base font-black"
-                                        style={{ color: 'var(--wave-purple)', fontFamily: 'Orbitron, sans-serif' }}
+                                        style={{ color: 'var(--wave-azul)', fontFamily: 'var(--font-helvetica)' }}
                                       >
                                         {token.symbol.charAt(0)}
                                       </span>
@@ -496,8 +496,8 @@ export function TokenSelector({
                                   <span 
                                     className="font-black text-base truncate"
                                     style={{ 
-                                      color: selected ? 'var(--wave-purple)' : 'var(--wave-text)',
-                                      fontFamily: 'Orbitron, sans-serif',
+                                      color: selected ? 'var(--wave-azul)' : 'var(--wave-text)',
+                                      fontFamily: 'var(--font-helvetica)',
                                       letterSpacing: '0.05em'
                                     }}
                                   >
@@ -509,7 +509,7 @@ export function TokenSelector({
                                 </div>
                               </div>
                               {selected && (
-                                <CheckIcon className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--wave-purple)' }} />
+                                <CheckIcon className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--wave-azul)' }} />
                               )}
                             </div>
                           </div>

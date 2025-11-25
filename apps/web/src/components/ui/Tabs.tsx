@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useThemeConfig, createGlassStyles } from '@/lib/theme'
 
 interface TabItem {
   id: string
@@ -18,6 +19,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProps) {
   const [selectedTab, setSelectedTab] = useState(defaultTab || tabs[0]?.id || '')
+  const theme = useThemeConfig()
 
   const handleTabChange = (tabId: string) => {
     setSelectedTab(tabId)
@@ -68,23 +70,13 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
       <div
         className="relative flex items-center justify-center p-1 rounded-2xl overflow-hidden"
         style={{
-          background: `
-            linear-gradient(135deg,
-              rgba(30, 30, 45, 0.6) 0%,
-              rgba(45, 45, 65, 0.4) 50%,
-              rgba(30, 30, 45, 0.6) 100%
-            ),
-            radial-gradient(circle at 50% 50%,
-              rgba(162, 89, 250, 0.02) 0%,
-              transparent 50%
-            )
-          `,
-          border: '1px solid rgba(162, 89, 250, 0.1)',
+          ...createGlassStyles(theme),
+          border: `1px solid ${theme.colors.primary}10`,
           backdropFilter: 'blur(20px) saturate(1.8)',
           boxShadow: `
-            0 8px 32px rgba(0, 0, 0, 0.2),
+            0 8px 32px ${theme.colors.shadow},
             inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 0 1px rgba(162, 89, 250, 0.05)
+            0 0 0 1px ${theme.colors.primary}05
           `
         }}
         role="tablist"
@@ -117,51 +109,48 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
               className={`
                 relative flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm z-10
                 transition-all duration-300 ease-out
-                focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:ring-offset-2 focus:ring-offset-transparent
+                focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2 focus:ring-offset-transparent
                 hover:scale-[1.02] active:scale-[0.98]
               `}
               style={{
                 background: isSelected
                   ? `
                     linear-gradient(135deg,
-                      rgba(162, 89, 250, 0.2) 0%,
-                      rgba(162, 89, 250, 0.1) 50%,
-                      rgba(162, 89, 250, 0.2) 100%
+                      ${theme.colors.primary}20 0%,
+                      ${theme.colors.primary}10 50%,
+                      ${theme.colors.primary}20 100%
                     ),
                     radial-gradient(circle at 30% 30%,
-                      rgba(162, 89, 250, 0.15) 0%,
+                      ${theme.colors.primary}15 0%,
                       transparent 50%
                     )
                   `
                   : 'transparent',
                 border: isSelected
-                  ? '1px solid rgba(162, 89, 250, 0.3)'
+                  ? `1px solid ${theme.colors.primary}30`
                   : '1px solid transparent',
                 backdropFilter: isSelected ? 'blur(12px) saturate(1.5)' : 'none',
                 boxShadow: isSelected
-                  ? `
-                    0 8px 24px rgba(162, 89, 250, 0.2),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.2)
-                  `
+                  ? `0 8px 24px ${theme.colors.primary}20, inset 0 1px 0 rgba(255, 255, 255, 0.2)`
                   : 'none',
-                fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                fontFamily: 'var(--font-helvetica)',
                 fontWeight: isSelected ? 600 : 500,
                 letterSpacing: '0.025em'
               }}
             >
               {tab.icon && (
                 <span style={{
-                  color: isSelected ? 'rgba(162, 89, 250, 0.9)' : 'rgba(156, 163, 175, 0.8)',
+                  color: isSelected ? `${theme.colors.primary}e6` : `${theme.colors.textMuted}cc`,
                   transition: 'all 0.3s ease',
-                  filter: isSelected ? 'drop-shadow(0 0 8px rgba(162, 89, 250, 0.4))' : 'none'
+                  filter: isSelected ? `drop-shadow(0 0 8px ${theme.colors.primary}40)` : 'none'
                 }}>
                   {tab.icon}
                 </span>
               )}
 
               <span style={{
-                color: isSelected ? 'rgba(255, 255, 255, 0.95)' : 'rgba(156, 163, 175, 0.9)',
-                textShadow: isSelected ? '0 0 10px rgba(162, 89, 250, 0.3)' : 'none'
+                color: isSelected ? theme.colors.textPrimary : `${theme.colors.textMuted}e6`,
+                textShadow: isSelected ? `0 0 10px ${theme.colors.primary}30` : 'none'
               }}>
                 {tab.label}
               </span>
@@ -171,7 +160,7 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
                 <div
                   className="absolute inset-0 rounded-xl opacity-20 pointer-events-none"
                   style={{
-                    background: 'radial-gradient(circle at 50% 50%, rgba(162, 89, 250, 0.3) 0%, transparent 70%)',
+                    background: `radial-gradient(circle at 50% 50%, ${theme.colors.primary}30 0%, transparent 70%)`,
                     filter: 'blur(8px)'
                   }}
                 />

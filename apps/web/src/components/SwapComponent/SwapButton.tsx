@@ -1,7 +1,6 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useWalletModal } from '@solana/wallet-adapter-react-ui'
 import { ArrowPathIcon, LockClosedIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { ReactNode } from 'react'
 import { SwapProgress, SwapStatus } from '@/types/token'
@@ -32,7 +31,6 @@ export function SwapButton({
   progress
 }: SwapButtonProps) {
   const { connected } = useWallet()
-  const { setVisible } = useWalletModal()
 
   const isValidAmount = inputAmount && parseFloat(inputAmount) > 0
   const hasBalance = true // TODO: Check actual balance from hook
@@ -46,12 +44,12 @@ export function SwapButton({
   const baseClass = 'glass-btn-primary w-full py-4 px-8 rounded-2xl text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]'
 
   if (!connected) {
-    buttonContent = <span>CONNECT WALLET</span>
-    buttonDisabled = false
+    buttonContent = <span>CONNECT WALLET FIRST</span>
+    buttonDisabled = true
     buttonStyle = {
-      background: 'var(--wave-purple)',
+      background: 'var(--wave-primary)',
       color: 'white',
-      border: '1px solid rgba(162, 89, 250, 0.4)'
+      border: '1px solid rgba(59, 130, 246, 0.4)'
     }
   } else if (!isValidAmount) {
     buttonContent = <span>ENTER AMOUNT</span>
@@ -59,7 +57,7 @@ export function SwapButton({
     buttonStyle = {
       background: 'rgba(40, 40, 60, 0.5)',
       color: 'rgba(240, 240, 240, 0.5)',
-      border: '1px solid rgba(162, 89, 250, 0.1)',
+      border: '1px solid rgba(33, 188, 255, 0.1)',
       cursor: 'not-allowed'
     }
   } else if (!hasBalance) {
@@ -91,9 +89,9 @@ export function SwapButton({
     )
     buttonDisabled = !isCancellable
     buttonStyle = {
-      background: 'var(--wave-purple)',
+      background: 'var(--wave-azul)',
       color: 'white',
-      border: '1px solid rgba(162, 89, 250, 0.4)',
+      border: '1px solid rgba(33, 188, 255, 0.4)',
       cursor: isCancellable ? 'pointer' : 'wait'
     }
   } else if (loading) {
@@ -105,9 +103,9 @@ export function SwapButton({
     )
     buttonDisabled = true
     buttonStyle = {
-      background: 'var(--wave-purple)',
+      background: 'var(--wave-azul)',
       color: 'white',
-      border: '1px solid rgba(162, 89, 250, 0.4)',
+      border: '1px solid rgba(33, 188, 255, 0.4)',
       cursor: 'wait'
     }
   } else if (!hasQuote) {
@@ -128,20 +126,9 @@ export function SwapButton({
     )
     buttonDisabled = !canSwap
     buttonStyle = {
-      background: 'var(--wave-purple)',
+      background: 'var(--wave-primary)',
       color: 'white',
-      border: '1px solid rgba(162, 89, 250, 0.4)'
-    }
-  }
-
-  // Handle wallet connection
-  const handleConnectWallet = () => {
-    console.log('handleConnectWallet called:', { connected })
-
-    if (!connected) {
-      // Open wallet selection modal
-      console.log('Opening wallet selection modal')
-      setVisible(true)
+      border: '1px solid rgba(59, 130, 246, 0.4)'
     }
   }
 
@@ -151,9 +138,7 @@ export function SwapButton({
       style={buttonStyle}
       disabled={buttonDisabled}
       onClick={() => {
-        if (!connected) {
-          handleConnectWallet()
-        } else if (connected && canSwap && !loading && hasQuote && !isProgressActive) {
+        if (connected && canSwap && !loading && hasQuote && !isProgressActive) {
           onSwap()
         } else if (isProgressActive) {
           onCancel()
@@ -161,7 +146,7 @@ export function SwapButton({
       }}
       onMouseEnter={(e) => {
         if (!buttonDisabled) {
-          e.currentTarget.style.boxShadow = '0 0 30px rgba(162, 89, 250, 0.6)';
+          e.currentTarget.style.boxShadow = '0 0 30px rgba(33, 188, 255, 0.6)';
         }
       }}
       onMouseLeave={(e) => {

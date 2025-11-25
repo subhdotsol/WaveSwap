@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { X } from 'lucide-react'
+import { useThemeConfig } from '@/lib/theme'
 
 interface ModalProps {
   isOpen: boolean
@@ -31,6 +32,7 @@ export function Modal({
   description,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const theme = useThemeConfig()
 
   useEffect(() => {
     if (!isOpen) return
@@ -70,7 +72,14 @@ export function Modal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-in"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 50,
+          backgroundColor: theme.colors.overlay,
+          backdropFilter: 'blur(8px)',
+        }}
+        className="animate-fade-in"
         onClick={handleBackdropClick}
       />
 
@@ -79,22 +88,68 @@ export function Modal({
         <div
           ref={modalRef}
           className={cn(
-            'relative w-full bg-card border border-border rounded-2xl shadow-2xl pointer-events-auto animate-scale-in',
+            'relative w-full pointer-events-auto animate-scale-in',
             sizes[size],
             className
           )}
+          style={{
+            background: `
+              linear-gradient(135deg,
+                ${theme.colors.surface} 0%,
+                ${theme.colors.surfaceHover} 25%,
+                ${theme.colors.surface} 50%,
+                ${theme.colors.surfaceHover} 75%,
+                ${theme.colors.surface} 100%
+              ),
+              radial-gradient(circle at 25% 25%,
+                ${theme.colors.primary}08 0%,
+                transparent 50%
+              )
+            `,
+            border: `1px solid ${theme.colors.primary}25`,
+            borderRadius: '1rem',
+            boxShadow: `
+              0 25px 70px ${theme.colors.shadowHeavy},
+              0 12px 32px ${theme.colors.primary}15,
+              inset 0 1px 0 rgba(255, 255, 255, 0.15),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.3)
+            `,
+            backdropFilter: theme.glassStyles.backdrop
+          }}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between p-6 border-b border-border">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1.5rem',
+                borderBottom: `1px solid ${theme.colors.border}`
+              }}
+            >
               <div>
                 {title && (
-                  <h2 className="text-xl font-display font-semibold text-foreground">
+                  <h2
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 600,
+                      color: theme.colors.textPrimary,
+                      fontFamily: 'var(--font-helvetica)'
+                    }}
+                  >
                     {title}
                   </h2>
                 )}
                 {description && (
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p
+                    style={{
+                      fontSize: '0.875rem',
+                      marginTop: '0.25rem',
+                      color: theme.colors.textMuted,
+                      fontFamily: 'var(--font-helvetica)'
+                    }}
+                  >
                     {description}
                   </p>
                 )}
@@ -102,9 +157,29 @@ export function Modal({
               {showCloseButton && !preventClose && (
                 <button
                   onClick={onClose}
-                  className="rounded-lg p-2 hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                  style={{
+                    borderRadius: '0.5rem',
+                    padding: '0.5rem',
+                    transition: `all ${theme.animations.duration} ${theme.animations.easing}`,
+                    color: theme.colors.textSecondary,
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      backgroundColor: theme.colors.surfaceHover,
+                      color: theme.colors.textPrimary
+                    }
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = theme.colors.surfaceHover
+                    e.currentTarget.style.color = theme.colors.textPrimary
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.color = theme.colors.textSecondary
+                  }}
                 >
-                  <X className="h-4 w-4" />
+                  <X size={16} />
                 </button>
               )}
             </div>

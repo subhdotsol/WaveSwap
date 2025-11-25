@@ -5,24 +5,16 @@ import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@sol
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import {
   PhantomWalletAdapter,
+  SolflareWalletAdapter,
   CoinbaseWalletAdapter,
   TrustWalletAdapter,
   LedgerWalletAdapter,
+  BackpackWalletAdapter,
 } from '@solana/wallet-adapter-wallets'
-import { useMemo, useEffect } from 'react'
+import { useMemo } from 'react'
 import { config } from '@/lib/config'
 
-// Component to handle dynamic style import
-function WalletStyles() {
-  useEffect(() => {
-    // Dynamic import with type assertion to avoid TypeScript errors
-    import('@solana/wallet-adapter-react-ui/styles.css' as any).catch(() => {
-      // Ignore if styles can't be loaded
-      console.warn('Could not load wallet adapter styles')
-    })
-  }, [])
-  return null
-}
+// Removed default wallet adapter styles since we use custom UI
 
 export function CustomWalletProvider({ children }: { children: React.ReactNode }) {
   const network = WalletAdapterNetwork.Mainnet
@@ -32,6 +24,8 @@ export function CustomWalletProvider({ children }: { children: React.ReactNode }
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new BackpackWalletAdapter(),
       new CoinbaseWalletAdapter(),
       new TrustWalletAdapter(),
       new LedgerWalletAdapter(),
@@ -41,7 +35,6 @@ export function CustomWalletProvider({ children }: { children: React.ReactNode }
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletStyles />
       <SolanaWalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </SolanaWalletProvider>

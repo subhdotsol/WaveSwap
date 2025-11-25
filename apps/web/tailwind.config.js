@@ -18,7 +18,7 @@ module.exports = {
             card: '#222236',      // Card/active backgrounds
           },
           accent: {
-            purple: '#A259FA',    // Vivid purple
+            azul: '#21bcff',      // Wave azul primary
             aqua: '#13D6C3',      // Electric aqua
           },
           text: {
@@ -102,11 +102,11 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-geist-mono)', 'system-ui', 'monospace'],
-        display: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
-        outfit: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
-        quantico: ['Quantico', 'system-ui', 'sans-serif'],
+        sans: ['"Tomorrow"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'system-ui', 'monospace'],
+        tomorrow: ['"Tomorrow"', 'system-ui', 'sans-serif'],
+        jetbrains: ['"JetBrains Mono"', 'system-ui', 'monospace'],
+        display: ['"Tomorrow"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'primary': '0 4px 20px rgba(255, 255, 255, 0.1)',
@@ -117,11 +117,11 @@ module.exports = {
         'card-hover': '0 20px 60px rgba(59, 130, 246, 0.25)',
         'glass': '0 8px 32px rgba(0, 0, 0, 0.37)',
         // WaveSwap Glow Effects
-        'glow-purple': '0 0 8px 2px rgba(162, 89, 250, 0.45)',
-        'glow-purple-lg': '0 0 16px 4px rgba(162, 89, 250, 0.6)',
+        'glow-azul': '0 0 8px 2px rgba(33, 188, 255, 0.45)',
+        'glow-azul-lg': '0 0 16px 4px rgba(33, 188, 255, 0.6)',
         'glow-aqua': '0 0 8px 2px rgba(19, 214, 195, 0.45)',
         'glow-aqua-lg': '0 0 16px 4px rgba(19, 214, 195, 0.6)',
-        'glow-subtle': '0 0 6px 1px rgba(162, 89, 250, 0.3)',
+        'glow-subtle': '0 0 6px 1px rgba(33, 188, 255, 0.3)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards',
@@ -161,8 +161,8 @@ module.exports = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'mesh-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #fda085 75%, #ffd89b 100%)',
-        'premium-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'mesh-gradient': 'linear-gradient(135deg, #3b82f6 0%, #1e40af 25%, #21bcff 50%, #1999d4 75%, #60a5fa 100%)',
+        'premium-gradient': 'linear-gradient(135deg, #21bcff 0%, #1999d4 100%)',
       },
       backdropBlur: {
         'xs': '2px',

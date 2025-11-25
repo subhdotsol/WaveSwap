@@ -49,20 +49,20 @@ export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: 
   if (showFallback || !sources[0] || imageError) {
     return (
       <div
-        className={`rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500/20 to-blue-500/20 ${className}`}
+        className={`rounded-full flex items-center justify-center bg-gradient-to-br from-primary-500/20 to-blue-500/20 ${className}`}
         style={{
           width: size,
           height: size,
-          background: 'linear-gradient(135deg, rgba(162, 89, 250, 0.1), rgba(59, 130, 246, 0.1))',
-          border: '2px solid rgba(162, 89, 250, 0.3)',
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.1))',
+          border: '2px solid rgba(59, 130, 246, 0.3)',
           backdropFilter: 'blur(10px)'
         }}
       >
         <span
           className="font-bold"
           style={{
-            color: 'var(--wave-purple)',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
+            color: 'var(--wave-primary)',
+            fontFamily: 'var(--font-helvetica)',
             fontSize: `${size * 0.4}px`,
             textTransform: 'uppercase',
             letterSpacing: '0.05em'
@@ -77,12 +77,12 @@ export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: 
   // Main icon display
   return (
     <div
-      className={`rounded-full flex items-center justify-center ${className} bg-gray-900/50`}
+      className={`rounded-full flex items-center justify-center ${className}`}
       style={{
         width: size,
         height: size,
-        background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.9), rgba(31, 41, 55, 0.9))',
-        border: '2px solid rgba(162, 89, 250, 0.2)',
+        background: 'var(--wave-glass-bg)',
+        border: '2px solid var(--wave-glass-border)',
         backdropFilter: 'blur(10px)',
         overflow: 'hidden'
       }}

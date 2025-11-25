@@ -69,39 +69,8 @@ export function useWaveSwap() {
       setQuote(data)
       return data
     } catch (err) {
-      console.error('Failed to get quote:', err)
-
-      // Fallback to mock data for development
-      const mockQuote: QuoteResponse = {
-        inputMint: request.inputMint,
-        outputMint: request.outputMint,
-        amount: request.amount,
-        outputAmount: Math.floor(request.amount * 0.95 * (1 - (request.privacyMode ? 0.0035 : 0.0025))), // Mock rate with fees
-        priceImpact: 0.08,
-        routes: [
-          {
-            name: 'Orca Direct',
-            output: Math.floor(request.amount * 0.95 * (1 - (request.privacyMode ? 0.0035 : 0.0025))),
-            steps: [
-              {
-                pool: `${request.inputMint}/${request.outputMint}`,
-                input: request.amount,
-                output: Math.floor(request.amount * 0.95 * (1 - (request.privacyMode ? 0.0035 : 0.0025)))
-              }
-            ]
-          }
-        ],
-        fee: {
-          baseBps: 25,
-          privacyBps: request.privacyMode ? 10 : 0,
-          totalBps: request.privacyMode ? 35 : 25
-        },
-        timestamp: Date.now(),
-        validFor: 10000
-      }
-
-      setQuote(mockQuote)
-      return mockQuote
+      setError('Failed to get quote')
+      return null
     } finally {
       setLoading(false)
     }

@@ -37,13 +37,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = 'relative inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:pointer-events-none'
 
     const variants = {
-      default: 'btn bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary',
-      primary: 'btn bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary',
-      secondary: 'btn bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border',
-      outline: 'btn border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-      ghost: 'btn hover:bg-accent hover:text-accent-foreground',
-      glow: 'btn bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 text-white bg-size-200 animate-gradient shadow-glow hover:shadow-glow-lg',
-      destructive: 'btn bg-destructive text-destructive-foreground hover:bg-destructive/90',
+      default: 'btn shadow-primary',
+      primary: 'btn shadow-primary',
+      secondary: 'btn border border-border',
+      outline: 'btn border border-input',
+      ghost: 'btn',
+      glow: 'btn bg-size-200 animate-gradient shadow-glow hover:shadow-glow-lg',
+      destructive: 'btn',
     }
 
     const sizes = {
@@ -51,6 +51,41 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       md: 'h-12 px-6 text-sm rounded-xl',
       lg: 'h-14 px-8 text-base rounded-xl',
       xl: 'h-16 px-10 text-lg rounded-2xl',
+    }
+
+    const getVariantStyles = () => {
+      switch (variant) {
+        case 'primary':
+          return {
+            background: 'var(--wave-azul)',
+            color: 'white',
+            border: '1px solid var(--wave-azul-dark)',
+          }
+        case 'secondary':
+          return {
+            background: 'var(--wave-glass-bg)',
+            color: 'var(--wave-text-primary)',
+            border: '1px solid var(--wave-glass-border)',
+          }
+        case 'destructive':
+          return {
+            background: '#dc2626',
+            color: 'white',
+            border: '1px solid #dc2626',
+          }
+        case 'glow':
+          return {
+            background: 'linear-gradient(135deg, var(--wave-azul), var(--wave-deep-blue))',
+            color: 'white',
+            border: 'none',
+          }
+        default:
+          return {
+            background: 'var(--wave-azul)',
+            color: 'white',
+            border: '1px solid var(--wave-azul-dark)',
+          }
+      }
     }
 
     const buttonStyles = cn(
@@ -61,6 +96,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       loading && 'cursor-wait',
       className
     )
+
+    const dynamicStyles = getVariantStyles()
 
     const content = (
       <>
@@ -76,6 +113,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className: buttonStyles,
       disabled: disabled || loading,
       onClick,
+      style: dynamicStyles,
     }
 
     return (

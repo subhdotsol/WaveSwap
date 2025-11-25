@@ -46,8 +46,7 @@ Object.entries(commonTokenIcons).forEach(([address, icon]) => {
 })
 
 export async function enrichTokenIcons(tokens: Token[]): Promise<Token[]> {
-  console.log('🎨 Using hardcoded token icons, no API calls')
-
+  
   // Simply return tokens as-is since they already have working logoURIs
   return tokens
 }
@@ -120,8 +119,7 @@ export async function getUserTokens(
           addressable: true,
         }
       } catch (error) {
-        console.log(`Skipping unknown token: ${mint}`)
-        return null
+                return null
       }
     })
 
@@ -137,8 +135,7 @@ export async function getUserTokens(
 
     return userTokens
   } catch (error) {
-    console.error('Error fetching user tokens:', error)
-    // Return precomputed default tokens instantly on error
+      // Return precomputed default tokens instantly on error
     return DEFAULT_TOKENS
   }
 }
@@ -200,8 +197,7 @@ async function fetchTokenInfo(mint: string): Promise<JupiterToken | null> {
 
     return tokenInfo
   } catch (error) {
-    console.warn(`Failed to fetch token info for ${mint}:`, error instanceof Error ? error.message : 'Unknown error')
-
+    
     // Cache the failure to avoid repeated requests
     tokenInfoCache.set(mint, null)
     lastCacheUpdate.set(mint, Date.now())
@@ -270,8 +266,7 @@ export async function getAllTradableTokens(): Promise<Token[]> {
       addressable: true,
     }))
   } catch (error) {
-    console.error('Error fetching tradable tokens:', error)
-    // Return default tokens if API fails
+        // Return default tokens if API fails
     return getDefaultTokens()
   }
 }
@@ -433,8 +428,7 @@ export async function getBatchTokenBalances(
       new Promise(resolve => setTimeout(resolve, 8000)) // 8 second total timeout
     ])
   } catch (error) {
-    console.warn('Batch balance fetch failed:', error)
-    // Set remaining balances to 0
+        // Set remaining balances to 0
     uncachedMints.forEach(mint => {
       if (!results.has(mint)) {
         results.set(mint, '0')
@@ -487,8 +481,7 @@ export async function getTokenBalance(
     }
     // Handle confidential tokens (they have different mint formats)
     else if (mint.startsWith('c') || !isBase58(mint)) {
-      console.log(`Skipping balance fetch for confidential/invalid mint: ${mint}`)
-      balance = '0'
+            balance = '0'
     }
     // Validate that mint is a valid public key before creating PublicKey
     else {
@@ -506,8 +499,7 @@ export async function getTokenBalance(
           balance = '0'
         }
       } catch (pubkeyError) {
-        console.log(`Invalid public key format for mint: ${mint}`)
-        balance = '0'
+                balance = '0'
       }
     }
 
@@ -516,8 +508,7 @@ export async function getTokenBalance(
 
     return balance
   } catch (error) {
-    console.error(`Error fetching token balance for ${mint}:`, error)
-    return '0'
+        return '0'
   }
 }
 
