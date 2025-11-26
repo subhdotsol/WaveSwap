@@ -94,7 +94,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         decimals: 9,
         name: 'Solana',
         symbol: 'SOL',
-        logoURI: 'https://img-cdn.jup.ag/tokens/SOL.svg',
+        logoURI: null, // Let TokenIcon component handle fallback
         tags: ['native', 'solana'],
         isConfidentialSupported: true,
         isNative: true,
@@ -107,7 +107,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         decimals: 9,
         name: 'Wave',
         symbol: 'WAVE',
-        logoURI: 'https://img-cdn.jup.ag/tokens/WAVE.svg',
+        logoURI: null, // Let TokenIcon component handle fallback
         tags: ['defi', 'dex'],
         isConfidentialSupported: false,
         isNative: false,

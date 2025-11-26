@@ -229,6 +229,62 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         symbol: 'cUSDT',
         name: 'Confidential USDT',
         logoURI: token.logoURI // Preserve the original logoURI
+      },
+      '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump': { // WAVE
+        ...token,
+        address: 'c4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump',
+        symbol: 'cWAVE',
+        name: 'Confidential WAVE',
+        logoURI: token.logoURI // Preserve the original logoURI
+      },
+      'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS': { // ZEC
+        ...token,
+        address: 'cA7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS',
+        symbol: 'cZEC',
+        name: 'Confidential ZEC',
+        logoURI: token.logoURI // Preserve the original logoURI
+      },
+      'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn': { // PUMP
+        ...token,
+        address: 'cpumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn',
+        symbol: 'cPUMP',
+        name: 'Confidential PUMP',
+        logoURI: token.logoURI // Preserve the original logoURI
+      },
+      'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump': { // WEALTH
+        ...token,
+        address: 'cBSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump',
+        symbol: 'cWEALTH',
+        name: 'Confidential WEALTH',
+        logoURI: token.logoURI // Preserve the original logoURI
+      },
+      'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump': { // FTP
+        ...token,
+        address: 'cJ2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump',
+        symbol: 'cFTP',
+        name: 'Confidential FTP',
+        logoURI: token.logoURI // Preserve the original logoURI
+      },
+      'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2': { // AURA
+        ...token,
+        address: 'cDtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2',
+        symbol: 'cAURA',
+        name: 'Confidential AURA',
+        logoURI: token.logoURI // Preserve the original logoURI
+      },
+      'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5': { // MEW
+        ...token,
+        address: 'cMEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5',
+        symbol: 'cMEW',
+        name: 'Confidential MEW',
+        logoURI: token.logoURI // Preserve the original logoURI
+      },
+      'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump': { // STORE
+        ...token,
+        address: 'cFLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump',
+        symbol: 'cSTORE',
+        name: 'Confidential STORE',
+        logoURI: token.logoURI // Preserve the original logoURI
       }
     }
 
@@ -460,12 +516,12 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
               </div>
               <div className="flex-shrink-0">
                 <TokenSelector
-                  selectedToken={safeInputToken}
+                  selectedToken={displayInputToken}
                   onTokenChange={handleInputTokenChange}
                   tokens={optimizedTokens}
                   disabled={isLoading || isProgressActive}
-                  privacyMode={privacyMode}
-                  showConfidentialIndicator={true}
+                  privacyMode={false} // Input should never show confidential symbols
+                  showConfidentialIndicator={false}
                   balances={balances}
                 />
               </div>
@@ -538,7 +594,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
               </div>
               <div className="flex-shrink-0">
                 <TokenSelector
-                  selectedToken={safeOutputToken}
+                  selectedToken={displayOutputTokenConfidential}
                   onTokenChange={handleOutputTokenChange}
                   tokens={optimizedTokens}
                   disabled={isLoading || isProgressActive}

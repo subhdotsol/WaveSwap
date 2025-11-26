@@ -433,7 +433,7 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
           decimals: commonToken?.decimals || 9,
           name: commonToken?.name || todoToken.name,
           symbol: commonToken?.symbol || todoToken.symbol,
-          logoURI: commonToken?.logoURI || `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${todoToken.address}/logo.png`,
+          logoURI: null, // Let TokenIcon component handle fallback
           tags: commonToken?.tags || [],
           isConfidentialSupported: commonToken?.isConfidentialSupported || false,
           isNative: todoToken.address === 'So11111111111111111111111111111111111111112',

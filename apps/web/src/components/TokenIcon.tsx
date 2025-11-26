@@ -31,49 +31,65 @@ export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: 
 
     if (!url) return sources
 
-    // Add original URL (may be Jupiter CDN or other source)
-    sources.push(url)
+    // Check for IPFS URLs first (highest priority for working gateways)
+    if (url.includes('ipfs/')) {
+      const ipfsHash = url.match(/ipfs\/([a-zA-Z0-9]+)/)?.[1]
+      if (ipfsHash) {
+        // Prioritize working gateways - Pinata confirmed working for WAVE token
+        sources.push(
+          `https://gateway.pinata.cloud/ipfs/${ipfsHash}`, // Working - confirmed
+          `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`, // Usually reliable
+          `https://ipfs.eternum.io/ipfs/${ipfsHash}`, // Backup option
+          `https://ipfs.fleek.co/ipfs/${ipfsHash}`, // Another backup
+          `https://ipfs.io/ipfs/${ipfsHash}` // Sometimes returns 403, try last
+        )
+        return sources // Return early for IPFS URLs
+      }
+    }
+
+    // If it's nftstorage.link, add reliable gateway alternatives instead of the original
+    if (url.includes('ipfs.nftstorage.link/')) {
+      const ipfsHash = url.match(/([a-zA-Z0-9]+)\.ipfs\.nftstorage\.link/)?.[1]
+      if (ipfsHash) {
+        // Use same working gateway priority as other IPFS URLs
+        sources.push(
+          `https://gateway.pinata.cloud/ipfs/${ipfsHash}`, // Working - confirmed
+          `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`, // Usually reliable
+          `https://ipfs.eternum.io/ipfs/${ipfsHash}`, // Backup option
+          `https://ipfs.fleek.co/ipfs/${ipfsHash}`, // Another backup
+          `https://ipfs.io/ipfs/${ipfsHash}` // Sometimes returns 403, try last
+        )
+        return sources // Return early for nftstorage URLs
+      }
+    }
 
     // If it's Jupiter CDN, add mirror alternatives
     if (url.includes('img-cdn.jup.ag')) {
       const tokenName = url.match(/\/tokens\/(.+)\.svg/)?.[1]
       if (tokenName) {
-        // Add alternative Jupiter CDN endpoints
+        // Add alternative Jupiter CDN endpoints first (more reliable)
         sources.push(
           `https://raw.jup.ag/tokens/${tokenName}.svg`,
           `https://cdn.jsdelivr.net/gh/jup-ag/token-icons@main/tokens/${tokenName}.svg`
         )
+        sources.push(url) // Add original as last resort
       }
+    } else {
+      // For other non-IPFS URLs, add the original
+      sources.push(url)
     }
 
-    // If it's an IPFS URL, add multiple reliable gateways
-    if (url.includes('ipfs/')) {
-      const ipfsHash = url.match(/ipfs\/([a-zA-Z0-9]+)/)?.[1]
-      if (ipfsHash) {
-        // Add multiple reliable IPFS gateways in order of preference
-        sources.push(
-          `https://ipfs.dweb.link/ipfs/${ipfsHash}`,
-          `https://gateway.ipfs.io/ipfs/${ipfsHash}`,
-          `https://cf-ipfs.com/ipfs/${ipfsHash}`,
-          `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`,
-          `https://ipfs.io/ipfs/${ipfsHash}`
-        )
-      }
-    }
-
-    // If it's nftstorage.link, add dweb.link alternative
-    if (url.includes('ipfs.nftstorage.link/')) {
-      const ipfsHash = url.match(/([a-zA-Z0-9]+)\.ipfs\.nftstorage\.link/)?.[1]
-      if (ipfsHash) {
-        sources.push(`https://ipfs.dweb.link/ipfs/${ipfsHash}`)
-      }
-    }
-
-    // Remove trailing slashes from all sources
+    // Remove trailing slashes and duplicates
     return sources.map(s => s.replace(/\/$/, '')).filter((s, i, arr) => arr.indexOf(s) === i)
   }
 
   const sources = getReliableSources(logoURI || '')
+
+  console.log(`[TokenIcon] Processing ${symbol} icon:`, {
+    logoURI,
+    sources,
+    sourcesCount: sources.length
+  })
 
   const handleError = () => {
     console.log(`[TokenIcon] Error loading icon for ${symbol} from source:`, sources[currentSource])
@@ -93,9 +109,71 @@ export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: 
     setIsLoading(false)
   }
 
+  // Original token URLs for fallback when all sources fail
+  const getTokenOriginalURL = (tokenSymbol: string, tokenAddress: string): string | null => {
+    const tokenURLs: { [key: string]: string | null } = {
+      // Popular tokens with known working URLs
+      'WAVE': null, // Skip fallback for WAVE - let Jupiter API handle it
+      'SOL': 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+      'USDC': 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
+      'USDT': 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.png',
+      'ZEC': 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS/logo.png',
+      'PUMP': 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn/logo.png',
+      // Other tokens
+      'WEALTH': null, // Skip fallback for WEALTH - let Jupiter API handle it
+      'FTP': null, // Skip fallback for FTP - let Jupiter API handle it
+      'AURA': null, // Skip fallback for AURA - let Jupiter API handle it
+      'MEW': 'https://ipfs.io/ipfs/bafkreidlwyr565dxtao2ipsze6bmzpszqzybz7sqi2zaet5fs7k53henju',
+      'STORE': null // Skip fallback for STORE - let Jupiter API handle it
+    }
+
+    return tokenURLs[tokenSymbol.toUpperCase()] || tokenURLs[tokenAddress] || null
+  }
+
   // Fallback display - show if no Jupiter API icon or if all sources fail
   if (showFallback || !logoURI || sources.length === 0) {
-    // Special SOL fallback with purple gradient
+    // Check for original token URL fallback first
+    const originalURL = getTokenOriginalURL(symbol, mint)
+
+    if (originalURL) {
+      return (
+        <div
+          className={`rounded-full flex items-center justify-center overflow-hidden ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: theme.name === 'light'
+              ? theme.colors.background
+              : theme.colors.surface,
+            border: theme.name === 'light'
+              ? `2px solid ${theme.colors.borderLight}`
+              : `2px solid ${theme.colors.borderLight}`,
+            backdropFilter: 'blur(12px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(12px) saturate(1.8)',
+            boxShadow: theme.name === 'light'
+              ? '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
+              : '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+          }}
+        >
+          <img
+            src={originalURL}
+            alt={symbol}
+            className="w-full h-full object-cover"
+            style={{
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
+            }}
+            crossOrigin="anonymous"
+            onError={() => {
+              // If original URL fails, show text fallback
+              console.log(`[TokenIcon] Original URL failed for ${symbol}, showing text fallback`)
+              setShowFallback(true)
+            }}
+          />
+        </div>
+      )
+    }
+
+    // Special SOL fallback with purple gradient (original for SOL)
     if (isSOL) {
       return (
         <div
