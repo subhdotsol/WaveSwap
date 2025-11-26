@@ -22,23 +22,7 @@ interface TokenSelectorProps {
   balances?: Map<string, string>
 }
 
-// Exact token addresses from TODO.md - hardcoded to ensure they work
-const POPULAR_TOKENS = [
-  { address: '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump', symbol: 'WAVE', name: 'Wave', decimals: 9 },
-  { address: 'So11111111111111111111111111111111111111112', symbol: 'SOL', name: 'Solana', decimals: 9 },
-  { address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-  { address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', symbol: 'USDT', name: 'Tether USD', decimals: 6 },
-  { address: 'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS', symbol: 'ZEC', name: 'Zcash', decimals: 8 },
-  { address: 'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn', symbol: 'PUMP', name: 'Pump', decimals: 6 }
-]
-
-const OTHER_TOKENS = [
-  { address: 'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump', symbol: 'WEALTH', name: 'Wealth', decimals: 6 },
-  { address: 'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump', symbol: 'FTP', name: 'FTP', decimals: 6 },
-  { address: 'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2', symbol: 'AURA', name: 'Aura', decimals: 6 },
-  { address: 'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5', symbol: 'MEW', name: 'MEW', decimals: 9 },
-  { address: 'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump', symbol: 'STORE', name: 'Store', decimals: 6 }
-]
+// Tokens are now loaded dynamically from Jupiter API via JupiterTokenService
 
 export function TokenSelector({
   selectedToken,
@@ -53,76 +37,70 @@ export function TokenSelector({
   const [searchResults, setSearchResults] = useState<JupiterToken[]>([])
   const [isSearching, setIsSearching] = useState(false)
 
-  // Convert JupiterToken to Token format
+  // Dynamic token states from Jupiter API
+  const [popularTokens, setPopularTokens] = useState<JupiterToken[]>([])
+  const [otherTokens, setOtherTokens] = useState<JupiterToken[]>([])
+  const [isLoadingTokens, setIsLoadingTokens] = useState(true)
+
+  // Convert JupiterToken to Token format - uses Jupiter API icon directly
   const jupiterToToken = useCallback((jupiterToken: JupiterToken): Token => ({
     address: jupiterToken.id,
     chainId: 101,
     decimals: jupiterToken.decimals,
     name: jupiterToken.name,
     symbol: jupiterToken.symbol,
-    logoURI: jupiterToken.icon || `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${jupiterToken.id}/logo.png`,
+    logoURI: jupiterToken.icon, // Use Jupiter API icon directly - no hardcoded fallbacks
     tags: jupiterToken.tags,
     isConfidentialSupported: false,
     isNative: jupiterToken.id === 'So11111111111111111111111111111111111111112',
     addressable: true
   }), [])
 
-  // Create hardcoded token list - ensure it always works
-  const { popularTokens, otherTokens, userTokens } = useMemo(() => {
-    // User tokens (with balance)
+  // Load tokens dynamically from Jupiter API on mount
+  useEffect(() => {
+    const loadTokens = async () => {
+      console.log('[TokenSelector] Loading tokens from Jupiter API...')
+      try {
+        setIsLoadingTokens(true)
+        const [popular, other] = await Promise.all([
+          JupiterTokenService.getPopularTokens(),
+          JupiterTokenService.getOtherTokens()
+        ])
+        console.log('[TokenSelector] Loaded tokens:', { popular: popular.length, other: other.length })
+        console.log('[TokenSelector] First popular token:', popular[0])
+        setPopularTokens(popular)
+        setOtherTokens(other)
+      } catch (error) {
+        console.error('Error loading tokens from Jupiter API:', error)
+      } finally {
+        setIsLoadingTokens(false)
+      }
+    }
+
+    loadTokens()
+  }, [])
+
+  // User tokens (with balance) - convert existing tokens to display format
+  const userTokens = useMemo(() => {
     const user: Token[] = []
     tokens.forEach(token => {
       if (balances?.get(token.address) && parseFloat(balances.get(token.address)!) > 0) {
         user.push(token)
       }
     })
-
-    // Create hardcoded popular tokens with proper data
-    const popular = POPULAR_TOKENS.map(tokenData => {
-      const existingToken = tokens.find(t => t.address === tokenData.address)
-      if (existingToken) return existingToken
-
-      // Create fallback token with Jupiter CDN icon
-      return {
-        address: tokenData.address,
-        chainId: 101,
-        decimals: tokenData.decimals,
-        name: tokenData.name,
-        symbol: tokenData.symbol,
-        logoURI: `https://img-cdn.jup.ag/tokens/${tokenData.symbol}.svg`,
-        tags: [],
-        isConfidentialSupported: false,
-        isNative: tokenData.address === 'So11111111111111111111111111111111111111112',
-        addressable: true
-      } as Token
-    })
-
-    // Create hardcoded other tokens with proper data
-    const other = OTHER_TOKENS.map(tokenData => {
-      const existingToken = tokens.find(t => t.address === tokenData.address)
-      if (existingToken) return existingToken
-
-      // Create fallback token with Jupiter CDN icon
-      return {
-        address: tokenData.address,
-        chainId: 101,
-        decimals: tokenData.decimals,
-        name: tokenData.name,
-        symbol: tokenData.symbol,
-        logoURI: `https://img-cdn.jup.ag/tokens/${tokenData.symbol}.svg`,
-        tags: [],
-        isConfidentialSupported: false,
-        isNative: false,
-        addressable: true
-      } as Token
-    })
-
-    return {
-      popularTokens: popular,
-      otherTokens: other,
-      userTokens: user
-    }
+    return user
   }, [tokens, balances])
+
+  // Convert Jupiter tokens to Token format for display
+  const popularTokensDisplay = useMemo(() =>
+    popularTokens.map(jupiterToToken),
+    [popularTokens, jupiterToToken]
+  )
+
+  const otherTokensDisplay = useMemo(() =>
+    otherTokens.map(jupiterToToken),
+    [otherTokens, jupiterToToken]
+  )
 
   // Search tokens using Jupiter API with debouncing
   useEffect(() => {
@@ -478,7 +456,7 @@ export function TokenSelector({
                     )}
 
                     {/* Popular Tokens */}
-                    {!searchQuery && popularTokens.length > 0 && (
+                    {!searchQuery && popularTokensDisplay.length > 0 && (
                       <div>
                         <div className="px-4 py-2 text-xs font-semibold mt-4" style={{
                           color: theme.name === 'light' ? theme.colors.primary : 'rgba(33, 188, 255, 0.8)',
@@ -486,7 +464,29 @@ export function TokenSelector({
                         }}>
                           Popular
                         </div>
-                        {popularTokens.map((token) => (
+                        {popularTokensDisplay.map((token) => (
+                          <TokenListItem
+                            key={token.address}
+                            token={token}
+                            balance={balances?.get(token.address) || '0'}
+                            onSelect={handleTokenSelect}
+                            isSelected={selectedToken?.address === token.address}
+                            isPopularToken={true}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Other Tokens */}
+                    {!searchQuery && otherTokensDisplay.length > 0 && (
+                      <div>
+                        <div className="px-4 py-2 text-xs font-semibold mt-4" style={{
+                          color: theme.name === 'light' ? theme.colors.textMuted : 'rgba(156, 163, 175, 0.8)',
+                          fontFamily: 'var(--font-helvetica)'
+                        }}>
+                          Other Tokens
+                        </div>
+                        {otherTokensDisplay.map((token) => (
                           <TokenListItem
                             key={token.address}
                             token={token}
@@ -498,24 +498,23 @@ export function TokenSelector({
                       </div>
                     )}
 
-                    {/* Other Tokens */}
-                    {!searchQuery && otherTokens.length > 0 && (
-                      <div>
-                        <div className="px-4 py-2 text-xs font-semibold mt-4" style={{
-                          color: theme.name === 'light' ? theme.colors.textMuted : 'rgba(156, 163, 175, 0.8)',
-                          fontFamily: 'var(--font-helvetica)'
-                        }}>
-                          Other Tokens
+                    {/* Loading State */}
+                    {isLoadingTokens && !searchQuery && (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full animate-bounce" style={{
+                            background: theme.colors.primary,
+                            animationDelay: '0ms'
+                          }} />
+                          <div className="w-2 h-2 rounded-full animate-bounce" style={{
+                            background: theme.colors.primary,
+                            animationDelay: '150ms'
+                          }} />
+                          <div className="w-2 h-2 rounded-full animate-bounce" style={{
+                            background: theme.colors.primary,
+                            animationDelay: '300ms'
+                          }} />
                         </div>
-                        {otherTokens.map((token) => (
-                          <TokenListItem
-                            key={token.address}
-                            token={token}
-                            balance={balances?.get(token.address) || '0'}
-                            onSelect={handleTokenSelect}
-                            isSelected={selectedToken?.address === token.address}
-                          />
-                        ))}
                       </div>
                     )}
                   </div>
@@ -535,9 +534,10 @@ interface TokenListItemProps {
   balance: string
   onSelect: (token: Token) => void
   isSelected: boolean
+  isPopularToken?: boolean
 }
 
-function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemProps) {
+function TokenListItem({ token, balance, onSelect, isSelected, isPopularToken = false }: TokenListItemProps) {
   const theme = useThemeConfig()
 
   const formatBalance = (balance: string, decimals: number): string => {
@@ -554,7 +554,6 @@ function TokenListItem({ token, balance, onSelect, isSelected }: TokenListItemPr
   }
 
   const hasBalance = parseFloat(balance) > 0
-  const isPopularToken = POPULAR_TOKENS.some(t => t.address === token.address)
 
   return (
     <button

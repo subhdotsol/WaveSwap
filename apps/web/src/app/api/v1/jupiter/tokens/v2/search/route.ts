@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
 
-    // Extract only the data array from Jupiter API response
-    const tokens = data.data || []
+    // Jupiter API returns an array directly, not wrapped in data object
+    const tokens = Array.isArray(data) ? data : []
 
     console.log(`[Token Search] Found ${tokens.length} tokens from Jupiter API for query "${query}"`)
 

@@ -1,5 +1,4 @@
 // Near Intent Bridge API Integration
-import { getTokenIcon } from './tokenIconService'
 
 export interface BridgeToken {
   symbol: string
@@ -224,7 +223,7 @@ export const SUPPORTED_CHAINS = [
   {
     id: 'solana',
     name: 'Solana',
-    logoURI: getTokenIcon('SOL', 'So11111111111111111111111111111111111111112'),
+    logoURI: '',
     color: 'from-blue-500 to-blue-600',
     gradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
     icon: '◎',
@@ -507,26 +506,6 @@ export const CHAIN_WALLETS = {
   }
 } as const
 
-/**
- * Get common tokens with dynamic icon loading
- */
-export async function getCommonTokens(): Promise<typeof COMMON_TOKENS_STATIC> {
-  const tokensWithIcons = JSON.parse(JSON.stringify(COMMON_TOKENS_STATIC))
-
-  // Fill in logoURIs dynamically using the token icon service
-  for (const chain of Object.keys(tokensWithIcons) as Array<keyof typeof COMMON_TOKENS_STATIC>) {
-    for (const token of tokensWithIcons[chain]) {
-      if (chain === 'solana') {
-        token.logoURI = await getTokenIcon(token.symbol, token.address)
-      } else {
-        // For non-Solana chains, use external icon URLs
-        token.logoURI = await getTokenIcon(token.symbol)
-      }
-    }
-  }
-
-  return tokensWithIcons
-}
 
 // Legacy export for backward compatibility
 export const COMMON_TOKENS = COMMON_TOKENS_STATIC

@@ -11,7 +11,6 @@ import { StarknetWalletModal } from '@/providers/StarknetWalletProvider'
 import { Token } from '@/types/token'
 import { enhancedBridgeService } from '@/lib/services/enhancedBridgeService'
 import { ComingSoon } from '@/components/ui/ComingSoon'
-import { getTokenIcon } from '@/lib/tokenIconService'
 
 interface WavePortalProps {
   privacyMode: boolean

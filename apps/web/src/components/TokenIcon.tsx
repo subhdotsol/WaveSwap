@@ -12,11 +12,8 @@ interface TokenIconProps {
 }
 
 /**
- * Token icon with fallback loading strategy
- * 1. Try provided logoURI (from Jupiter API)
- * 2. Try Solana token-list CDN
- * 3. Try Trust Wallet assets
- * 4. Show first letter
+ * Token icon loaded directly from Jupiter API
+ * Uses only Jupiter API icon URLs - no hardcoded fallbacks
  */
 export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: TokenIconProps) {
   const [currentSource, setCurrentSource] = useState(0)
@@ -28,22 +25,64 @@ export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: 
   // Special handling for SOL (wrapped SOL) - ensure it has a proper icon
   const isSOL = mint === 'So11111111111111111111111111111111111111112'
 
-  // Create sources array in order of preference
-  // Prioritize Jupiter API icons (IPFS) first, then fallback to reliable sources
-  const sources: string[] = [
-    logoURI, // Provided logoURI from Jupiter API (IPFS URLs) - primary source
-    `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${mint}/logo.png`, // Solana official token-list
-    `https://cdn.jsdelivr.net/gh/solana-labs/token-list@main/assets/mainnet/${mint}/logo.png`, // JSDelivr mirror
-    `https://img-cdn.jup.ag/tokens/${mint}.svg`, // Jupiter CDN - backup
-    // Add local SOL icon as last resort for SOL
-    isSOL ? '/icons/sol-circular.svg' : undefined
-  ].filter((source): source is string => Boolean(source))
+  // Enhanced IPFS URL handling with multiple gateways
+  const getReliableSources = (url: string): string[] => {
+    const sources: string[] = []
+
+    if (!url) return sources
+
+    // Add original URL (may be Jupiter CDN or other source)
+    sources.push(url)
+
+    // If it's Jupiter CDN, add mirror alternatives
+    if (url.includes('img-cdn.jup.ag')) {
+      const tokenName = url.match(/\/tokens\/(.+)\.svg/)?.[1]
+      if (tokenName) {
+        // Add alternative Jupiter CDN endpoints
+        sources.push(
+          `https://raw.jup.ag/tokens/${tokenName}.svg`,
+          `https://cdn.jsdelivr.net/gh/jup-ag/token-icons@main/tokens/${tokenName}.svg`
+        )
+      }
+    }
+
+    // If it's an IPFS URL, add multiple reliable gateways
+    if (url.includes('ipfs/')) {
+      const ipfsHash = url.match(/ipfs\/([a-zA-Z0-9]+)/)?.[1]
+      if (ipfsHash) {
+        // Add multiple reliable IPFS gateways in order of preference
+        sources.push(
+          `https://ipfs.dweb.link/ipfs/${ipfsHash}`,
+          `https://gateway.ipfs.io/ipfs/${ipfsHash}`,
+          `https://cf-ipfs.com/ipfs/${ipfsHash}`,
+          `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`,
+          `https://ipfs.io/ipfs/${ipfsHash}`
+        )
+      }
+    }
+
+    // If it's nftstorage.link, add dweb.link alternative
+    if (url.includes('ipfs.nftstorage.link/')) {
+      const ipfsHash = url.match(/([a-zA-Z0-9]+)\.ipfs\.nftstorage\.link/)?.[1]
+      if (ipfsHash) {
+        sources.push(`https://ipfs.dweb.link/ipfs/${ipfsHash}`)
+      }
+    }
+
+    // Remove trailing slashes from all sources
+    return sources.map(s => s.replace(/\/$/, '')).filter((s, i, arr) => arr.indexOf(s) === i)
+  }
+
+  const sources = getReliableSources(logoURI || '')
 
   const handleError = () => {
-    setImageError(true)
+    console.log(`[TokenIcon] Error loading icon for ${symbol} from source:`, sources[currentSource])
+
+    // Try next source if available
     if (currentSource < sources.length - 1) {
       setCurrentSource(currentSource + 1)
     } else {
+      // No more sources to try, show fallback
       setShowFallback(true)
       setIsLoading(false)
     }
@@ -54,8 +93,8 @@ export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: 
     setIsLoading(false)
   }
 
-  // Fallback display
-  if (showFallback || !sources[0] || imageError) {
+  // Fallback display - show if no Jupiter API icon or if all sources fail
+  if (showFallback || !logoURI || sources.length === 0) {
     // Special SOL fallback with purple gradient
     if (isSOL) {
       return (
@@ -152,6 +191,7 @@ export function TokenIcon({ symbol, mint, logoURI, size = 40, className = '' }: 
       }}
     >
       <img
+        key={currentSource} // Force re-render when source changes
         src={sources[currentSource]}
         alt={symbol}
         className="w-full h-full object-cover"

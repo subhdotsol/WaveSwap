@@ -40,10 +40,12 @@ export const OTHER_TOKEN_ADDRESSES = [
   'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump'  // STORE
 ]
 
-// API configuration
-const JUPITER_API_BASE = 'https://lite-api.jup.ag/tokens/v2'
+// API configuration - use Next.js API proxy to avoid CORS issues
+const JUPITER_API_BASE = '/api/v1/jupiter/tokens/v2'
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-const API_TIMEOUT = 10000 // 10 seconds
+const API_TIMEOUT = 15000 // 15 seconds
+const RETRY_DELAY = 2000 // 2 seconds
+const MAX_RETRIES = 3
 
 class JupiterTokenCache {
   private cache: Map<string, JupiterToken[]> = new Map()
@@ -81,7 +83,7 @@ class JupiterTokenCache {
 const tokenCache = new JupiterTokenCache()
 
 export class JupiterTokenService {
-  private static async fetchFromAPI(endpoint: string): Promise<any> {
+  private static async fetchFromAPI(endpoint: string, retryCount: number = 0): Promise<any> {
     try {
       const url = `${JUPITER_API_BASE}${endpoint}`
       const controller = new AbortController()
@@ -98,11 +100,23 @@ export class JupiterTokenService {
       clearTimeout(timeoutId)
 
       if (!response.ok) {
+        // Handle rate limiting with retry logic
+        if (response.status === 429 || response.status === 502) {
+          if (retryCount < MAX_RETRIES) {
+            console.log(`[JupiterTokenService] Rate limited, retrying in ${RETRY_DELAY}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`)
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)))
+            return this.fetchFromAPI(endpoint, retryCount + 1)
+          }
+          throw new Error(`Jupiter API rate limited after ${MAX_RETRIES} retries`)
+        }
         throw new Error(`Jupiter API error: ${response.status} ${response.statusText}`)
       }
 
       return await response.json()
     } catch (error) {
+      if (error instanceof Error && error.message.includes('rate limited')) {
+        throw error // Re-throw rate limit errors
+      }
       console.error('Error fetching from Jupiter API:', error)
       return null
     }
@@ -139,8 +153,38 @@ export class JupiterTokenService {
       return tokens
     } catch (error) {
       console.error('Error searching tokens:', error)
-      return []
+      // Fallback to local search when API is down
+      return this.localSearchFallback(query)
     }
+  }
+
+  /**
+   * Local search fallback when Jupiter API is unavailable
+   */
+  private static localSearchFallback(query: string): JupiterToken[] {
+    const searchQuery = query.toLowerCase()
+
+    // Combine all known tokens for local search
+    const allTokens = [...POPULAR_TOKEN_ADDRESSES, ...OTHER_TOKEN_ADDRESSES]
+
+    const results = allTokens.filter(address => {
+      const name = this.getTokenNameByAddress(address).toLowerCase()
+      const symbol = this.getTokenSymbolByAddress(address).toLowerCase()
+
+      return name.includes(searchQuery) ||
+             symbol.includes(searchQuery) ||
+             address.toLowerCase().includes(searchQuery)
+    }).map(address => ({
+      id: address,
+      name: this.getTokenNameByAddress(address),
+      symbol: this.getTokenSymbolByAddress(address),
+      icon: this.getTokenIconByAddress(address),
+      decimals: this.getTokenDecimalsByAddress(address),
+      tags: [],
+      verified: true
+    }))
+
+    return results
   }
 
   /**
@@ -187,20 +231,36 @@ export class JupiterTokenService {
    */
   static async getPopularTokens(): Promise<JupiterToken[]> {
     try {
-      const tokens = await this.getTokensByAddresses(POPULAR_TOKEN_ADDRESSES)
+      // First try to get real token data from Jupiter API
+      const apiTokens = await this.getTokensByAddresses(POPULAR_TOKEN_ADDRESSES)
 
-      // Sort in the exact order specified in POPULAR_TOKEN_ADDRESSES
-      const sortedTokens = tokens.sort((a, b) => {
-        const aIndex = POPULAR_TOKEN_ADDRESSES.indexOf(a.id)
-        const bIndex = POPULAR_TOKEN_ADDRESSES.indexOf(b.id)
-        return aIndex - bIndex
+      // For tokens not found in API, create fallback token data
+      const popularTokens: JupiterToken[] = POPULAR_TOKEN_ADDRESSES.map((address) => {
+        const apiToken = apiTokens.find(token => token.id === address)
+
+        if (apiToken) {
+          return {
+            ...apiToken,
+            isPopular: true
+          }
+        } else {
+          // Fallback to hardcoded data if not found in API
+          console.log(`[JupiterTokenService] API token not found for ${address}, using fallback`)
+          return {
+            id: address,
+            name: this.getTokenNameByAddress(address),
+            symbol: this.getTokenSymbolByAddress(address),
+            icon: this.getTokenIconByAddress(address),
+            decimals: this.getTokenDecimalsByAddress(address),
+            tags: [],
+            verified: true,
+            isPopular: true
+          }
+        }
       })
 
-      // Mark as popular
-      return sortedTokens.map(token => ({
-        ...token,
-        isPopular: true
-      }))
+      console.log(`[JupiterTokenService] Loaded ${popularTokens.length} popular tokens`)
+      return popularTokens
     } catch (error) {
       console.error('Error fetching popular tokens:', error)
       return []
@@ -212,16 +272,36 @@ export class JupiterTokenService {
    */
   static async getOtherTokens(): Promise<JupiterToken[]> {
     try {
-      const tokens = await this.getTokensByAddresses(OTHER_TOKEN_ADDRESSES)
+      // First try to get real token data from Jupiter API
+      const apiTokens = await this.getTokensByAddresses(OTHER_TOKEN_ADDRESSES)
 
-      // Sort in the exact order specified in OTHER_TOKEN_ADDRESSES
-      const sortedTokens = tokens.sort((a, b) => {
-        const aIndex = OTHER_TOKEN_ADDRESSES.indexOf(a.id)
-        const bIndex = OTHER_TOKEN_ADDRESSES.indexOf(b.id)
-        return aIndex - bIndex
+      // For tokens not found in API, create fallback token data
+      const otherTokens: JupiterToken[] = OTHER_TOKEN_ADDRESSES.map((address) => {
+        const apiToken = apiTokens.find(token => token.id === address)
+
+        if (apiToken) {
+          return {
+            ...apiToken,
+            isPopular: false
+          }
+        } else {
+          // Fallback to hardcoded data if not found in API
+          console.log(`[JupiterTokenService] API token not found for ${address}, using fallback`)
+          return {
+            id: address,
+            name: this.getTokenNameByAddress(address),
+            symbol: this.getTokenSymbolByAddress(address),
+            icon: this.getTokenIconByAddress(address),
+            decimals: this.getTokenDecimalsByAddress(address),
+            tags: [],
+            verified: true,
+            isPopular: false
+          }
+        }
       })
 
-      return sortedTokens
+      console.log(`[JupiterTokenService] Loaded ${otherTokens.length} other tokens`)
+      return otherTokens
     } catch (error) {
       console.error('Error fetching other tokens:', error)
       return []
@@ -229,9 +309,83 @@ export class JupiterTokenService {
   }
 
   /**
+   * Helper method to get token name by address
+   */
+  private static getTokenNameByAddress(address: string): string {
+    const tokenMap: Record<string, string> = {
+      '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump': 'WaveSwap',
+      'So11111111111111111111111111111111111111112': 'Solana',
+      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USD Coin',
+      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'Tether USD',
+      'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS': 'Zcash',
+      'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn': 'Pump',
+      'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump': 'Wealth',
+      'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump': 'FTP',
+      'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2': 'Aura',
+      'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5': 'MEW',
+      'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump': 'Store'
+    }
+    return tokenMap[address] || 'Unknown Token'
+  }
+
+  /**
+   * Helper method to get token symbol by address
+   */
+  private static getTokenSymbolByAddress(address: string): string {
+    const tokenMap: Record<string, string> = {
+      '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump': 'WAVE',
+      'So11111111111111111111111111111111111111112': 'SOL',
+      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
+      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
+      'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS': 'ZEC',
+      'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn': 'PUMP',
+      'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump': 'WEALTH',
+      'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump': 'FTP',
+      'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2': 'AURA',
+      'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5': 'MEW',
+      'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump': 'STORE'
+    }
+    return tokenMap[address] || 'UNKNOWN'
+  }
+
+  /**
+   * Helper method to get token icon URL by address
+   * ONLY for specific fallback cases when API is completely unavailable
+   */
+  private static getTokenIconByAddress(address: string): string | null {
+    // Known working icon URLs for tokens that have issues with API rate limiting
+    const knownIcons: Record<string, string> = {
+      // MEW token - using dweb.link gateway for better CORS support
+      'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5': 'https://bafkreidlwyr565dxtao2ipsze6bmzpszqzybz7sqi2zaet5fs7k53henju.ipfs.dweb.link/'
+    }
+
+    return knownIcons[address] || null
+  }
+
+  /**
+   * Helper method to get token decimals by address
+   */
+  private static getTokenDecimalsByAddress(address: string): number {
+    const decimalsMap: Record<string, number> = {
+      'So11111111111111111111111111111111111111112': 9, // SOL
+      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 6, // USDC
+      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 6, // USDT
+      'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS': 8, // ZEC
+      'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn': 6,  // PUMP
+      '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump': 9, // WAVE
+      'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump': 9, // WEALTH
+      'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump': 9, // FTP
+      'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2': 9, // AURA
+      'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5': 9, // MEW
+      'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump': 9  // STORE
+    }
+    return decimalsMap[address] || 9 // Default to 9 for Solana tokens
+  }
+
+  /**
    * Get user owned tokens (simplified - would need wallet integration)
    */
-  static async getUserOwnedTokens(userPublicKey: string): Promise<JupiterToken[]> {
+  static async getUserOwnedTokens(_userPublicKey: string): Promise<JupiterToken[]> {
     // This would integrate with wallet balance fetching
     // For now, return empty array
     return []
@@ -289,7 +443,7 @@ export class JupiterTokenService {
    * Format token data from Jupiter API to our interface
    */
   private static formatToken(tokenData: any): JupiterToken {
-    return {
+    const token = {
       id: tokenData.id || '',
       name: tokenData.name || 'Unknown',
       symbol: tokenData.symbol || 'UNKNOWN',
@@ -305,6 +459,18 @@ export class JupiterTokenService {
       twitter: tokenData.twitter,
       telegram: tokenData.telegram
     }
+
+    // Debug logging for MEW token (commented out)
+    // if (token.id === 'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5' || token.symbol === 'MEW') {
+    //   console.log('[JupiterTokenService] MEW token formatted:', {
+    //     id: token.id,
+    //     symbol: token.symbol,
+    //     icon: token.icon,
+    //     name: token.name
+    //   })
+    // }
+
+    return token
   }
 }
 

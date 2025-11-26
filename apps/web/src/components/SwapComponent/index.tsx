@@ -213,19 +213,22 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         ...token,
         address: 'cSo11111111111111111111111111111111111111112',
         symbol: 'cSOL',
-        name: 'Confidential SOL'
+        name: 'Confidential SOL',
+        logoURI: token.logoURI // Preserve the original logoURI
       },
       'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { // USDC
         ...token,
         address: 'cEPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
         symbol: 'cUSDC',
-        name: 'Confidential USDC'
+        name: 'Confidential USDC',
+        logoURI: token.logoURI // Preserve the original logoURI
       },
       'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { // USDT
         ...token,
         address: 'cEs9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
         symbol: 'cUSDT',
-        name: 'Confidential USDT'
+        name: 'Confidential USDT',
+        logoURI: token.logoURI // Preserve the original logoURI
       }
     }
 

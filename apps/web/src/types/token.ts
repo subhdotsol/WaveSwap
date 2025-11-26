@@ -390,7 +390,7 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
       decimals: jupiterToken.decimals || 9,
       name: jupiterToken.name || 'Unknown',
       symbol: jupiterToken.symbol || 'UNKNOWN',
-      logoURI: jupiterToken.icon || `https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/${jupiterToken.id}/logo.png`, // Use Jupiter API icon with GitHub fallback
+      logoURI: jupiterToken.icon, // Use Jupiter API icon only - no hardcoded fallbacks
       tags: jupiterToken.tags || [],
       isConfidentialSupported: false, // Will be determined by privacy mode
       isNative: jupiterToken.id === 'So11111111111111111111111111111111111111112',

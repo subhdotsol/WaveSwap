@@ -4,7 +4,7 @@
 import { IntentsSDK, createIntentSignerNearKeyPair } from '@defuse-protocol/intents-sdk'
 import { Connection, PublicKey, Transaction } from '@solana/web3.js'
 import { nearIntentBridge, type BridgeQuote } from '../nearIntentBridge'
-import { getTokenIcon } from '../tokenIconService'
+import { JupiterTokenService } from '../jupiterTokens'
 
 // Define AssetId type locally since it's not exported from the package
 type AssetId = string
@@ -217,25 +217,54 @@ export class EnhancedBridgeService {
    */
   private async getDefuseAssets(): Promise<any[]> {
     // This would integrate with Defuse API to get supported assets
-    // For now, return commonly supported assets with dynamic icon loading
-    return [
-      {
-        symbol: 'USDC',
-        name: 'USD Coin',
-        address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        decimals: 6,
-        chain: 'solana',
-        logoURI: await getTokenIcon('USDC', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
-      },
-      {
-        symbol: 'USDT',
-        name: 'Tether USD',
-        address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-        decimals: 6,
-        chain: 'solana',
-        logoURI: await getTokenIcon('USDT', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB')
-      }
-    ]
+    // For now, return commonly supported assets with dynamic icon loading from Jupiter API
+    try {
+      // Get token icons from Jupiter API
+      const jupiterTokens = await JupiterTokenService.searchTokens('USDC')
+      const usdcToken = jupiterTokens.find(t => t.address === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
+      const usdtTokens = await JupiterTokenService.searchTokens('USDT')
+      const usdtToken = usdtTokens.find(t => t.address === 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB')
+
+      return [
+        {
+          symbol: 'USDC',
+          name: 'USD Coin',
+          address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+          decimals: 6,
+          chain: 'solana',
+          logoURI: usdcToken?.icon || ''
+        },
+        {
+          symbol: 'USDT',
+          name: 'Tether USD',
+          address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+          decimals: 6,
+          chain: 'solana',
+          logoURI: usdtToken?.icon || ''
+        }
+      ]
+    } catch (error) {
+      console.warn('Failed to fetch token icons from Jupiter API:', error)
+      // Fallback without icons
+      return [
+        {
+          symbol: 'USDC',
+          name: 'USD Coin',
+          address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+          decimals: 6,
+          chain: 'solana',
+          logoURI: ''
+        },
+        {
+          symbol: 'USDT',
+          name: 'Tether USD',
+          address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+          decimals: 6,
+          chain: 'solana',
+          logoURI: ''
+        }
+      ]
+    }
   }
 
   /**
