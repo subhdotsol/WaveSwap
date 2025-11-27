@@ -77,10 +77,13 @@ export default function RootLayout({
                   <StarknetWalletProvider>
                     <SolanaWalletProvider>
                       <WaveSwapProvider>
-                        <div className="min-h-screen text-foreground theme-background">
-                          {children}
-                          <PrivacyReminder />
-                          <GlobalWalletModal />
+                        <div className="relative min-h-screen text-foreground w-full">
+                          <div className="theme-background fixed inset-0"></div>
+                          <div className="relative z-[1]">
+                            {children}
+                            <PrivacyReminder />
+                            <GlobalWalletModal />
+                          </div>
                         </div>
                       </WaveSwapProvider>
                     </SolanaWalletProvider>

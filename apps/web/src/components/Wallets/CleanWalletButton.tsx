@@ -120,22 +120,41 @@ export function CleanWalletButton() {
       }}
       onMouseEnter={(e) => {
         if (!publicKey) {
-          e.currentTarget.style.background = `
-            linear-gradient(135deg,
-              rgba(33, 188, 255, 0.15) 0%,
-              rgba(33, 188, 255, 0.08) 50%,
-              rgba(33, 188, 255, 0.15) 100%
-            ),
-            radial-gradient(circle at 30% 30%,
-              rgba(33, 188, 255, 0.1) 0%,
-              transparent 50%
-            )
-          `
-          e.currentTarget.style.borderColor = 'rgba(33, 188, 255, 0.3)'
-          e.currentTarget.style.boxShadow = `
-            0 12px 40px rgba(33, 188, 255, 0.15),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15)
-          `
+          e.currentTarget.style.background = theme.name === 'light'
+            ? `
+              linear-gradient(135deg,
+                rgba(33, 188, 255, 0.25) 0%,
+                rgba(33, 188, 255, 0.18) 50%,
+                rgba(33, 188, 255, 0.25) 100%
+              ),
+              radial-gradient(circle at 30% 30%,
+                rgba(33, 188, 255, 0.2) 0%,
+                transparent 50%
+              )
+            `
+            : `
+              linear-gradient(135deg,
+                rgba(33, 188, 255, 0.25) 0%,
+                rgba(33, 188, 255, 0.18) 50%,
+                rgba(33, 188, 255, 0.25) 100%
+              ),
+              radial-gradient(circle at 30% 30%,
+                rgba(33, 188, 255, 0.2) 0%,
+                transparent 50%
+              )
+            `
+          e.currentTarget.style.borderColor = theme.name === 'light'
+            ? 'rgba(33, 188, 255, 0.4)'
+            : 'rgba(33, 188, 255, 0.4)'
+          e.currentTarget.style.boxShadow = theme.name === 'light'
+            ? `
+              0 12px 40px rgba(33, 188, 255, 0.25),
+              inset 0 1px 0 rgba(255, 255, 255, 0.25)
+            `
+            : `
+              0 12px 40px rgba(33, 188, 255, 0.25),
+              inset 0 1px 0 rgba(255, 255, 255, 0.25)
+            `
         } else {
           e.currentTarget.style.boxShadow = `
             0 12px 40px rgba(34, 197, 94, 0.25),
@@ -143,26 +162,44 @@ export function CleanWalletButton() {
           `
         }
         e.currentTarget.style.transform = 'translateY(-1px)'
+
+        // Change text and icon colors to primary color on hover
+        if (!publicKey) {
+          const textElement = e.currentTarget.querySelector('span')
+          const iconElement = e.currentTarget.querySelector('svg:not(.chevron-down)')
+          const chevronElement = e.currentTarget.querySelector('.chevron-down')
+
+          if (textElement) {
+            textElement.style.color = theme.colors.primary
+          }
+          if (iconElement) {
+            iconElement.style.color = theme.colors.primary
+          }
+          if (chevronElement) {
+            chevronElement.style.color = theme.colors.primary
+          }
+        }
       }}
       onMouseLeave={(e) => {
         if (!publicKey) {
-          e.currentTarget.style.background = `
-            linear-gradient(135deg,
-              rgba(30, 30, 45, 0.6) 0%,
-              rgba(45, 45, 65, 0.4) 50%,
-              rgba(30, 30, 45, 0.6) 100%
-            ),
-            radial-gradient(circle at 50% 50%,
-              rgba(33, 188, 255, 0.02) 0%,
-              transparent 50%
-            )
-          `
-          e.currentTarget.style.borderColor = 'rgba(33, 188, 255, 0.1)'
-          e.currentTarget.style.boxShadow = `
-            0 8px 32px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 0 1px rgba(33, 188, 255, 0.05)
-          `
+          // Reset to original background based on theme
+          e.currentTarget.style.background = theme.name === 'light'
+            ? `
+              linear-gradient(135deg,
+                ${theme.colors.primary}dd 0%,
+                ${theme.colors.primary}cc 50%,
+                ${theme.colors.primary}dd 100%
+              ),
+              radial-gradient(circle at 30% 30%,
+                ${theme.colors.primary}20 0%,
+                transparent 50%
+              )
+            `
+            : createGlassStyles(theme).background as string
+          e.currentTarget.style.borderColor = theme.colors.primary + '30'
+          e.currentTarget.style.boxShadow = theme.name === 'light'
+            ? `0 8px 24px ${theme.colors.primary}30, inset 0 1px 0 rgba(255, 255, 255, 0.3)`
+            : `0 8px 32px ${theme.colors.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px ${theme.colors.primary}05`
         } else {
           e.currentTarget.style.boxShadow = `
             0 8px 24px rgba(34, 197, 94, 0.2),
@@ -170,6 +207,23 @@ export function CleanWalletButton() {
           `
         }
         e.currentTarget.style.transform = 'translateY(0)'
+
+        // Reset text and icon colors to original values
+        if (!publicKey) {
+          const textElement = e.currentTarget.querySelector('span')
+          const iconElement = e.currentTarget.querySelector('svg:not(.chevron-down)')
+          const chevronElement = e.currentTarget.querySelector('.chevron-down')
+
+          if (textElement) {
+            textElement.style.color = theme.name === 'light' ? '#ffffff' : theme.colors.textMuted
+          }
+          if (iconElement) {
+            iconElement.style.color = theme.name === 'light' ? '#ffffff' : theme.colors.textPrimary
+          }
+          if (chevronElement) {
+            chevronElement.style.color = theme.name === 'light' ? '#ffffff' : theme.colors.textPrimary
+          }
+        }
       }}
     >
       {/* Noise grain overlay */}
@@ -191,7 +245,7 @@ export function CleanWalletButton() {
           }} />
         ) : (
           <Wallet className="w-4 h-4" style={{
-            color: `${theme.colors.primary}e6`,
+            color: theme.name === 'light' ? '#ffffff' : theme.colors.textPrimary,
             filter: `drop-shadow(0 0 8px ${theme.colors.primary}40)`
           }} />
         )}
@@ -212,9 +266,9 @@ export function CleanWalletButton() {
 
         {!publicKey && (
           <ChevronDown
-            className="w-3 h-3"
+            className="w-3 h-3 chevron-down"
             style={{
-              color: theme.name === 'light' ? '#ffffff' : `${theme.colors.textMuted}cc`,
+              color: theme.name === 'light' ? '#ffffff' : theme.colors.textPrimary,
               transition: 'all 0.3s ease',
               textShadow: theme.name === 'light' ? '0 1px 2px rgba(0, 0, 0, 0.2)' : 'none'
             }}

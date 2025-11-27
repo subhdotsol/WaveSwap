@@ -209,47 +209,23 @@
     -moz-osx-font-smoothing: grayscale;
     background: transparent !important;
     min-height: 100vh;
+    width: 100%;
     position: relative;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
 
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
+  html {
+    background: transparent !important;
     width: 100%;
     height: 100%;
-    background-image:
-      url("data:image/svg+xml,%3Csvg width='300' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise-rough'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise-rough)' opacity='0.30'/%3E%3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg width='150' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise-fine'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23noise-fine)' opacity='0.25'/%3E%3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise-dust'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23noise-dust)' opacity='0.20'/%3E%3C/svg%3E");
-    background-repeat: repeat, repeat, repeat;
-    background-size: 300px 300px, 150px 150px, 80px 80px;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 1;
-    mix-blend-mode: overlay;
   }
 
-  body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg width='600' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='film-grain'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.85' numOctaves='1' result='turbulence'/%3E%3CfeColorMatrix in='turbulence' type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 0.5 0.5 0.5 0.5 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='600' height='600' filter='url(%23film-grain)' opacity='0.15'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 600px 600px;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 1;
-    mix-blend-mode: overlay;
-  }
-
+  
   body > * {
     position: relative;
-    z-index: 1;
+    z-index: auto;
   }
 
   /* Professional Z-Index System */
@@ -264,21 +240,21 @@
 
   /* Next.js React Error Overlay z-index fix */
   nextjs-portal {
-    z-index: 999999 !important;
+    z-index: 9999999 !important;
   }
 
   .nextjs-container-errors-outline {
-    z-index: 999998 !important;
+    z-index: 9999998 !important;
   }
 
   /* React-Error-Overlay styles */
   [data-react-portal] {
-    z-index: 999999 !important;
+    z-index: 9999999 !important;
   }
 
   /* Ensure error overlay is always on top */
   .react-error-overlay {
-    z-index: 999999 !important;
+    z-index: 9999999 !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -288,23 +264,33 @@
 
   /* Fix for any error boundaries */
   .error-boundary-fallback {
-    z-index: 999997 !important;
+    z-index: 9999997 !important;
   }
 
   /* Global overlay styles for development */
   .react-devtools-helper {
-    z-index: 999996 !important;
+    z-index: 9999996 !important;
   }
 
   /* Ensure all dev tools are above our UI */
   [data-testid="react-error-overlay"] {
-    z-index: 999999 !important;
+    z-index: 9999999 !important;
     position: fixed !important;
   }
 
   /* Additional z-index fixes for any overlay components */
   [data-overlay] {
-    z-index: 999995 !important;
+    z-index: 9999995 !important;
+  }
+
+  /* Next.js dev tools specific fixes */
+  .nextjs-devtools {
+    z-index: 9999999 !important;
+  }
+
+  /* Ensure any dev tool overlay is on top */
+  [class*="nextjs-"] {
+    z-index: 9999999 !important;
   }
 
   /* Z-Index utilities */
@@ -1238,6 +1224,13 @@
 }
 
 .light-theme .theme-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background:
     linear-gradient(135deg,
       #ffffff 0%,
@@ -1254,9 +1247,18 @@
     radial-gradient(circle at 80% 20%, rgba(74, 74, 255, 0.06) 0%, rgba(74, 74, 255, 0.01) 35%, transparent 50%),
     radial-gradient(circle at 40% 80%, rgba(6, 182, 212, 0.05) 0%, rgba(6, 182, 212, 0.01) 40%, transparent 50%),
     radial-gradient(circle at 60% 30%, rgba(33, 188, 255, 0.04) 0%, transparent 40%) !important;
+  z-index: -1000;
+  pointer-events: none;
 }
 
 .dark-theme .theme-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background:
     linear-gradient(135deg,
       #030712 0%,
@@ -1274,27 +1276,49 @@
     radial-gradient(circle at 75% 75%, rgba(21, 188, 255, 0.20) 0%, transparent 50%),
     radial-gradient(circle at 50% 10%, rgba(125, 211, 252, 0.15) 0%, transparent 70%),
     radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.12) 0%, transparent 60%) !important;
+  z-index: -1000;
+  pointer-events: none;
 }
 
 .orca-theme .theme-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background:
+    /* Single clean black to white gradient */
     linear-gradient(135deg,
       #000000 0%,
-      #0a0a0a 12%,
-      #171717 22%,
-      #262626 32%,
-      #404040 42%,
-      #525252 52%,
-      #737373 62%,
-      #a3a3a3 72%,
-      #d4d4d4 82%,
-      #000000 100%
-    ),
-    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.15) 0%, transparent 60%),
-    radial-gradient(circle at 75% 75%, rgba(229, 229, 229, 0.10) 0%, transparent 50%),
-    radial-gradient(circle at 50% 10%, rgba(209, 213, 219, 0.08) 0%, transparent 70%),
-    radial-gradient(circle at 20% 80%, rgba(156, 163, 175, 0.06) 0%, transparent 60%) !important;
+      #1a1a1a 20%,
+      #333333 40%,
+      #666666 60%,
+      #999999 80%,
+      #cccccc 90%,
+      #ffffff 100%
+    ) !important;
+  animation: orcaThemePulse 10s ease-in-out infinite alternate;
+  z-index: -1000;
+  pointer-events: none;
 }
+
+@keyframes orcaThemePulse {
+  0% {
+    opacity: 0.95;
+    filter: contrast(1) brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: contrast(1.2) brightness(1.1);
+  }
+  100% {
+    opacity: 0.98;
+    filter: contrast(1.1) brightness(1.05);
+  }
+}
+
 
 /* Dark mode specific noise enhancement */
 .dark-theme::before {
@@ -1310,7 +1334,7 @@
   background-repeat: repeat, repeat;
   background-size: 200px 200px, 100px 100px;
   pointer-events: none;
-  z-index: 0;
+  z-index: -999;
   mix-blend-mode: screen;
 }
 
