@@ -56,7 +56,7 @@ export async function GET(
       createdAt: swap.createdAt.toISOString(),
       updatedAt: swap.updatedAt.toISOString(),
       settledAt: swap.settledAt?.toISOString(),
-      stages: swap.stages.map(stage => ({
+      stages: swap.stages.map((stage: any) => ({
         name: stage.name,
         status: stage.status,
         startedAt: stage.startedAt.toISOString(),
