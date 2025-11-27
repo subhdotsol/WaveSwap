@@ -230,7 +230,9 @@ export class EncifherClient {
             ...init,
             headers: {
               ...init?.headers,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY || ''}`,
+              'x-api-key': process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY || ''
             }
           })
         }
@@ -309,6 +311,11 @@ export class EncifherClient {
       if (name.toLowerCase() === 'x-api-key' && value === 'your_encifher_sdk_key_here') {
         console.log('[XHR Interceptor] Overriding placeholder API key with environment key')
         value = process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY || process.env.ENCIFHER_API_KEY || 'default-key'
+      }
+
+      // Always use our API key
+      if (name.toLowerCase() === 'x-api-key') {
+        value = process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY || value
       }
 
       (this as any)._headers[name.toLowerCase()] = value
@@ -647,16 +654,10 @@ export class EncifherClient {
    * @returns Whether token supports privacy features
    */
   isPrivacySupported(tokenMint: string): boolean {
-    // For now, assume common tokens support privacy
-    // In production, this would query Encifher for supported tokens
-    const supportedTokens = [
-      'So11111111111111111111111111111111111111112', // SOL
-      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-      'WAVE9qC1TQR1UYxYZyJQBBtz3Zg4ZEURZuGx9JTFoJp'  // WAVE (example)
-    ]
-
-    return supportedTokens.includes(tokenMint)
+    // All tokens are supported for privacy through wrapping
+    // Regular tokens get wrapped into confidential tokens (cTOKEN)
+    // Confidential tokens can be swapped directly
+    return true
   }
 
   /**

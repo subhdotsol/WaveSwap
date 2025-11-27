@@ -45,6 +45,10 @@ export interface Token {
   encifherSupported?: boolean
   privacyProviders?: string[]
   minPrivateAmount?: string
+  // Confidential token properties
+  isConfidentialToken?: boolean
+  underlyingTokenAddress?: string
+  confidentialVersion?: number
 }
 
 export interface TokenWithBalance extends Token {
@@ -422,17 +426,15 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
 
     // Filter for privacy mode if needed
     if (privacyMode) {
-      console.log('[getAvailableTokens] Privacy mode filter - before filtering:', allTokens.length)
-      allTokens.forEach(token => {
-        const isSupported = token.isConfidentialSupported || COMMON_TOKENS.find(ct => ct.address === token.address)?.isConfidentialSupported
-        console.log(`[getAvailableTokens] Token ${token.symbol} (${token.address}): isConfidentialSupported=${token.isConfidentialSupported}, supported=${isSupported}`)
-      })
+      console.log('[getAvailableTokens] Privacy mode enabled - adding confidential tokens')
 
-      allTokens = allTokens.filter(token => {
-        return token.isConfidentialSupported || COMMON_TOKENS.find(ct => ct.address === token.address)?.isConfidentialSupported
-      })
+      // Create confidential versions of all tokens
+      const confidentialTokens = allTokens.map(token => createConfidentialToken(token))
 
-      console.log('[getAvailableTokens] Privacy mode filter - after filtering:', allTokens.length)
+      // Merge regular and confidential tokens
+      allTokens = [...allTokens, ...confidentialTokens]
+
+      console.log('[getAvailableTokens] Total tokens with confidential versions:', allTokens.length)
     }
 
     // Sort: Popular tokens maintain their exact order, others come after
@@ -521,9 +523,17 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
 
     let tokens = Array.from(uniqueTokens.values())
 
-    // Filter for privacy mode if needed
+    // Add confidential tokens for privacy mode
     if (privacyMode) {
-      tokens = tokens.filter(t => t.isConfidentialSupported)
+      console.log('[getAvailableTokens] Privacy mode enabled - adding confidential tokens (fallback)')
+
+      // Create confidential versions of all tokens
+      const confidentialTokens = tokens.map(token => createConfidentialToken(token))
+
+      // Merge regular and confidential tokens
+      tokens = [...tokens, ...confidentialTokens]
+
+      console.log('[getAvailableTokens] Total tokens with confidential versions (fallback):', tokens.length)
     }
 
     // Sort: Popular tokens first, then others
@@ -577,4 +587,103 @@ export interface WaveSwapError {
   details?: any
   action?: string
   recoverable: boolean
+}
+
+/**
+ * Confidential Token Utilities
+ */
+
+/**
+ * Generate confidential token address from regular token address
+ * Uses a deterministic mapping: adds 'c' prefix to the address
+ */
+export function generateConfidentialTokenAddress(tokenAddress: string): string {
+  return 'c' + tokenAddress
+}
+
+/**
+ * Extract underlying token address from confidential token address
+ */
+export function extractUnderlyingTokenAddress(confidentialAddress: string): string {
+  if (confidentialAddress.startsWith('c')) {
+    return confidentialAddress.substring(1)
+  }
+  return confidentialAddress
+}
+
+/**
+ * Check if a token address is a confidential token
+ */
+export function isConfidentialTokenAddress(tokenAddress: string): boolean {
+  return tokenAddress.startsWith('c')
+}
+
+/**
+ * Generate confidential token symbol from regular token symbol
+ */
+export function generateConfidentialTokenSymbol(symbol: string): string {
+  return 'c' + symbol
+}
+
+/**
+ * Extract underlying token symbol from confidential token symbol
+ */
+export function extractUnderlyingTokenSymbol(confidentialSymbol: string): string {
+  if (confidentialSymbol.startsWith('c')) {
+    return confidentialSymbol.substring(1)
+  }
+  return confidentialSymbol
+}
+
+/**
+ * Check if a token symbol is a confidential token
+ */
+export function isConfidentialTokenSymbol(symbol: string): boolean {
+  return symbol.startsWith('c')
+}
+
+/**
+ * Create confidential token version from regular token
+ */
+export function createConfidentialToken(token: Token): Token {
+  return {
+    ...token,
+    address: generateConfidentialTokenAddress(token.address),
+    symbol: generateConfidentialTokenSymbol(token.symbol),
+    name: `Confidential ${token.name}`,
+    tags: [...token.tags, 'confidential', 'wrapped'],
+    isConfidentialSupported: true,
+    isConfidentialToken: true,
+    underlyingTokenAddress: token.address,
+    confidentialVersion: 1,
+    // Confidential tokens are not directly addressable
+    addressable: false,
+    // Inherit privacy support from underlying token
+    encifherSupported: true,
+    privacyProviders: ['encifher'],
+    minPrivateAmount: token.minPrivateAmount || '0.001'
+  }
+}
+
+/**
+ * Get underlying token from confidential token
+ */
+export function getUnderlyingToken(confidentialToken: Token): Token | null {
+  if (!confidentialToken.underlyingTokenAddress) {
+    return null
+  }
+
+  return {
+    ...confidentialToken,
+    address: confidentialToken.underlyingTokenAddress,
+    symbol: extractUnderlyingTokenSymbol(confidentialToken.symbol),
+    name: confidentialToken.name.replace('Confidential ', ''),
+    tags: confidentialToken.tags.filter(tag => tag !== 'confidential' && tag !== 'wrapped'),
+    isConfidentialSupported: false,
+    isConfidentialToken: false,
+    underlyingTokenAddress: undefined,
+    confidentialVersion: undefined,
+    // Regular tokens are addressable
+    addressable: true
+  }
 }

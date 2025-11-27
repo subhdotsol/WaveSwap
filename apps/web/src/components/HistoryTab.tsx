@@ -117,7 +117,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-4xl sm:max-w-5xl lg:max-w-6xl mx-auto px-2 xs:px-0">
       {/* Header */}
       <div
         className="relative p-6 rounded-2xl mb-6 overflow-hidden"

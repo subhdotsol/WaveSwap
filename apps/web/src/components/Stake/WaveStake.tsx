@@ -168,7 +168,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-6">
+    <div className="w-full max-w-lg sm:max-w-xl mx-auto px-2 xs:px-0 space-y-4 sm:space-y-6">
       {/* Pool Selector */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -665,7 +665,7 @@ function StakeModal({
 
       {/* Modal Content */}
       <div
-        className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden"
         style={{
           background: `
             linear-gradient(135deg,
@@ -838,7 +838,7 @@ function SecureBagModal({
 
       {/* Modal Content */}
       <div
-        className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden"
         style={{
           background: `
             linear-gradient(135deg,

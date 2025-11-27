@@ -218,21 +218,38 @@ export function TokenSelector({
                 />
               </div>
               <div className="flex flex-col items-start">
-                <span
-                  className="font-bold tracking-wide"
-                  style={{
-                    fontFamily: 'var(--font-helvetica)',
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.01em',
-                    color: theme.name === 'light' ? theme.colors.textPrimary : 'rgba(255, 255, 255, 0.95)',
-                    textShadow: theme.name === 'light'
-                      ? '0 1px 2px rgba(0, 0, 0, 0.1)'
-                      : '0 0 10px rgba(33, 188, 255, 0.3)'
-                  }}
-                >
-                  {currentToken.symbol}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="font-bold tracking-wide"
+                    style={{
+                      fontFamily: 'var(--font-helvetica)',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      letterSpacing: '0.01em',
+                      color: theme.name === 'light' ? theme.colors.textPrimary : 'rgba(255, 255, 255, 0.95)',
+                      textShadow: theme.name === 'light'
+                        ? '0 1px 2px rgba(0, 0, 0, 0.1)'
+                        : '0 0 10px rgba(33, 188, 255, 0.3)'
+                    }}
+                  >
+                    {currentToken.symbol}
+                  </span>
+                  {currentToken.isConfidentialToken && (
+                    <div
+                      className="px-1.5 py-0.5 rounded text-xs font-medium"
+                      style={{
+                        background: `${theme.colors.success}20`,
+                        color: theme.colors.success,
+                        border: `1px solid ${theme.colors.success}40`,
+                        fontFamily: 'var(--font-jetbrains), monospace',
+                        fontSize: '0.65rem',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      PRIVATE
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -576,6 +593,22 @@ function TokenListItem({ token, balance, onSelect, isSelected, isPopularToken = 
             >
               {token.symbol}
             </span>
+            {/* Confidential token badge */}
+            {token.isConfidentialToken && (
+              <div
+                className="px-1.5 py-0.5 rounded text-xs font-medium"
+                style={{
+                  background: `${theme.colors.success}20`,
+                  color: theme.colors.success,
+                  border: `1px solid ${theme.colors.success}40`,
+                  fontFamily: 'var(--font-jetbrains), monospace',
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                PRIVATE
+              </div>
+            )}
             {/* Popular token badge */}
             {isPopularToken && (
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full border" style={{

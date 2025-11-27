@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     // Add API key if available
     if (encifherKey && encifherKey !== 'your-api-key-here') {
       headers['Authorization'] = `Bearer ${encifherKey}`
+      headers['x-api-key'] = encifherKey
       console.log('[Encifher Prepare Wrap API] Using API key for authentication')
     } else {
       console.log('[Encifher Prepare Wrap API] No API key configured, using default')

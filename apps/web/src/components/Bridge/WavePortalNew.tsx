@@ -527,10 +527,10 @@ const handleBridge = async () => {
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-lg sm:max-w-xl mx-auto px-2 xs:px-0">
       {/* Enhanced Chain Selector */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
           {/* From Chain */}
           <div className="flex-1">
             <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.textSecondary }}>
@@ -544,7 +544,7 @@ const handleBridge = async () => {
                   key={chain.id}
                   onClick={() => !isDisabled && handleChainSelect('from', chain.id)}
                   disabled={isDisabled}
-                  className={`p-3 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                  className={`p-2 sm:p-3 rounded-xl border-2 transition-all hover:scale-[1.02] ${
                     fromChain === chain.id
                       ? 'ring-2 ring-blue-500/20 shadow-lg'
                       : isDisabled
@@ -745,7 +745,7 @@ const handleBridge = async () => {
                   key={chain.id}
                   onClick={() => !isDisabled && handleChainSelect('to', chain.id)}
                   disabled={isDisabled}
-                  className={`p-3 rounded-xl border-2 transition-all hover:scale-[1.02] ${
+                  className={`p-2 sm:p-3 rounded-xl border-2 transition-all hover:scale-[1.02] ${
                     toChain === chain.id
                       ? 'ring-2 ring-blue-500/20 shadow-lg'
                       : isDisabled

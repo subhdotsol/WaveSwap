@@ -216,7 +216,7 @@ export function Footer() {
                     fontFamily: 'var(--font-jetbrains), monospace'
                   }}
                 >
-                  © 2024 WaveSwap. All rights reserved.
+                  © 2025 Wavetek. All rights reserved.
                 </span>
               </div>
             </div>

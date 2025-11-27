@@ -170,41 +170,53 @@ export function AppTabs() {
               mixBlendMode: theme.name === 'light' ? 'soft-light' : 'overlay'
             }}
           />
-          <div className="container mx-auto px-4 sm:px-6 py-4 relative z-10">
+          <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 relative z-10">
             <div className="flex items-center justify-between">
-              {/* Logo */}
-              <div className="flex items-center gap-3">
+              {/* Logo - Optimized for all screens */}
+              <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
                 <div className="relative">
                   <img
                     src={theme.name === 'orca' ? '/wave-orca.png' : '/wave0.png'}
                     alt="WaveSwap Logo"
-                    className="w-10 h-10 rounded-xl shadow-lg"
+                    className="w-6 h-6 xs:w-7 xs:h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 rounded-xl shadow-lg transition-all duration-200"
                   />
                 </div>
-                <div>
+                <div className="hidden xs:block">
                   <h1
-                    className="text-xl font-bold italic font-work-sans"
+                    className="text-sm xs:text-base sm:text-lg md:text-xl font-bold italic font-work-sans"
                     style={{ color: theme.colors.textPrimary }}
                   >
                     WAVETEK
                   </h1>
                   <p
-                    className="text-xs"
+                    className="text-xs hidden md:block"
                     style={{ color: theme.colors.textMuted }}
                   >
                     Private. Secure. Fast.
                   </p>
                 </div>
+                {/* Mobile logo fallback - just WAVETEK */}
+                <div className="xs:hidden">
+                  <h1
+                    className="text-sm font-bold italic font-work-sans"
+                    style={{ color: theme.colors.textPrimary }}
+                  >
+                    WAVETEK
+                  </h1>
+                </div>
               </div>
 
-              {/* Right side controls */}
-              <div className="flex items-center gap-2 sm:gap-4">
-                <NetworkSelector />
+              {/* Right side controls - Responsive layout */}
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+                {/* Network Selector - Hide on small mobile */}
+                <div className="hidden sm:block">
+                  <NetworkSelector />
+                </div>
 
-                {/* Privacy Mode Toggle */}
+                {/* Privacy Mode Toggle - Compact on mobile */}
                 <div className="flex items-center">
                   <div
-                    className="relative flex items-center gap-2 px-3 py-2 rounded-xl border overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                    className="relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border overflow-hidden transition-all duration-300 hover:scale-[1.02]"
                     style={{
                       ...createGlassStyles(theme),
                       borderColor: privacyMode ? `${theme.colors.success}30` : `${theme.colors.primary}10`,
@@ -224,9 +236,9 @@ export function AppTabs() {
                       }}
                     />
 
-                    <div className="relative z-10 flex items-center gap-2">
+                    <div className="relative z-10 flex items-center gap-1 sm:gap-2">
                       <SparklesIcon
-                        className="h-4 w-4 transition-all duration-300"
+                        className="h-3 w-3 sm:h-4 sm:w-4 transition-all duration-300"
                         style={{
                           color: privacyMode ? theme.colors.success : theme.colors.primary,
                           filter: privacyMode
@@ -248,7 +260,7 @@ export function AppTabs() {
                       <Switch
                         checked={privacyMode}
                         onChange={setPrivacyMode}
-                        className="relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent z-10"
+                        className="relative inline-flex h-3 w-5 sm:h-4 sm:w-7 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent z-10"
                         style={{
                           backgroundColor: privacyMode ? `${theme.colors.success}80` : `${theme.colors.error}80`,
                           boxShadow: privacyMode
@@ -258,7 +270,7 @@ export function AppTabs() {
                       >
                         <span className="sr-only">Toggle privacy mode</span>
                         <span
-                          className={`inline-block h-2 w-2 transform rounded-full bg-white transition-all duration-300 ${privacyMode ? 'translate-x-4' : 'translate-x-0.5'}`}
+                          className={`inline-block h-1.5 w-1.5 sm:h-2 sm:w-2 transform rounded-full bg-white transition-all duration-300 ${privacyMode ? 'translate-x-3 sm:translate-x-4' : 'translate-x-0.5'}`}
                           style={{
                             boxShadow: privacyMode
                               ? `0 2px 4px rgba(0, 0, 0, 0.2), 0 0 8px ${theme.colors.success}30`
@@ -283,8 +295,13 @@ export function AppTabs() {
 
                 <Settings />
 
-                {/* Solana Wallet Connect Button */}
-                <div className="hidden lg:block">
+                {/* Solana Wallet Connect Button - Show on larger screens */}
+                <div className="hidden md:block">
+                  <CleanWalletButton />
+                </div>
+
+                {/* Mobile wallet button - smaller version */}
+                <div className="md:hidden">
                   <CleanWalletButton />
                 </div>
               </div>
@@ -293,10 +310,10 @@ export function AppTabs() {
         </header>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <div className="w-full max-w-5xl mx-auto">
+        <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
+          <div className="w-full max-w-6xl mx-auto">
             {/* Tab Navigation with constrained width */}
-            <div className="w-full max-w-xl mx-auto mb-8">
+            <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto mb-6 sm:mb-8">
               <Tabs
                 tabs={tabs}
                 defaultTab="swap"

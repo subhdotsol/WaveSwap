@@ -68,7 +68,7 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
   return (
     <div className={`w-full ${className}`}>
       <div
-        className="relative flex items-center justify-center p-1 rounded-2xl overflow-hidden"
+        className="relative flex items-center justify-center p-1 rounded-2xl overflow-hidden flex-wrap sm:flex-nowrap gap-1 sm:gap-0"
         style={{
           ...createGlassStyles(theme),
           border: `1px solid ${theme.colors.primary}10`,
@@ -107,8 +107,8 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
               onClick={() => !isDisabled && handleTabChange(tab.id)}
               onKeyDown={(e) => !isDisabled && handleKeyDown(e, tab.id)}
               className={`
-                relative flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm z-10
-                transition-all duration-300 ease-out
+                relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl font-medium text-xs sm:text-sm z-10
+                transition-all duration-300 ease-out flex-1 sm:flex-initial justify-center min-w-0
                 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:ring-offset-2 focus:ring-offset-transparent
                 hover:scale-[1.02] active:scale-[0.98]
               `}
@@ -156,12 +156,29 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
                 </span>
               )}
 
-              <span style={{
-                color: isSelected ? theme.colors.textPrimary : theme.colors.textSecondary,
-                textShadow: isSelected ? `0 0 10px ${theme.colors.primary}30` : 'none',
-                fontWeight: isSelected ? 600 : 500
-              }}>
+              <span
+                className="hidden sm:inline"
+                style={{
+                  color: isSelected ? theme.colors.textPrimary : theme.colors.textSecondary,
+                  textShadow: isSelected ? `0 0 10px ${theme.colors.primary}30` : 'none',
+                  fontWeight: isSelected ? 600 : 500
+                }}>
                 {tab.label}
+              </span>
+
+              {/* Mobile-only abbreviated label */}
+              <span
+                className="sm:hidden"
+                style={{
+                  color: isSelected ? theme.colors.textPrimary : theme.colors.textSecondary,
+                  textShadow: isSelected ? `0 0 10px ${theme.colors.primary}30` : 'none',
+                  fontWeight: isSelected ? 600 : 500,
+                  fontSize: '0.7rem'
+                }}>
+                {tab.label === 'WaveSwap' ? 'SWAP' :
+                 tab.label === 'WavePortal' ? 'BRIDGE' :
+                 tab.label === 'WaveStake' ? 'STAKE' :
+                 tab.label}
               </span>
 
               {/* Selected indicator glow */}

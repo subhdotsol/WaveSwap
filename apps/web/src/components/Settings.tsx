@@ -108,7 +108,7 @@ export function Settings() {
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-            className="absolute right-0 top-full mt-2 w-96 rounded-2xl overflow-hidden"
+            className="absolute right-0 top-full mt-2 w-72 xs:w-80 sm:w-96 max-w-[calc(100vw-1rem)] xs:max-w-[calc(100vw-1.5rem)] sm:max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden"
             style={{
               background: themeConfig.name === 'light'
                 ? `
@@ -148,27 +148,31 @@ export function Settings() {
               border: themeConfig.name === 'light'
                 ? `1px solid ${themeConfig.colors.border}`
                 : `1px solid ${themeConfig.colors.primary}20`,
-              backdropFilter: 'blur(24px) saturate(1.8) contrast(1.05)',
-              WebkitBackdropFilter: 'blur(24px) saturate(1.8) contrast(1.05)', // Safari support
+              backdropFilter: 'blur(32px) saturate(1.8) contrast(1.05) brightness(1.02)',
+              WebkitBackdropFilter: 'blur(32px) saturate(1.8) contrast(1.05) brightness(1.02)', // Safari support
               boxShadow: themeConfig.name === 'light'
                 ? `
-                  0 20px 50px ${themeConfig.colors.shadowLight},
-                  0 8px 24px ${themeConfig.colors.primary}15,
-                  inset 0 1px 0 rgba(255, 255, 255, 0.4),
-                  inset 0 -1px 0 ${themeConfig.colors.shadow},
-                  0 0 0 1px ${themeConfig.colors.primary}10
+                  0 25px 60px ${themeConfig.colors.shadowLight}40,
+                  0 12px 32px ${themeConfig.colors.primary}20,
+                  0 6px 16px ${themeConfig.colors.shadow}30,
+                  inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                  inset 0 -1px 0 ${themeConfig.colors.shadow}20,
+                  0 0 0 1px ${themeConfig.colors.primary}15,
+                  0 0 20px ${themeConfig.colors.primary}10
                 `
                 : `
-                  0 25px 70px ${themeConfig.colors.shadow},
-                  0 12px 32px ${themeConfig.colors.primary}20,
-                  0 8px 24px ${themeConfig.colors.shadow},
-                  inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                  inset 0 -1px 0 ${themeConfig.colors.shadow},
-                  0 0 0 1px ${themeConfig.colors.primary}15
+                  0 30px 80px ${themeConfig.colors.shadow}60,
+                  0 15px 40px ${themeConfig.colors.primary}25,
+                  0 8px 24px ${themeConfig.colors.shadow}40,
+                  inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                  inset 0 -1px 0 ${themeConfig.colors.shadow}30,
+                  0 0 0 1px ${themeConfig.colors.primary}20,
+                  0 0 30px ${themeConfig.colors.primary}15
                 `,
               zIndex: 50,
               transform: 'translateZ(0)', // Enable hardware acceleration
-              willChange: 'backdrop-filter, transform' // Optimize animations
+              willChange: 'backdrop-filter, transform', // Optimize animations
+              animation: 'slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s 1 normal none forwards'
             }}
           >
           {/* Noise grain overlay */}
@@ -181,7 +185,7 @@ export function Settings() {
           />
 
           {/* Header */}
-          <div className="relative z-10 p-4" style={{
+          <div className="relative z-10 p-3 xs:p-4" style={{
             background: `linear-gradient(135deg, ${themeConfig.colors.primary}15 0%, ${themeConfig.colors.primary}08 50%, ${themeConfig.colors.primary}15 100%)`,
             borderBottom: `1px solid ${themeConfig.colors.border}50`,
             backdropFilter: 'blur(12px) saturate(1.5)'
@@ -206,7 +210,7 @@ export function Settings() {
           </div>
 
           {/* Settings Content */}
-          <div className="relative z-10 p-4 space-y-6 max-h-96 overflow-y-auto">
+          <div className="relative z-10 p-3 xs:p-4 space-y-4 xs:space-y-6 max-h-80 xs:max-h-96 overflow-y-auto">
             {/* Trading Preferences */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-3">
@@ -264,10 +268,10 @@ export function Settings() {
               </div>
 
               {/* Theme Options */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5 xs:gap-2">
                 <button
                   onClick={setLightTheme}
-                  className={`relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
+                  className={`relative flex flex-col items-center gap-1.5 xs:gap-2 p-2 xs:p-3 rounded-xl transition-all duration-200 ${
                     theme === 'light' ? '' : ''
                   }`}
                   style={{
@@ -306,7 +310,7 @@ export function Settings() {
 
                 <button
                   onClick={setDarkTheme}
-                  className={`relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
+                  className={`relative flex flex-col items-center gap-1.5 xs:gap-2 p-2 xs:p-3 rounded-xl transition-all duration-200 ${
                     theme === 'dark' ? '' : ''
                   }`}
                   style={{
@@ -345,7 +349,7 @@ export function Settings() {
 
                 <button
                   onClick={setOrcaTheme}
-                  className={`relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 ${
+                  className={`relative flex flex-col items-center gap-1.5 xs:gap-2 p-2 xs:p-3 rounded-xl transition-all duration-200 ${
                     theme === 'orca' ? '' : ''
                   }`}
                   style={{
@@ -397,7 +401,7 @@ export function Settings() {
               </div>
 
               {/* Slippage */}
-              <div className="p-3 rounded-xl" style={{
+              <div className="p-2 xs:p-3 rounded-xl" style={{
                 background: `${themeConfig.colors.primary}08`,
                 border: `1px solid ${themeConfig.colors.primary}15`
               }}>
@@ -428,7 +432,7 @@ export function Settings() {
               </div>
 
               {/* Deadline */}
-              <div className="p-3 rounded-xl" style={{
+              <div className="p-2 xs:p-3 rounded-xl" style={{
                 background: `${themeConfig.colors.primary}08`,
                 border: `1px solid ${themeConfig.colors.primary}15`
               }}>

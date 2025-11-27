@@ -172,9 +172,9 @@ export function CleanWalletButton() {
 
         // Change text and icon colors to primary color on hover
         if (!publicKey) {
-          const textElement = e.currentTarget.querySelector('span')
-          const iconElement = e.currentTarget.querySelector('svg:not(.chevron-down)')
-          const chevronElement = e.currentTarget.querySelector('.chevron-down')
+          const textElement = e.currentTarget.querySelector('span') as HTMLElement
+          const iconElement = e.currentTarget.querySelector('svg:not(.chevron-down)') as HTMLElement
+          const chevronElement = e.currentTarget.querySelector('.chevron-down') as HTMLElement
 
           if (textElement) {
             textElement.style.color = theme.colors.primary
@@ -217,9 +217,9 @@ export function CleanWalletButton() {
 
         // Reset text and icon colors to original values
         if (!publicKey) {
-          const textElement = e.currentTarget.querySelector('span')
-          const iconElement = e.currentTarget.querySelector('svg:not(.chevron-down)')
-          const chevronElement = e.currentTarget.querySelector('.chevron-down')
+          const textElement = e.currentTarget.querySelector('span') as HTMLElement
+          const iconElement = e.currentTarget.querySelector('svg:not(.chevron-down)') as HTMLElement
+          const chevronElement = e.currentTarget.querySelector('.chevron-down') as HTMLElement
 
           if (textElement) {
             textElement.style.color = theme.name === 'light' ? '#ffffff' : theme.colors.textMuted

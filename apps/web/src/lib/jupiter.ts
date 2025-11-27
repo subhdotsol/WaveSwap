@@ -202,9 +202,11 @@ export class JupiterAPI {
         if (!response.ok) {
           const errorText = await response.text()
           console.error('[Jupiter REST API] Error response:', {
+            url: url.toString(),
             status: response.status,
             statusText: response.statusText,
-            body: errorText
+            body: errorText || 'No response body',
+            headers: Object.fromEntries(response.headers.entries())
           })
 
           // Don't retry on client errors (4xx), only on server errors (5xx)
@@ -275,6 +277,19 @@ export class JupiterAPI {
    */
   async getSwapTransaction(params: JupiterSwapParams): Promise<JupiterSwapResponse> {
     try {
+      // Validate quote response before making the request
+      if (!params.quoteResponse) {
+        throw new Error('Quote response is required')
+      }
+
+      if (!params.quoteResponse.inputMint || !params.quoteResponse.outputMint) {
+        throw new Error('Invalid quote: missing token addresses')
+      }
+
+      if (!params.quoteResponse.inAmount || !params.quoteResponse.outAmount) {
+        throw new Error('Invalid quote: missing amounts')
+      }
+
       const url = new URL('https://lite-api.jup.ag/swap/v1/swap')
 
       const requestBody = {
@@ -306,11 +321,25 @@ export class JupiterAPI {
       if (!response.ok) {
         const errorText = await response.text()
         console.error('[Jupiter REST API] Swap execution error:', {
+          url: url.toString(),
           status: response.status,
           statusText: response.statusText,
-          body: errorText
+          body: errorText || 'No response body',
+          headers: Object.fromEntries(response.headers.entries()),
+          requestBody: {
+            inputMint: params.quoteResponse.inputMint,
+            outputMint: params.quoteResponse.outputMint,
+            userPublicKey: params.userPublicKey
+          }
         })
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+
+        // Provide more specific error messages
+        if (response.status === 400) {
+          throw new Error(`Invalid swap request: ${errorText || 'Invalid parameters'}`)
+        } else if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again in a few moments.')
+        }
+        throw new Error(`Jupiter API error (${response.status}): ${response.statusText}`)
       }
 
       const swapResult = await response.json()

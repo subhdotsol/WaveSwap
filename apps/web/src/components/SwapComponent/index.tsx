@@ -303,7 +303,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
   const displayOutputTokenConfidential = getConfidentialToken(displayOutputToken)
 
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-lg sm:max-w-xl mx-auto px-2 xs:px-0">
       {/* Swap Card */}
       <div className="relative">
         {/* Privacy Mode Indicator */}
@@ -332,7 +332,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
 
         {/* Main Swap Card */}
         <div
-          className="relative p-6 space-y-6 w-full rounded-2xl overflow-hidden"
+          className="relative p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 md:space-y-6 w-full rounded-2xl overflow-hidden"
           style={{
             background: `
               linear-gradient(135deg,
@@ -418,15 +418,15 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
           )}
 
         {/* You Send Section */}
-        <div className="relative z-10 space-y-3">
+        <div className="relative z-10 space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
             <label
-              className="text-sm font-bold tracking-wide"
+              className="text-xs sm:text-sm font-bold tracking-wide"
               style={{ color: theme.colors.textSecondary }}
             >
               You Send
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {publicKey && safeInputToken && (
                 <div className="flex items-center gap-1">
                   {[
@@ -449,7 +449,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                         }
                         clearQuote()
                       }}
-                      className="text-xs font-medium transition-all duration-200 px-2 py-1 rounded-md hover:scale-105 active:scale-95"
+                      className="text-xs font-medium transition-all duration-200 px-1.5 sm:px-2 py-1 rounded-md hover:scale-105 active:scale-95"
                       style={{
                         color: label === 'MAX' ? theme.colors.success : theme.colors.primary,
                         backgroundColor: label === 'MAX' ? `${theme.colors.success}08` : `${theme.colors.primary}05`,
@@ -487,14 +487,14 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
           </div>
 
           <div className="relative">
-            <div className="flex gap-3 items-stretch">
+            <div className="flex gap-2 sm:gap-3 items-stretch">
               <div className="flex-1 min-w-0">
                 <AmountInput
                   value={inputAmount}
                   onChange={handleInputChange}
                   disabled={isLoading || isProgressActive}
                   placeholder="0.00"
-                  className="text-xl font-bold"
+                  className="text-lg sm:text-xl font-bold"
                 />
                 {/* Fiat conversion display */}
                 {inputAmount && safeInputToken && (
@@ -577,7 +577,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
           </div>
 
           <div className="relative">
-            <div className="flex gap-3 items-stretch">
+            <div className="flex gap-2 sm:gap-3 items-stretch">
               <div className="flex-1 min-w-0">
                 <AmountInput
                   value={outputAmount}
@@ -585,7 +585,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                   disabled={true}
                   placeholder="0.00"
                   readOnly={true}
-                  className="text-xl font-bold opacity-75"
+                  className="text-lg sm:text-xl font-bold opacity-75"
                 />
                 {/* Fiat conversion display */}
                 {outputAmount && safeOutputToken && (
@@ -862,7 +862,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         )}
 
         {/* Swap Button */}
-        <div className="w-full">
+        <div className="w-full mt-4 sm:mt-6">
           <SwapButton
             inputAmount={inputAmount}
             inputToken={safeInputToken}
