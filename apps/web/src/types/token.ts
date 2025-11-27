@@ -390,7 +390,7 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
       decimals: jupiterToken.decimals || 9,
       name: jupiterToken.name || 'Unknown',
       symbol: jupiterToken.symbol || 'UNKNOWN',
-      logoURI: jupiterToken.icon, // Use Jupiter API icon only - no hardcoded fallbacks
+      logoURI: jupiterToken.icon || 'https://ui-avatars.com/api/?name=' + (jupiterToken.symbol || 'UNKNOWN') + '&background=14F195&color=fff', // Use Jupiter API icon with fallback
       tags: jupiterToken.tags || [],
       isConfidentialSupported: false, // Will be determined by privacy mode
       isNative: jupiterToken.id === 'So11111111111111111111111111111111111111112',
@@ -433,7 +433,7 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
           decimals: commonToken?.decimals || 9,
           name: commonToken?.name || todoToken.name,
           symbol: commonToken?.symbol || todoToken.symbol,
-          logoURI: null, // Let TokenIcon component handle fallback
+          logoURI: 'https://ui-avatars.com/api/?name=' + todoToken.symbol + '&background=14F195&color=fff', // Fallback
           tags: commonToken?.tags || [],
           isConfidentialSupported: commonToken?.isConfidentialSupported || false,
           isNative: todoToken.address === 'So11111111111111111111111111111111111111112',

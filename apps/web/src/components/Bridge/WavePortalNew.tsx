@@ -771,7 +771,6 @@ const handleBridge = async () => {
               selectedToken={fromToken || null}
               onTokenChange={setFromToken}
               tokens={getAvailableFromTokens()}
-              privacyMode={privacyMode}
             />
 
             <div
@@ -842,7 +841,6 @@ const handleBridge = async () => {
             selectedToken={toToken || null}
             onTokenChange={setToToken}
             tokens={getAvailableToTokens()}
-            privacyMode={privacyMode}
           />
         </div>
 

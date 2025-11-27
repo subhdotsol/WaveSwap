@@ -94,7 +94,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         decimals: 9,
         name: 'Solana',
         symbol: 'SOL',
-        logoURI: null, // Let TokenIcon component handle fallback
+        logoURI: 'https://ui-avatars.com/api/?name=SOL&background=14F195&color=fff', // SOL fallback
         tags: ['native', 'solana'],
         isConfidentialSupported: true,
         isNative: true,
@@ -107,7 +107,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         decimals: 9,
         name: 'Wave',
         symbol: 'WAVE',
-        logoURI: null, // Let TokenIcon component handle fallback
+        logoURI: 'https://ui-avatars.com/api/?name=WAVE&background=14F195&color=fff', // WAVE fallback
         tags: ['defi', 'dex'],
         isConfidentialSupported: false,
         isNative: false,

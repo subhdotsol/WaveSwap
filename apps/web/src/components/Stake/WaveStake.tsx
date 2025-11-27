@@ -209,13 +209,15 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div
-                  className="ring-2 rounded-full overflow-hidden"
-                  style={{ ringColor: theme.colors.border }}
+                  className="rounded-full overflow-hidden p-[2px]"
+                  style={{
+                    background: `linear-gradient(${theme.colors.border}, ${theme.colors.border})`
+                  }}
                 >
                   <TokenIcon
                     symbol={currentPool?.symbol || 'WAVE'}
                     mint={currentPool?.mintAddress || '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump'}
-                    logoURI={getJupiterIconUrl(currentPool?.symbol || 'WAVE')}
+                    logoURI={getJupiterIconUrl(currentPool?.symbol || 'WAVE') || undefined}
                     size={40}
                   />
                 </div>
@@ -301,22 +303,24 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                     background: selectedPool === pool.id
                       ? `${theme.colors.primary}15`
                       : 'transparent',
-                    borderBottom: pool.id === stakePools[stakePools.length - 1].id
+                    borderBottom: stakePools.length > 0 && pool.id === stakePools.at(-1)?.id
                       ? 'none'
                       : `1px solid ${theme.colors.borderLight}`
                   }}
                 >
                   <div className="relative">
                     <div
-                      className="ring-2 rounded-full overflow-hidden"
+                      className="rounded-full overflow-hidden p-[2px]"
                       style={{
-                        ringColor: selectedPool === pool.id ? theme.colors.primary : theme.colors.borderLight
+                        background: selectedPool === pool.id
+                          ? `linear-gradient(${theme.colors.primary}, ${theme.colors.primary})`
+                          : `linear-gradient(${theme.colors.borderLight}, ${theme.colors.borderLight})`
                       }}
                     >
                       <TokenIcon
                         symbol={pool.symbol}
                         mint={pool.mintAddress}
-                        logoURI={getJupiterIconUrl(pool.symbol)}
+                        logoURI={getJupiterIconUrl(pool.symbol) || undefined}
                         size={36}
                       />
                     </div>
@@ -421,7 +425,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                 <TokenIcon
                   symbol={currentPool.symbol}
                   mint={currentPool.mintAddress}
-                  logoURI={getJupiterIconUrl(currentPool.symbol)}
+                  logoURI={getJupiterIconUrl(currentPool.symbol) || undefined}
                   size={40}
                 />
                 <div>
@@ -753,7 +757,7 @@ function StakeModal({
                   <TokenIcon
                     symbol={pool.symbol}
                     mint={pool.mintAddress}
-                    logoURI={getJupiterIconUrl(pool.symbol)}
+                    logoURI={getJupiterIconUrl(pool.symbol) || undefined}
                     size={24}
                   />
                   <span className="font-bold" style={{ color: theme.colors.textPrimary }}>
@@ -919,7 +923,7 @@ function SecureBagModal({
                 <TokenIcon
                   symbol={pool.symbol}
                   mint={pool.mintAddress}
-                  logoURI={getJupiterIconUrl(pool.symbol)}
+                  logoURI={getJupiterIconUrl(pool.symbol) || undefined}
                   size={24}
                 />
                 <span className="font-bold" style={{ color: theme.colors.textPrimary }}>

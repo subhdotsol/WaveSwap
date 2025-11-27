@@ -520,8 +520,6 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                   onTokenChange={handleInputTokenChange}
                   tokens={optimizedTokens}
                   disabled={isLoading || isProgressActive}
-                  privacyMode={false} // Input should never show confidential symbols
-                  showConfidentialIndicator={false}
                   balances={balances}
                 />
               </div>
@@ -598,8 +596,6 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                   onTokenChange={handleOutputTokenChange}
                   tokens={optimizedTokens}
                   disabled={isLoading || isProgressActive}
-                  privacyMode={privacyMode}
-                  showConfidentialIndicator={true}
                   balances={balances}
                 />
               </div>

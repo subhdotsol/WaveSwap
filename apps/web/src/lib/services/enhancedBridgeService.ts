@@ -221,9 +221,9 @@ export class EnhancedBridgeService {
     try {
       // Get token icons from Jupiter API
       const jupiterTokens = await JupiterTokenService.searchTokens('USDC')
-      const usdcToken = jupiterTokens.find(t => t.address === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
+      const usdcToken = jupiterTokens.find(t => t.id === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
       const usdtTokens = await JupiterTokenService.searchTokens('USDT')
-      const usdtToken = usdtTokens.find(t => t.address === 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB')
+      const usdtToken = usdtTokens.find(t => t.id === 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB')
 
       return [
         {

@@ -49,7 +49,7 @@ export function TokenSelector({
     decimals: jupiterToken.decimals,
     name: jupiterToken.name,
     symbol: jupiterToken.symbol,
-    logoURI: jupiterToken.icon, // Use Jupiter API icon directly - no hardcoded fallbacks
+    logoURI: jupiterToken.icon || 'https://ui-avatars.com/api/?name=' + jupiterToken.symbol + '&background=14F195&color=fff', // Use Jupiter API icon with fallback
     tags: jupiterToken.tags,
     isConfidentialSupported: false,
     isNative: jupiterToken.id === 'So11111111111111111111111111111111111111112',

@@ -349,10 +349,10 @@ const DEFAULT_TOKENS_METADATA = [
   },
 ]
 
-// Default tokens - logoURI set to null to force TokenIcon component fallbacks
+// Default tokens - logoURI set to fallback URL
 export const DEFAULT_TOKENS: Token[] = DEFAULT_TOKENS_METADATA.map(token => ({
   ...token,
-  logoURI: null // Let TokenIcon component handle fallbacks
+  logoURI: 'https://ui-avatars.com/api/?name=' + token.symbol + '&background=14F195&color=fff' // Fallback
 }))
 
 
