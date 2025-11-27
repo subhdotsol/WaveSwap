@@ -535,10 +535,10 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         <div className="flex justify-center -my-2 z-10">
           <button
             onClick={handleTokenSwitch}
-            className="p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 border"
+            className="p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
             style={{
               ...createGlassStyles(theme),
-              borderColor: theme.colors.border
+              border: '1px solid ' + theme.colors.border
             }}
             disabled={isLoading || isProgressActive}
           >
@@ -795,7 +795,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
             className="flex items-start gap-3 p-4 rounded-xl"
             style={{
               ...createGlassStyles(theme),
-              borderColor: error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}30` : `${theme.colors.error}30`,
+              border: '1px solid ' + (error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}30` : `${theme.colors.error}30`),
               backgroundColor: error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}05` : `${theme.colors.error}05`
             }}
           >

@@ -285,9 +285,7 @@ export function StarknetWalletModal({ isOpen, onClose, onSuccess }: StarknetWall
               className="w-full flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 ...createGlassStyles(theme),
-                borderColor: theme.colors.border,
-                borderWidth: '1px',
-                borderStyle: 'solid'
+                border: '1px solid ' + theme.colors.border
               }}
             >
               {/* Wallet Icon */}

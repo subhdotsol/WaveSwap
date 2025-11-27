@@ -557,7 +557,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                         background: `
                           linear-gradient(135deg,
                             ${theme.colors.success} 0%,
-                            ${theme.name === 'orca' ? '#00cc88' : theme.colors.successHover} 100%
+                            ${theme.name === 'orca' ? '#00cc88' : theme.colors.primaryHover} 100%
                           )
                         `,
                         border: `1px solid ${theme.colors.success}30`,
@@ -993,7 +993,7 @@ function SecureBagModal({
               background: `
                 linear-gradient(135deg,
                   ${theme.colors.success} 0%,
-                  ${theme.name === 'orca' ? '#00cc88' : theme.colors.successHover} 100%
+                  ${theme.name === 'orca' ? '#00cc88' : theme.colors.primaryHover} 100%
                 )
               `,
               border: `1px solid ${theme.colors.success}30`,
