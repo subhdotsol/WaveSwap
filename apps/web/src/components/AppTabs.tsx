@@ -77,7 +77,7 @@ export function AppTabs() {
     {
       id: 'bridge',
       label: 'WavePortal',
-      icon: <img src="/portal.svg" alt="WavePortal" className="h-6 w-6" />
+      icon: <img src="/portal.svg" alt="WavePortal" className="h-4 w-4" style={{ minWidth: '16px', minHeight: '16px' }} />
     },
     {
       id: 'stake',

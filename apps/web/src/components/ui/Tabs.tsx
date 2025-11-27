@@ -145,10 +145,10 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
                     transition: 'all 0.3s ease',
                     filter: isSelected ? `drop-shadow(0 0 8px ${theme.colors.primary}40)` : 'none',
                     ...(tab.id === 'bridge' && {
-                      // Apply filters to make portal.svg match theme colors (azul #21bcff)
+                      // Colorize portal icon to match theme
                       filter: isSelected
-                        ? `drop-shadow(0 0 8px ${theme.colors.primary}40) brightness(0) invert(67%) sepia(96%) saturate(1482%) hue-rotate(174deg) brightness(101%) contrast(102%)`
-                        : `brightness(0) invert(67%) sepia(20%) saturate(385%) hue-rotate(174deg) brightness(90%) contrast(85%)`
+                        ? `drop-shadow(0 0 8px ${theme.colors.primary}40) brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(200deg) brightness(104%) contrast(97%)`
+                        : `brightness(0) saturate(100%) invert(42%) sepia(14%) saturate(397%) hue-rotate(200deg) brightness(90%) contrast(85%)`
                     })
                   }}
                 >

@@ -131,7 +131,6 @@ export function getTokenSymbol(mint: string): string {
     'So11111111111111111111111111111111111111112': 'SOL',
     'EPjFWdd5Au17hunJyHyer4hoi6UcsbkxNmnpDnJ55ip2': 'USDC',
     'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
-    'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': 'BONK',
   }
   return tokenSymbols[mint] || 'Unknown'
 }

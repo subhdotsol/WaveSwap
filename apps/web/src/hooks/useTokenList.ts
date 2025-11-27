@@ -92,7 +92,7 @@ export function useTokenList(walletAddress: PublicKey | null) {
           symbol: token.symbol,
           logoURI: token.logoURI || '',
           tags: token.tags || [],
-          isConfidentialSupported: ['SOL', 'USDC', 'USDT', 'mSOL'].includes(token.symbol),
+          isConfidentialSupported: ['SOL', 'USDC', 'USDT'].includes(token.symbol),
           isNative: token.address === 'So11111111111111111111111111111111111111112',
           addressable: true,
         }))

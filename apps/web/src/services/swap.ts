@@ -629,11 +629,7 @@ export const SwapUtils = {
       'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
       'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
       'WAVE9qC1TQR1UYxYZyJQBBtz3Zg4ZEURZuGx9JTFoJp', // WAVE
-      'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', // BONK
-      '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', // RAY
-      'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So', // mSOL
-      'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',  // JUP
-      'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7KgCKB',  // jitoSOL
+      'GoLDppdjB1vDTPSGxyMJFqdnj134yH6Prg9eqsGDiw6A', // GOLD
     ]
     return supportedTokens.includes(tokenAddress)
   },

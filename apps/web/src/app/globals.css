@@ -226,7 +226,7 @@
     background-repeat: repeat, repeat, repeat;
     background-size: 300px 300px, 150px 150px, 80px 80px;
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
     opacity: 1;
     mix-blend-mode: overlay;
   }
@@ -242,14 +242,14 @@
     background-repeat: repeat;
     background-size: 600px 600px;
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
     opacity: 1;
     mix-blend-mode: overlay;
   }
 
   body > * {
     position: relative;
-    z-index: 2;
+    z-index: 1;
   }
 
   /* Professional Z-Index System */
@@ -1310,7 +1310,7 @@
   background-repeat: repeat, repeat;
   background-size: 200px 200px, 100px 100px;
   pointer-events: none;
-  z-index: 2;
+  z-index: 0;
   mix-blend-mode: screen;
 }
 
