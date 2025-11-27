@@ -376,6 +376,7 @@ export const CONFIDENTIAL_TOKENS: Token[] = [
  * Get available tokens based on privacy mode using Jupiter Token API v2
  */
 export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]> {
+  console.log('[getAvailableTokens] Starting token loading with privacyMode:', privacyMode)
   try {
     // Get all available tokens from Jupiter API v2
     const [popularTokens, otherTokens] = await Promise.all([
@@ -454,9 +455,17 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
 
     // Filter for privacy mode if needed
     if (privacyMode) {
+      console.log('[getAvailableTokens] Privacy mode filter - before filtering:', allTokens.length)
+      allTokens.forEach(token => {
+        const isSupported = token.isConfidentialSupported || COMMON_TOKENS.find(ct => ct.address === token.address)?.isConfidentialSupported
+        console.log(`[getAvailableTokens] Token ${token.symbol} (${token.address}): isConfidentialSupported=${token.isConfidentialSupported}, supported=${isSupported}`)
+      })
+
       allTokens = allTokens.filter(token => {
         return token.isConfidentialSupported || COMMON_TOKENS.find(ct => ct.address === token.address)?.isConfidentialSupported
       })
+
+      console.log('[getAvailableTokens] Privacy mode filter - after filtering:', allTokens.length)
     }
 
     // Sort: Popular tokens maintain their exact order, others come after
@@ -488,16 +497,81 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
       return a.symbol.localeCompare(b.symbol)
     })
 
+    console.log('[getAvailableTokens] Successfully loaded tokens:', allTokens.length, allTokens.map(t => ({ symbol: t.symbol, address: t.address })))
     return allTokens
 
   } catch (error) {
     console.error('Error fetching available tokens from Jupiter API:', error)
 
-    // Fallback to COMMON_TOKENS if Jupiter API fails
-    let tokens = COMMON_TOKENS
+    // Fallback: Include COMMON_TOKENS + all TODO tokens if Jupiter API fails
+    const TODO_TOKENS = [
+      // Popular tokens
+      { address: '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump', symbol: 'WAVE', name: 'Wave' },
+      { address: 'So11111111111111111111111111111111111111112', symbol: 'SOL', name: 'Solana' },
+      { address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC', name: 'USD Coin' },
+      { address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', symbol: 'USDT', name: 'Tether USD' },
+      { address: 'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS', symbol: 'ZEC', name: 'Zcash' },
+      { address: 'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn', symbol: 'PUMP', name: 'Pump' },
+      // Other tokens
+      { address: 'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump', symbol: 'WEALTH', name: 'Wealth' },
+      { address: 'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump', symbol: 'FTP', name: 'FTP' },
+      { address: 'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2', symbol: 'AURA', name: 'Aura' },
+      { address: 'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5', symbol: 'MEW', name: 'MEW' },
+      { address: 'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump', symbol: 'STORE', name: 'Store' }
+    ]
+
+    // Add missing TODO tokens with fallback data
+    const fallbackTodoTokens = TODO_TOKENS.map(todoToken => {
+      const commonToken = COMMON_TOKENS.find(ct => ct.address === todoToken.address)
+      return {
+        address: todoToken.address,
+        chainId: 101,
+        decimals: commonToken?.decimals || 9,
+        name: commonToken?.name || todoToken.name,
+        symbol: commonToken?.symbol || todoToken.symbol,
+        logoURI: 'https://ui-avatars.com/api/?name=' + todoToken.symbol + '&background=14F195&color=fff', // Fallback
+        tags: commonToken?.tags || [],
+        isConfidentialSupported: commonToken?.isConfidentialSupported || false,
+        isNative: todoToken.address === 'So11111111111111111111111111111111111111112',
+        addressable: true,
+        encifherSupported: commonToken?.encifherSupported || false,
+        privacyProviders: commonToken?.privacyProviders || [],
+        minPrivateAmount: commonToken?.minPrivateAmount
+      } as Token
+    })
+
+    // Merge COMMON_TOKENS with fallback TODO tokens
+    let allTokens = [...COMMON_TOKENS, ...fallbackTodoTokens]
+
+    // Remove duplicates (prefer COMMON_TOKENS versions)
+    const uniqueTokens = new Map<string, Token>()
+    COMMON_TOKENS.forEach(token => uniqueTokens.set(token.address, token))
+    fallbackTodoTokens.forEach(token => {
+      if (!uniqueTokens.has(token.address)) {
+        uniqueTokens.set(token.address, token)
+      }
+    })
+
+    let tokens = Array.from(uniqueTokens.values())
+
+    // Filter for privacy mode if needed
     if (privacyMode) {
-      tokens = COMMON_TOKENS.filter(t => t.isConfidentialSupported)
+      tokens = tokens.filter(t => t.isConfidentialSupported)
     }
+
+    // Sort: Popular tokens first, then others
+    tokens.sort((a, b) => {
+      const aPopularIndex = POPULAR_TOKEN_ADDRESSES.indexOf(a.address)
+      const bPopularIndex = POPULAR_TOKEN_ADDRESSES.indexOf(b.address)
+
+      if (aPopularIndex !== -1 && bPopularIndex === -1) return -1
+      if (aPopularIndex === -1 && bPopularIndex !== 1) return 1
+      if (aPopularIndex !== -1 && bPopularIndex !== -1) return aPopularIndex - bPopularIndex
+
+      return a.symbol.localeCompare(b.symbol)
+    })
+
+    console.log('[getAvailableTokens] Using fallback tokens:', tokens.length, tokens.map(t => ({ symbol: t.symbol, address: t.address })))
     return tokens
   }
 }

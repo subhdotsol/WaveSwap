@@ -64,12 +64,14 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     // 2. Popular tokens (excluding those already in user tokens)
     const popularTokens = availableTokens.filter(token => {
       const hasBalance = hasTokenBalance(token.address)
-      return !hasBalance && (
+      const isPopular = !hasBalance && (
         token.tags?.includes('popular') ||
         ['WAVE', 'SOL', 'USDC', 'USDT', 'ZEC', 'PUMP', 'WEALTH', 'FTP', 'AURA', 'MEW', 'STORE'].includes(token.symbol || '')
       )
+      return isPopular
     })
 
+  
     // 3. Limited other tokens for discovery (max 20, excluding user and popular tokens)
     const otherTokens = availableTokens
       .filter(token => {
@@ -86,6 +88,8 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
   // Ensure we always have valid tokens with safe fallbacks
   const safeInputToken = inputToken || availableTokens[1] || availableTokens[0] || null
   const safeOutputToken = outputToken || availableTokens[0] || availableTokens[1] || null
+
+  console.log('[SwapComponent] received availableTokens:', availableTokens.length, availableTokens.map(t => ({ symbol: t.symbol, address: t.address })))
 
   // Handle token switch
   const handleTokenSwitch = () => {

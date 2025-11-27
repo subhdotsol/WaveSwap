@@ -22,7 +22,19 @@ interface TokenSelectorProps {
   balances?: Map<string, string>
 }
 
-// Tokens are now loaded dynamically from Jupiter API via JupiterTokenService
+// Convert JupiterToken to Token format
+const jupiterToToken = (jupiterToken: JupiterToken): Token => ({
+  address: jupiterToken.id,
+  chainId: 101,
+  decimals: jupiterToken.decimals || 9,
+  name: jupiterToken.name || 'Unknown',
+  symbol: jupiterToken.symbol || 'UNKNOWN',
+  logoURI: jupiterToken.icon || `https://ui-avatars.com/api/?name=${jupiterToken.symbol || 'UNKNOWN'}&background=14F195&color=fff`,
+  tags: jupiterToken.tags || [],
+  isConfidentialSupported: false,
+  isNative: jupiterToken.id === 'So11111111111111111111111111111111111111112',
+  addressable: true
+})
 
 export function TokenSelector({
   selectedToken,
@@ -37,48 +49,10 @@ export function TokenSelector({
   const [searchResults, setSearchResults] = useState<JupiterToken[]>([])
   const [isSearching, setIsSearching] = useState(false)
 
-  // Dynamic token states from Jupiter API
-  const [popularTokens, setPopularTokens] = useState<JupiterToken[]>([])
-  const [otherTokens, setOtherTokens] = useState<JupiterToken[]>([])
-  const [isLoadingTokens, setIsLoadingTokens] = useState(true)
-
-  // Convert JupiterToken to Token format - uses Jupiter API icon directly
-  const jupiterToToken = useCallback((jupiterToken: JupiterToken): Token => ({
-    address: jupiterToken.id,
-    chainId: 101,
-    decimals: jupiterToken.decimals,
-    name: jupiterToken.name,
-    symbol: jupiterToken.symbol,
-    logoURI: jupiterToken.icon || 'https://ui-avatars.com/api/?name=' + jupiterToken.symbol + '&background=14F195&color=fff', // Use Jupiter API icon with fallback
-    tags: jupiterToken.tags,
-    isConfidentialSupported: false,
-    isNative: jupiterToken.id === 'So11111111111111111111111111111111111111112',
-    addressable: true
+  // Convert Token to display format (use existing tokens from props)
+  const convertToDisplayFormat = useCallback((token: Token): Token => ({
+    ...token
   }), [])
-
-  // Load tokens dynamically from Jupiter API on mount
-  useEffect(() => {
-    const loadTokens = async () => {
-      console.log('[TokenSelector] Loading tokens from Jupiter API...')
-      try {
-        setIsLoadingTokens(true)
-        const [popular, other] = await Promise.all([
-          JupiterTokenService.getPopularTokens(),
-          JupiterTokenService.getOtherTokens()
-        ])
-        console.log('[TokenSelector] Loaded tokens:', { popular: popular.length, other: other.length })
-        console.log('[TokenSelector] First popular token:', popular[0])
-        setPopularTokens(popular)
-        setOtherTokens(other)
-      } catch (error) {
-        console.error('Error loading tokens from Jupiter API:', error)
-      } finally {
-        setIsLoadingTokens(false)
-      }
-    }
-
-    loadTokens()
-  }, [])
 
   // User tokens (with balance) - convert existing tokens to display format
   const userTokens = useMemo(() => {
@@ -91,15 +65,10 @@ export function TokenSelector({
     return user
   }, [tokens, balances])
 
-  // Convert Jupiter tokens to Token format for display
-  const popularTokensDisplay = useMemo(() =>
-    popularTokens.map(jupiterToToken),
-    [popularTokens, jupiterToToken]
-  )
-
-  const otherTokensDisplay = useMemo(() =>
-    otherTokens.map(jupiterToToken),
-    [otherTokens, jupiterToToken]
+  // Convert tokens to display format - use tokens passed via props
+  const tokensDisplay = useMemo(() =>
+    tokens.map(convertToDisplayFormat),
+    [tokens, convertToDisplayFormat]
   )
 
   // Search tokens using Jupiter API with debouncing
@@ -455,66 +424,19 @@ export function TokenSelector({
                       </div>
                     )}
 
-                    {/* Popular Tokens */}
-                    {!searchQuery && popularTokensDisplay.length > 0 && (
+                    {/* Available Tokens */}
+                    {!searchQuery && tokensDisplay.length > 0 && (
                       <div>
-                        <div className="px-4 py-2 text-xs font-semibold mt-4" style={{
-                          color: theme.name === 'light' ? theme.colors.primary : 'rgba(33, 188, 255, 0.8)',
-                          fontFamily: 'var(--font-helvetica)'
-                        }}>
-                          Popular
-                        </div>
-                        {popularTokensDisplay.map((token) => (
+                        {tokensDisplay.map((token) => (
                           <TokenListItem
                             key={token.address}
                             token={token}
                             balance={balances?.get(token.address) || '0'}
                             onSelect={handleTokenSelect}
                             isSelected={selectedToken?.address === token.address}
-                            isPopularToken={true}
+                            isPopularToken={false}
                           />
                         ))}
-                      </div>
-                    )}
-
-                    {/* Other Tokens */}
-                    {!searchQuery && otherTokensDisplay.length > 0 && (
-                      <div>
-                        <div className="px-4 py-2 text-xs font-semibold mt-4" style={{
-                          color: theme.name === 'light' ? theme.colors.textMuted : 'rgba(156, 163, 175, 0.8)',
-                          fontFamily: 'var(--font-helvetica)'
-                        }}>
-                          Other Tokens
-                        </div>
-                        {otherTokensDisplay.map((token) => (
-                          <TokenListItem
-                            key={token.address}
-                            token={token}
-                            balance={balances?.get(token.address) || '0'}
-                            onSelect={handleTokenSelect}
-                            isSelected={selectedToken?.address === token.address}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Loading State */}
-                    {isLoadingTokens && !searchQuery && (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full animate-bounce" style={{
-                            background: theme.colors.primary,
-                            animationDelay: '0ms'
-                          }} />
-                          <div className="w-2 h-2 rounded-full animate-bounce" style={{
-                            background: theme.colors.primary,
-                            animationDelay: '150ms'
-                          }} />
-                          <div className="w-2 h-2 rounded-full animate-bounce" style={{
-                            background: theme.colors.primary,
-                            animationDelay: '300ms'
-                          }} />
-                        </div>
                       </div>
                     )}
                   </div>

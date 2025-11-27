@@ -19,6 +19,7 @@ export interface JupiterToken {
   balance?: string
   isPopular?: boolean
   isUserOwned?: boolean
+  isConfidentialSupported?: boolean
 }
 
 // Popular tokens from TODO.md - in exact order specified
@@ -181,7 +182,8 @@ export class JupiterTokenService {
       icon: this.getTokenIconByAddress(address),
       decimals: this.getTokenDecimalsByAddress(address),
       tags: [],
-      verified: true
+      verified: true,
+      isConfidentialSupported: this.getIsConfidentialSupportedByAddress(address)
     }))
 
     return results
@@ -231,35 +233,25 @@ export class JupiterTokenService {
    */
   static async getPopularTokens(): Promise<JupiterToken[]> {
     try {
-      // First try to get real token data from Jupiter API
-      const apiTokens = await this.getTokensByAddresses(POPULAR_TOKEN_ADDRESSES)
+      console.log(`[JupiterTokenService] Loading popular tokens using fallback method`)
 
-      // For tokens not found in API, create fallback token data
+      // Since /popular endpoint doesn't exist, use fallback method directly
       const popularTokens: JupiterToken[] = POPULAR_TOKEN_ADDRESSES.map((address) => {
-        const apiToken = apiTokens.find(token => token.id === address)
-
-        if (apiToken) {
-          return {
-            ...apiToken,
-            isPopular: true
-          }
-        } else {
-          // Fallback to hardcoded data if not found in API
-          console.log(`[JupiterTokenService] API token not found for ${address}, using fallback`)
-          return {
-            id: address,
-            name: this.getTokenNameByAddress(address),
-            symbol: this.getTokenSymbolByAddress(address),
-            icon: this.getTokenIconByAddress(address),
-            decimals: this.getTokenDecimalsByAddress(address),
-            tags: [],
-            verified: true,
-            isPopular: true
-          }
+        // Fallback to hardcoded data
+        return {
+          id: address,
+          name: this.getTokenNameByAddress(address),
+          symbol: this.getTokenSymbolByAddress(address),
+          icon: this.getTokenIconByAddress(address),
+          decimals: this.getTokenDecimalsByAddress(address),
+          tags: [],
+          verified: true,
+          isPopular: true,
+          isConfidentialSupported: this.getIsConfidentialSupportedByAddress(address)
         }
       })
 
-      console.log(`[JupiterTokenService] Loaded ${popularTokens.length} popular tokens`)
+      console.log(`[JupiterTokenService] Loaded ${popularTokens.length} popular tokens using fallback`)
       return popularTokens
     } catch (error) {
       console.error('Error fetching popular tokens:', error)
@@ -272,35 +264,25 @@ export class JupiterTokenService {
    */
   static async getOtherTokens(): Promise<JupiterToken[]> {
     try {
-      // First try to get real token data from Jupiter API
-      const apiTokens = await this.getTokensByAddresses(OTHER_TOKEN_ADDRESSES)
+      console.log(`[JupiterTokenService] Loading other tokens using fallback method`)
 
-      // For tokens not found in API, create fallback token data
+      // Since /other endpoint doesn't exist, use fallback method directly
       const otherTokens: JupiterToken[] = OTHER_TOKEN_ADDRESSES.map((address) => {
-        const apiToken = apiTokens.find(token => token.id === address)
-
-        if (apiToken) {
-          return {
-            ...apiToken,
-            isPopular: false
-          }
-        } else {
-          // Fallback to hardcoded data if not found in API
-          console.log(`[JupiterTokenService] API token not found for ${address}, using fallback`)
-          return {
-            id: address,
-            name: this.getTokenNameByAddress(address),
-            symbol: this.getTokenSymbolByAddress(address),
-            icon: this.getTokenIconByAddress(address),
-            decimals: this.getTokenDecimalsByAddress(address),
-            tags: [],
-            verified: true,
-            isPopular: false
-          }
+        // Fallback to hardcoded data
+        return {
+          id: address,
+          name: this.getTokenNameByAddress(address),
+          symbol: this.getTokenSymbolByAddress(address),
+          icon: this.getTokenIconByAddress(address),
+          decimals: this.getTokenDecimalsByAddress(address),
+          tags: [],
+          verified: true,
+          isPopular: false,
+          isConfidentialSupported: this.getIsConfidentialSupportedByAddress(address)
         }
       })
 
-      console.log(`[JupiterTokenService] Loaded ${otherTokens.length} other tokens`)
+      console.log(`[JupiterTokenService] Loaded ${otherTokens.length} other tokens using fallback`)
       return otherTokens
     } catch (error) {
       console.error('Error fetching other tokens:', error)
@@ -383,6 +365,27 @@ export class JupiterTokenService {
   }
 
   /**
+   * Helper method to get isConfidentialSupported flag by address
+   */
+  private static getIsConfidentialSupportedByAddress(address: string): boolean {
+    // All TODO.md tokens should be supported in privacy mode as requested by user
+    const supportedTokens: Record<string, boolean> = {
+      '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump': true, // WAVE
+      'So11111111111111111111111111111111111111112': true, // SOL
+      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': true, // USDC
+      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': true, // USDT
+      'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS': true, // ZEC
+      'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn': true,  // PUMP
+      'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump': true, // WEALTH
+      'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump': true, // FTP
+      'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2': true, // AURA
+      'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5': true, // MEW
+      'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump': true  // STORE
+    }
+    return supportedTokens[address] || false
+  }
+
+  /**
    * Get user owned tokens (simplified - would need wallet integration)
    */
   static async getUserOwnedTokens(_userPublicKey: string): Promise<JupiterToken[]> {
@@ -457,7 +460,8 @@ export class JupiterTokenService {
       fdv: tokenData.fdv,
       website: tokenData.website,
       twitter: tokenData.twitter,
-      telegram: tokenData.telegram
+      telegram: tokenData.telegram,
+      isConfidentialSupported: this.getIsConfidentialSupportedByAddress(tokenData.id || tokenData.address || '')
     }
 
     // Debug logging for MEW token (commented out)
