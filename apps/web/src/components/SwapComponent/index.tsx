@@ -292,7 +292,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
       }
     }
 
-    return confidentialMap[token.address] || token
+    return token // Return original token - Encifher handles privacy internally
   }
 
   // Ensure token references are consistent throughout calculations

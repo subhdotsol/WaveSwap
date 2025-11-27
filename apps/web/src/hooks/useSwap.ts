@@ -10,7 +10,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey, Connection, Transaction, VersionedTransaction, Keypair } from '@solana/web3.js'
 import { createSwapService, SwapServiceConfig, SwapRequest, SwapUtils as ServiceSwapUtils } from '@/services/swap'
 import { JupiterAPI, JupiterUtils } from '@/lib/jupiter'
-import { TEEClient, DefiClient } from 'encifher-swap-sdk'
+import { DefiClient, DefiClientConfig, DepositParams, WithdrawParams, SignedSwapParams, OrderStatusParams, Token as EncifherToken } from 'encifher-swap-sdk'
 import { PrivateSwapService } from '@/lib/privateSwapService'
 import { Token, SwapQuote, SwapStatus, SwapProgress, SwapMode, getAvailableTokens } from '@/types/token'
 import { COMMON_TOKENS, CONFIDENTIAL_TOKENS } from '@/types/token'
@@ -73,7 +73,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
   const debugPrivacyMode = privacyMode // Use actual privacy mode without debug override
   const swapServiceRef = useRef<any>(null)
   const privateSwapServiceRef = useRef<PrivateSwapService | null>(null)
-  const teeClientRef = useRef<TEEClient | null>(null)
+  const defiClientRef = useRef<DefiClient | null>(null)
 
   // Core swap state - Initialize with empty tokens, will be populated by useEffect
   const [inputToken, setInputToken] = useState<Token | null>(null)
@@ -148,12 +148,30 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       try {
         const jupiterApi = JupiterAPI.createClient(connection)
 
-        // Initialize Encifher client for private swaps (commented out until properly configured)
-        // const teeClient = new TEEClient({
-        //   teeGatewayUrl: process.env.NEXT_PUBLIC_ENCIFHER_TEE_GATEWAY_URL || 'https://tee.encifher.io',
-        //   rpcUrl: connection.rpcEndpoint
-        // })
-        // teeClientRef.current = teeClient
+        // Intercept fetch calls to route Encifher API requests through our proxy
+        const originalFetch = window.fetch
+        window.fetch = async (input, init) => {
+          const url = typeof input === 'string' ? input : input.toString()
+
+          // Intercept Encifher API calls and route through our proxy
+          if (url.includes('authority.encrypt.trade')) {
+            const newUrl = url.replace('https://authority.encrypt.trade/api/v1',
+              `${window.location.origin}/api/v1/encifher`)
+            console.log(`[Fetch Interceptor] Routing ${url} -> ${newUrl}`)
+            return originalFetch(newUrl, init)
+          }
+
+          return originalFetch(input, init)
+        }
+
+        // Initialize Encifher DefiClient for private swaps
+        const defiClientConfig: DefiClientConfig = {
+          encifherKey: process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY || '',
+          rpcUrl: connection.rpcEndpoint,
+          mode: 'Mainnet' // Add required mode property - use "Mainnet" for production
+        }
+        const defiClient = new DefiClient(defiClientConfig)
+        defiClientRef.current = defiClient
 
         // Initialize PrivateSwapService for enhanced private swap flow (commented out until API is clear)
         // privateSwapServiceRef.current = new PrivateSwapService(connection, null)
@@ -582,6 +600,12 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
           throw new Error('Encifher SDK key not configured')
         }
 
+        if (!defiClientRef.current) {
+          throw new Error('Encifher client not initialized')
+        }
+
+        const defiClient = defiClientRef.current
+
         // Update progress for private swap
         setProgress({
           status: 'pending' as any,
@@ -591,121 +615,92 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         })
 
         try {
-          // For now, use Jupiter API directly
-          // TODO: Replace with actual Encifher SDK integration once API is clear
-          console.log('[Private Swap] Using Jupiter API with privacy enhancements')
+          // Real Encifher SDK implementation - 3 step process: Deposit → Swap → Withdraw
+          console.log('[Private Swap] Using real Encifher SDK workflow')
 
           const amountInBaseUnits = Math.floor(parseFloat(inputAmount) * Math.pow(10, inputToken.decimals))
-          const slippage = 50 // 0.5% slippage by default
+          const amountInTokenUnits = amountInBaseUnits.toString()
 
-          console.log('[Private Swap] Swap parameters:', {
+          console.log('[Private Swap] Encifher swap parameters:', {
             inputToken: inputToken.address,
             outputToken: outputToken.address,
             inputAmount: inputAmount,
             amountInBaseUnits: amountInBaseUnits.toString(),
+            amountInTokenUnits: amountInTokenUnits,
             decimals: inputToken.decimals
           })
 
-          // Step 1: Get swap quote
+          // Convert to Encifher token format
+          const inputTokenEncifher: EncifherToken = {
+            tokenMintAddress: inputToken.address,
+            decimals: inputToken.decimals
+          }
+          const outputTokenEncifher: EncifherToken = {
+            tokenMintAddress: outputToken.address,
+            decimals: outputToken.decimals
+          }
+
+          // Step 1: Get swap quote from Encifher
           setProgress({
             status: 'pending' as any,
             message: 'Getting private swap quote...',
             currentStep: 1,
-            totalSteps: 5
+            totalSteps: 4
           })
 
-          const jupiterApi = JupiterAPI.createClient(connection)
+          const quote = await defiClient.getSwapQuote({
+            inMint: inputTokenEncifher.tokenMintAddress,
+            outMint: outputTokenEncifher.tokenMintAddress,
+            amountIn: amountInBaseUnits.toString()
+          })
 
-          // Try with direct routes first for privacy, fall back to all routes if needed
-          let quote
-          try {
-            console.log('[Private Swap] Trying direct routes for privacy...')
-            quote = await jupiterApi.getQuote({
-              inputMint: inputToken.address,
-              outputMint: outputToken.address,
-              amount: amountInBaseUnits.toString(),
-              slippageBps: slippage,
-              onlyDirectRoutes: true
-            })
-            console.log('[Private Swap] Direct route found')
-          } catch (directRouteError) {
-            console.log('[Private Swap] Direct routes failed, trying all routes:', directRouteError)
+          console.log('[Private Swap] Encifher quote received:', quote)
 
-            try {
-              quote = await jupiterApi.getQuote({
-                inputMint: inputToken.address,
-                outputMint: outputToken.address,
-                amount: amountInBaseUnits.toString(),
-                slippageBps: slippage,
-                onlyDirectRoutes: false // Allow indirect routes
-              })
-              console.log('[Private Swap] Indirect route found')
-            } catch (indirectRouteError) {
-              console.log('[Private Swap] All routes failed with current amount, trying with higher slippage...')
+          // Step 2: Build and sign deposit transaction (if user hasn't deposited)
+          setProgress({
+            status: 'pending' as any,
+            message: 'Preparing deposit transaction...',
+            currentStep: 2,
+            totalSteps: 4
+          })
 
-              // Try with higher slippage as last resort
-              quote = await jupiterApi.getQuote({
-                inputMint: inputToken.address,
-                outputMint: outputToken.address,
-                amount: amountInBaseUnits.toString(),
-                slippageBps: Math.max(slippage * 2, 300), // Double slippage or min 3%
-                onlyDirectRoutes: false
-              })
-              console.log('[Private Swap] Route found with higher slippage')
-            }
+          const depositParams: DepositParams = {
+            token: inputTokenEncifher,
+            depositor: new PublicKey(publicKey),
+            amount: amountInTokenUnits
           }
 
-          console.log('[Private Swap] Jupiter quote received:', {
-            inAmount: quote.inAmount,
-            outAmount: quote.outAmount,
-            priceImpact: quote.priceImpactPct
-          })
+          // Build swap transaction
+          const swapParams = {
+            inMint: inputTokenEncifher.tokenMintAddress,
+            outMint: outputTokenEncifher.tokenMintAddress,
+            amountIn: amountInBaseUnits.toString(),
+            senderPubkey: new PublicKey(publicKey),
+            receiverPubkey: new PublicKey(publicKey)
+          }
 
-          // Step 2: Get swap transaction
+          // Get both deposit and swap transactions
+          const depositTxn = await defiClient.getDepositTxn(depositParams)
+          const swapTxn = await defiClient.getSwapTxn(swapParams)
+
+          console.log('[Private Swap] Transactions built successfully')
+
+          // Step 3: Execute transactions
           setProgress({
             status: 'pending' as any,
-            message: 'Building private swap transaction...',
-            currentStep: 2,
-            totalSteps: 5
-          })
-
-          const swapResponse = await jupiterApi.getSwapTransaction({
-            quoteResponse: quote,
-            userPublicKey: publicKey.toString(),
-            wrapAndUnwrapSol: true,
-            asLegacyTransaction: false,
-            prioritizationFeeLamports: 100000 // Small priority fee for privacy
-          })
-
-          const transaction = await jupiterApi.prepareTransaction(swapResponse)
-          console.log('[Private Swap] Transaction built successfully')
-
-          // Step 3: Sign transaction
-          setProgress({
-            status: 'pending' as any,
-            message: 'Signing transaction...',
+            message: 'Executing private swap...',
             currentStep: 3,
-            totalSteps: 5
+            totalSteps: 4
           })
 
+          // Sign and execute deposit transaction
           if (!signTransaction) {
             throw new Error('Wallet does not support transaction signing')
           }
 
-          const signedTransaction = await signTransaction(transaction)
-          console.log('[Private Swap] Transaction signed')
-
-          // Step 4: Execute swap
-          setProgress({
-            status: 'pending' as any,
-            message: 'Executing private swap...',
-            currentStep: 4,
-            totalSteps: 5
-          })
-
-          // Execute the transaction directly using connection
-          const signature = await connection.sendRawTransaction(
-            signedTransaction.serialize(),
+          const signedDepositTxn = await signTransaction(depositTxn)
+          const depositSignature = await connection.sendRawTransaction(
+            signedDepositTxn.serialize(),
             {
               skipPreflight: false,
               preflightCommitment: 'confirmed',
@@ -713,29 +708,71 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
             }
           )
 
-          console.log('[Private Swap] Transaction sent:', signature)
+          console.log('[Private Swap] Deposit transaction sent:', depositSignature)
+          const depositConfirmation = await connection.confirmTransaction(depositSignature, 'finalized')
 
-          // Step 5: Confirm transaction
-          setProgress({
-            status: 'pending' as any,
-            message: 'Confirming transaction...',
-            currentStep: 5,
-            totalSteps: 5
-          })
-
-          // Wait for transaction confirmation
-          const confirmation = await connection.confirmTransaction(signature, 'confirmed')
-
-          if (confirmation.value.err) {
-            throw new Error(`Transaction failed: ${confirmation.value.err}`)
+          if (depositConfirmation.value.err) {
+            throw new Error(`Deposit failed: ${depositConfirmation.value.err}`)
           }
 
+          // Sign and execute swap transaction
+          const signedSwapTxn = await signTransaction(swapTxn)
+
+          const signedSwapParams: SignedSwapParams = {
+            serializedTxn: Buffer.from(signedSwapTxn.serialize()).toString('base64'),
+            orderDetails: {
+              inMint: inputTokenEncifher.tokenMintAddress,
+              outMint: outputTokenEncifher.tokenMintAddress,
+              amountIn: amountInBaseUnits.toString(),
+              senderPubkey: new PublicKey(publicKey),
+              receiverPubkey: new PublicKey(publicKey),
+              message: `Private swap ${inputToken.symbol} to ${outputToken.symbol}`
+            }
+          }
+
+          const executeResponse = await defiClient.executeSwapTxn(signedSwapParams)
+          console.log('[Private Swap] Swap executed:', executeResponse)
+
+          // Step 4: Poll for completion
           setProgress({
-            status: 'success' as any,
-            message: `Private swap completed! Transaction: ${signature}`,
-            currentStep: 5,
-            totalSteps: 5
+            status: 'pending' as any,
+            message: 'Confirming private swap completion...',
+            currentStep: 4,
+            totalSteps: 4
           })
+
+          let completed = false
+          let attempts = 0
+          const maxAttempts = 30 // Poll for up to 30 seconds
+
+          while (!completed && attempts < maxAttempts) {
+            const orderStatusParams: OrderStatusParams = {
+              orderStatusIdentifier: executeResponse.orderStatusIdentifier
+            }
+
+            const status = await defiClient.getOrderStatus(orderStatusParams)
+            console.log(`[Private Swap] Order status (attempt ${attempts + 1}):`, status)
+
+            if (status.status === 'completed') {
+              completed = true
+              setProgress({
+                status: 'success' as any,
+                message: `Private swap completed! Order ID: ${String(executeResponse.orderStatusIdentifier).slice(0, 12)}...`,
+                currentStep: 4,
+                totalSteps: 4
+              })
+              break
+            } else if (status.status === 'failed') {
+              throw new Error(`Private swap failed: ${status.status}`)
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second between polls
+            attempts++
+          }
+
+          if (!completed) {
+            throw new Error('Private swap timed out waiting for completion')
+          }
 
           // Clear progress after showing completion
           setTimeout(() => {
@@ -749,14 +786,14 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
             inputMint: inputToken.address,
             outputMint: outputToken.address,
             inputAmount: inputAmount,
-            outputAmount: JupiterUtils.parseAmount(quote.outAmount, outputToken.decimals).toString(),
-            priceImpactPct: JupiterUtils.parsePriceImpact(quote.priceImpactPct),
-            routePlan: quote.routePlan || [],
-            swapTransaction: signature,
+            outputAmount: quote.amountOut || '0',
+            priceImpactPct: 0, // Encifher doesn't provide price impact in the same format
+            routePlan: [],
+            swapTransaction: String(executeResponse.orderStatusIdentifier),
             fee: {
-              amount: quote.platformFee ? quote.platformFee.amount : '0',
-              mint: 'So11111111111111111111111111111111111111112', // SOL mint address
-              pct: quote.platformFee ? quote.platformFee.feeBps.toString() : '0'
+              amount: '0',
+              mint: 'So11111111111111111111111111111111111111112',
+              pct: '0'
             }
           }
 

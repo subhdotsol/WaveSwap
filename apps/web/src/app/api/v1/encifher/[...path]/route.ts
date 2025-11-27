@@ -70,6 +70,13 @@ async function proxyRequest(
     // Get API key from environment or request
     let apiKeyHeader = request.headers.get('authorization') || request.headers.get('x-api-key')
 
+    console.log('[Encifher Proxy API] Request headers:', {
+      authorization: request.headers.get('authorization'),
+      xApiKey: request.headers.get('x-api-key'),
+      envKeyPresent: !!process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY,
+      envKeyLength: process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY?.length
+    })
+
     // If no API key in request, try to get from environment
     if (!apiKeyHeader) {
       apiKeyHeader = process.env.NEXT_PUBLIC_ENCIFHER_SDK_KEY || process.env.ENCIFHER_API_KEY || null
@@ -77,6 +84,7 @@ async function proxyRequest(
 
     // If still no API key, use the configured key from the client
     if (!apiKeyHeader) {
+      console.error('[Encifher Proxy API] No API key found!')
       apiKeyHeader = 'default-key' // This may need to be updated with a real key
     }
 
@@ -86,7 +94,8 @@ async function proxyRequest(
 
       requestOptions.headers = {
         ...requestOptions.headers,
-        'Authorization': authHeader
+        'Authorization': authHeader,
+        'x-api-key': apiKeyHeader.replace('Bearer ', '') // Also include x-api-key header
       }
       console.log('[Encifher Proxy API] Using API key:', authHeader.substring(0, 12) + '...')
     }
@@ -101,7 +110,17 @@ async function proxyRequest(
     }
 
     // Make server-side request to Encifher API (bypasses CORS)
+    console.log(`[Encifher Proxy API] Making request to: ${encifherUrl}`)
+    console.log(`[Encifher Proxy API] Request options:`, {
+      method: requestOptions.method,
+      headers: requestOptions.headers,
+      bodySize: requestOptions.body ? (typeof requestOptions.body === 'string' ? requestOptions.body.length : 'binary') : 0
+    })
+
     const encifherResponse = await fetch(encifherUrl, requestOptions)
+
+    console.log(`[Encifher Proxy API] Response status: ${encifherResponse.status} ${encifherResponse.statusText}`)
+    console.log(`[Encifher Proxy API] Response headers:`, Object.fromEntries(encifherResponse.headers.entries()))
 
     if (!encifherResponse.ok) {
       const errorText = await encifherResponse.text()
