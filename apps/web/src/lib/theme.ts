@@ -43,6 +43,13 @@ export interface ThemeColors {
   gradientStart: string
   gradientEnd: string
   overlay: string
+
+  // Enhanced ghost theme properties (optional for other themes)
+  primaryBorder?: string
+  primaryBorderLight?: string
+  purpleShadow?: string
+  phantomGradient?: string
+  phantomGlow?: string
 }
 
 export interface ThemeConfig {
@@ -231,12 +238,12 @@ const stealthTheme: ThemeConfig = {
 const ghostTheme: ThemeConfig = {
   name: 'ghost',
   colors: {
-    // Background colors - Ghost Theme (light background from provided colors)
+    // Background colors - Ghost Theme (Phantom-styled with purple accents)
     background: '#fffdf8', // Main background
     surface: '#ffffff',
-    surfaceHover: '#f8f8f8',
-    glass: 'rgba(255, 253, 248, 0.9)',
-    glassBorder: 'rgba(171, 159, 242, 0.2)', // Using ab9ff2
+    surfaceHover: '#f5f2ff', // Slight purple tint
+    glass: 'rgba(255, 253, 248, 0.85)',
+    glassBorder: 'rgba(171, 159, 242, 0.25)',
 
     // Text colors - Ghost Theme (dark foreground from provided colors)
     textPrimary: '#1c1c1c', // Dark text from provided
@@ -244,43 +251,50 @@ const ghostTheme: ThemeConfig = {
     textMuted: '#8d8c8a', // From greyscale
     textInverse: '#fffdf8',
 
-    // Brand colors - Ghost Theme (using provided colors)
+    // Brand colors - Ghost Theme (enhanced Phantom-style)
     primary: '#ab9ff2', // Primary purple from provided
     primaryHover: '#9b8fe2', // Darker version
-    secondary: '#ffd13f', // Yellow from provided
+    secondary: '#ffd13f', // Phantom yellow from provided
     accent: '#e2dffe', // Light purple from provided
 
-    // Additional colors from provided palette
+    // Enhanced Phantom palette
     success: '#2ec08b', // Green from provided
     warning: '#ff7243', // Orange from provided
     error: '#ff7243', // Using orange for error
     info: '#4a8712', // Green from provided
 
-    // Border and outline - Ghost theme (using provided greyscale)
+    // Border and outline - Ghost theme (enhanced with purple accents)
     border: '#d2d0cc', // From greyscale
     borderLight: '#e8e6e2', // From greyscale
     outline: '#ab9ff2', // Primary purple
     outlineFocus: '#9b8fe2',
+    primaryBorder: 'rgba(171, 159, 242, 0.3)', // Enhanced purple border
+    primaryBorderLight: 'rgba(171, 159, 242, 0.15)',
 
-    // Shadow colors - Ghost theme (subtle for light theme)
-    shadow: 'rgba(28, 28, 28, 0.08)',
-    shadowLight: 'rgba(28, 28, 28, 0.04)',
-    shadowHeavy: 'rgba(28, 28, 28, 0.12)',
+    // Shadow colors - Ghost theme with purple tint
+    shadow: 'rgba(171, 159, 242, 0.12)', // Purple-tinted shadows
+    shadowLight: 'rgba(171, 159, 242, 0.06)', // Light purple shadows
+    shadowHeavy: 'rgba(171, 159, 242, 0.2)', // Heavy purple shadows
+    purpleShadow: 'rgba(171, 159, 242, 0.25)', // Dedicated purple shadow
 
-    // Special colors - Ghost Theme gradient (using provided colors)
-    gradientStart: '#fffdf8', // Light start
-    gradientEnd: '#e2dffe', // Light purple end
-    overlay: 'rgba(171, 159, 242, 0.08)'
+    // Special colors - Enhanced Ghost Theme gradients
+    gradientStart: '#fffdf8',
+    gradientEnd: '#e2dffe',
+    overlay: 'rgba(171, 159, 242, 0.08)',
+
+    // Phantom-style gradients
+    phantomGradient: 'linear-gradient(135deg, rgba(171, 159, 242, 0.1) 0%, rgba(171, 159, 242, 0.05) 50%, rgba(171, 159, 242, 0.1) 100%)',
+    phantomGlow: 'radial-gradient(ellipse at center, rgba(171, 159, 242, 0.15) 0%, transparent 70%)'
   },
   glassStyles: {
-    backdrop: 'blur(20px) saturate(1.8)',
-    blur: '20px',
-    border: '1px solid rgba(171, 159, 242, 0.2)',
-    background: 'rgba(255, 253, 248, 0.9)'
+    backdrop: 'blur(24px) saturate(1.9)',
+    blur: '24px',
+    border: '1px solid rgba(171, 159, 242, 0.25)',
+    background: 'rgba(255, 253, 248, 0.85)'
   },
   animations: {
-    duration: '0.2s',
-    easing: 'ease-out'
+    duration: '0.3s',
+    easing: 'cubic-bezier(0.4, 0, 0.2, 1)' // Smooth Phantom-style animation
   }
 }
 

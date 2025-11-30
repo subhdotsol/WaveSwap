@@ -1223,8 +1223,8 @@ input[type="number"]:focus {
 
     /* Ghost theme specific colors - using provided palette */
     --wave-glass-bg: rgba(255, 253, 248, 0.9);
-    --wave-glass-border: rgba(171, 159, 242, 0.2);
-    --wave-glass-border-hover: rgba(171, 159, 242, 0.3);
+    --wave-glass-border: rgba(171, 159, 242, 0.25);
+    --wave-glass-border-hover: rgba(171, 159, 242, 0.4);
     --wave-text-primary: #1c1c1c;
     --wave-text-secondary: #3c315b;
     --wave-text-muted: #8d8c8a;
@@ -1232,9 +1232,9 @@ input[type="number"]:focus {
     /* Comprehensive Ghost Theme Variables - using provided colors */
     --theme-background: #fffdf8;
     --theme-surface: #ffffff;
-    --theme-surface-hover: #f8f8f8;
-    --theme-glass: rgba(255, 253, 248, 0.9);
-    --theme-glass-border: rgba(171, 159, 242, 0.2);
+    --theme-surface-hover: #f5f2ff;
+    --theme-glass: rgba(255, 253, 248, 0.85);
+    --theme-glass-border: rgba(171, 159, 242, 0.25);
     --theme-text-primary: #1c1c1c;
     --theme-text-secondary: #3c315b;
     --theme-text-muted: #8d8c8a;
@@ -1251,15 +1251,18 @@ input[type="number"]:focus {
     --theme-border-light: #e8e6e2;
     --theme-outline: #ab9ff2;
     --theme-outline-focus: #9b8fe2;
-    --theme-shadow: rgba(28, 28, 28, 0.08);
-    --theme-shadow-light: rgba(28, 28, 28, 0.04);
-    --theme-shadow-heavy: rgba(28, 28, 28, 0.12);
+    --theme-primary-border: rgba(171, 159, 242, 0.3);
+    --theme-primary-border-light: rgba(171, 159, 242, 0.15);
+    --theme-shadow: rgba(171, 159, 242, 0.12);
+    --theme-shadow-light: rgba(171, 159, 242, 0.06);
+    --theme-shadow-heavy: rgba(171, 159, 242, 0.2);
+    --theme-purple-shadow: rgba(171, 159, 242, 0.25);
     --theme-gradient-start: #fffdf8;
     --theme-gradient-end: #e2dffe;
     --theme-overlay: rgba(171, 159, 242, 0.08);
-    --theme-glass-blur: blur(20px) saturate(1.8);
-    --theme-animation-duration: 0.2s;
-    --theme-animation-easing: ease-out;
+    --theme-glass-blur: blur(24px) saturate(1.9);
+    --theme-animation-duration: 0.3s;
+    --theme-animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
 
@@ -1416,6 +1419,176 @@ input[type="number"]:focus {
   .privacy-mode .hover\:bg-blue-700:hover {
     background-color: var(--privacy-accent-hover);
   }
+
+  /* Ghost Theme Component Enhancements */
+  .ghost-theme .glass-panel {
+    background: rgba(255, 253, 248, 0.85);
+    backdrop-filter: blur(24px) saturate(1.9);
+    border: 1px solid rgba(171, 159, 242, 0.25);
+    box-shadow: 0 8px 32px rgba(171, 159, 242, 0.12), 0 4px 16px rgba(171, 159, 242, 0.08);
+  }
+
+  .ghost-theme .glass-panel:focus-within {
+    border-color: rgba(171, 159, 242, 0.4);
+    box-shadow: 0 0 20px rgba(171, 159, 242, 0.2), 0 8px 32px rgba(171, 159, 242, 0.15);
+  }
+
+  .ghost-theme .glass-card {
+    background: rgba(255, 253, 248, 0.7);
+    backdrop-filter: blur(20px) saturate(1.8);
+    border: 1px solid rgba(171, 159, 242, 0.15);
+    box-shadow: 0 4px 16px rgba(171, 159, 242, 0.08);
+  }
+
+  .ghost-theme .glass-card:hover {
+    border-color: rgba(171, 159, 242, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(171, 159, 242, 0.15);
+  }
+
+  .ghost-theme .glass-input {
+    background: rgba(255, 253, 248, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(171, 159, 242, 0.2);
+    color: #1c1c1c;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .ghost-theme .glass-input:hover:not(:disabled) {
+    border-color: rgba(171, 159, 242, 0.35);
+    box-shadow: 0 0 0 3px rgba(171, 159, 242, 0.1);
+  }
+
+  .ghost-theme .glass-input:focus {
+    outline: none;
+    border-color: rgba(171, 159, 242, 0.5);
+    box-shadow: 0 0 15px rgba(171, 159, 242, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .ghost-theme .glass-input::placeholder {
+    color: rgba(141, 140, 138, 0.7);
+  }
+
+  .ghost-theme .glass-btn-primary {
+    background: linear-gradient(135deg, #ab9ff2 0%, #9b8fe2 100%);
+    border: 1px solid rgba(171, 159, 242, 0.4);
+    color: #fffdf8;
+    box-shadow: 0 4px 16px rgba(171, 159, 242, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+  }
+
+  .ghost-theme .glass-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #9b8fe2 0%, #8b7fd2 100%);
+    box-shadow: 0 6px 24px rgba(171, 159, 242, 0.4), 0 0 20px rgba(171, 159, 242, 0.3);
+    transform: translateY(-2px);
+    border-color: rgba(171, 159, 242, 0.6);
+  }
+
+  .ghost-theme .glass-btn-secondary {
+    background: rgba(255, 253, 248, 0.9);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(171, 159, 242, 0.25);
+    color: #1c1c1c;
+    box-shadow: 0 2px 8px rgba(171, 159, 242, 0.1);
+  }
+
+  .ghost-theme .glass-btn-secondary:hover:not(:disabled) {
+    border-color: rgba(171, 159, 242, 0.4);
+    background: rgba(245, 242, 255, 0.8);
+    box-shadow: 0 4px 16px rgba(171, 159, 242, 0.2), 0 0 12px rgba(171, 159, 242, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .ghost-theme .glass-enhanced {
+    background: rgba(255, 253, 248, 0.85);
+    backdrop-filter: blur(24px) saturate(1.9);
+    border: 1px solid rgba(171, 159, 242, 0.25);
+    box-shadow: 0 8px 32px rgba(171, 159, 242, 0.12), 0 4px 16px rgba(171, 159, 242, 0.08);
+  }
+
+  .ghost-theme .glass-enhanced:hover {
+    border-color: rgba(171, 159, 242, 0.4);
+    box-shadow: 0 12px 40px rgba(171, 159, 242, 0.2), 0 6px 24px rgba(171, 159, 242, 0.15);
+  }
+
+  /* Ghost theme scrollbar */
+  .ghost-theme ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .ghost-theme ::-webkit-scrollbar-track {
+    background: rgba(226, 223, 254, 0.1);
+    border-radius: 8px;
+  }
+
+  .ghost-theme ::-webkit-scrollbar-thumb {
+    background: rgba(171, 159, 242, 0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(171, 159, 242, 0.1);
+  }
+
+  .ghost-theme ::-webkit-scrollbar-thumb:hover {
+    background: rgba(171, 159, 242, 0.5);
+    border-color: rgba(171, 159, 242, 0.2);
+  }
+
+  /* Ghost theme status indicators */
+  .ghost-theme .status-success {
+    background: rgba(46, 192, 139, 0.15);
+    box-shadow: 0 0 8px rgba(46, 192, 139, 0.2);
+  }
+
+  .ghost-theme .status-warning {
+    background: rgba(255, 114, 67, 0.15);
+    box-shadow: 0 0 8px rgba(255, 114, 67, 0.2);
+  }
+
+  .ghost-theme .status-error {
+    background: rgba(255, 114, 67, 0.15);
+    box-shadow: 0 0 8px rgba(255, 114, 67, 0.2);
+  }
+
+  .ghost-theme .status-processing {
+    background: rgba(171, 159, 242, 0.15);
+    box-shadow: 0 0 8px rgba(171, 159, 242, 0.3);
+    animation: phantomPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes phantomPulse {
+    0%, 100% {
+      opacity: 0.8;
+      transform: scale(1);
+      box-shadow: 0 0 8px rgba(171, 159, 242, 0.3);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+      box-shadow: 0 0 16px rgba(171, 159, 242, 0.5);
+    }
+  }
+
+  /* Ghost theme badges */
+  .ghost-theme .badge-primary {
+    background: rgba(171, 159, 242, 0.15);
+    color: #9b8fe2;
+    border: 1px solid rgba(171, 159, 242, 0.3);
+    box-shadow: 0 2px 4px rgba(171, 159, 242, 0.1);
+  }
+
+  .ghost-theme .badge-secondary {
+    background: rgba(255, 209, 63, 0.15);
+    color: #e5c235;
+    border: 1px solid rgba(255, 209, 63, 0.3);
+    box-shadow: 0 2px 4px rgba(255, 209, 63, 0.1);
+  }
+
+  .ghost-theme .badge-emerald {
+    background: rgba(46, 192, 139, 0.15);
+    color: #26a869;
+    border: 1px solid rgba(46, 192, 139, 0.3);
+    box-shadow: 0 2px 4px rgba(46, 192, 139, 0.1);
+  }
 }
 
 /* Helvetica Neue Font Faces */
@@ -1557,6 +1730,134 @@ input[type="number"]:focus {
   animation: stealthThemePulse 15s ease-in-out infinite alternate, stealthThemeShift 20s ease-in-out infinite;
   z-index: -1000;
   pointer-events: none;
+}
+
+.ghost-theme .theme-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background:
+    /* Rich Phantom color gradients - Multiple layers with different colors */
+    /* Deep purple blobs */
+    radial-gradient(circle at 15% 25%, rgba(171, 159, 242, 0.20) 0%, rgba(171, 159, 242, 0.08) 25%, transparent 50%),
+    radial-gradient(circle at 85% 15%, rgba(171, 159, 242, 0.18) 0%, rgba(171, 159, 242, 0.06) 30%, transparent 55%),
+    radial-gradient(circle at 25% 75%, rgba(171, 159, 242, 0.15) 0%, rgba(171, 159, 242, 0.05) 35%, transparent 60%),
+    radial-gradient(circle at 75% 85%, rgba(171, 159, 242, 0.12) 0%, rgba(171, 159, 242, 0.04) 40%, transparent 65%),
+
+    /* Light purple accents */
+    radial-gradient(circle at 35% 35%, rgba(196, 187, 248, 0.16) 0%, rgba(196, 187, 248, 0.06) 28%, transparent 52%),
+    radial-gradient(circle at 65% 65%, rgba(196, 187, 248, 0.14) 0%, rgba(196, 187, 248, 0.05) 32%, transparent 58%),
+    radial-gradient(circle at 50% 20%, rgba(196, 187, 248, 0.12) 0%, rgba(196, 187, 248, 0.04) 38%, transparent 62%),
+
+    /* Phantom violet highlights */
+    radial-gradient(circle at 10% 60%, rgba(147, 129, 240, 0.14) 0%, rgba(147, 129, 240, 0.05) 30%, transparent 55%),
+    radial-gradient(circle at 90% 40%, rgba(147, 129, 240, 0.16) 0%, rgba(147, 129, 240, 0.06) 28%, transparent 52%),
+    radial-gradient(circle at 45% 55%, rgba(147, 129, 240, 0.12) 0%, rgba(147, 129, 240, 0.04) 35%, transparent 60%),
+
+    /* Very light purple dust */
+    radial-gradient(circle at 20% 80%, rgba(226, 223, 254, 0.18) 0%, rgba(226, 223, 254, 0.07) 25%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(226, 223, 254, 0.15) 0%, rgba(226, 223, 254, 0.06) 30%, transparent 55%),
+    radial-gradient(circle at 60% 45%, rgba(226, 223, 254, 0.13) 0%, rgba(226, 223, 254, 0.05) 32%, transparent 58%),
+
+    /* Secondary linear gradient layer with multiple Phantom colors */
+    linear-gradient(135deg,
+      rgba(171, 159, 242, 0.08) 0%,
+      rgba(196, 187, 248, 0.06) 15%,
+      rgba(226, 223, 254, 0.08) 30%,
+      rgba(147, 129, 240, 0.06) 45%,
+      rgba(171, 159, 242, 0.07) 60%,
+      rgba(196, 187, 248, 0.05) 75%,
+      rgba(226, 223, 254, 0.06) 90%,
+      rgba(171, 159, 242, 0.08) 100%
+    ),
+
+    /* Additional diagonal gradient for depth */
+    linear-gradient(45deg,
+      rgba(171, 159, 242, 0.04) 0%,
+      rgba(196, 187, 248, 0.06) 12%,
+      rgba(226, 223, 254, 0.05) 24%,
+      rgba(147, 129, 240, 0.07) 36%,
+      rgba(171, 159, 242, 0.05) 48%,
+      rgba(196, 187, 248, 0.06) 60%,
+      rgba(226, 223, 254, 0.04) 72%,
+      rgba(147, 129, 240, 0.05) 84%,
+      rgba(171, 159, 242, 0.06) 100%
+    ),
+
+    /* Base gradient with Phantom touch */
+    linear-gradient(135deg,
+      #fffdf8 0%,
+      rgba(255, 253, 248, 0.96) 12%,
+      rgba(255, 255, 255, 0.98) 24%,
+      rgba(226, 223, 254, 0.08) 36%,
+      #ffffff 48%,
+      rgba(196, 187, 248, 0.06) 60%,
+      rgba(255, 255, 255, 0.97) 72%,
+      rgba(171, 159, 242, 0.04) 84%,
+      #e2dffe 100%
+    ) !important;
+  animation: phantomGradientFloat 25s ease-in-out infinite, phantomGlow 30s ease-in-out infinite alternate, phantomColorShift 35s ease-in-out infinite;
+  z-index: -1000;
+  pointer-events: none;
+}
+
+@keyframes phantomGradientFloat {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+    filter: hue-rotate(0deg) brightness(1) saturate(1.2);
+  }
+  25% {
+    transform: translate(15px, -20px) scale(1.02);
+    filter: hue-rotate(5deg) brightness(1.02) saturate(1.3);
+  }
+  50% {
+    transform: translate(-10px, 15px) scale(0.98);
+    filter: hue-rotate(-3deg) brightness(1.01) saturate(1.25);
+  }
+  75% {
+    transform: translate(20px, 10px) scale(1.01);
+    filter: hue-rotate(3deg) brightness(1.015) saturate(1.28);
+  }
+}
+
+@keyframes phantomGlow {
+  0% {
+    opacity: 0.8;
+    filter: brightness(1) saturate(1.2);
+  }
+  50% {
+    opacity: 0.9;
+    filter: brightness(1.02) saturate(1.3);
+  }
+  100% {
+    opacity: 0.85;
+    filter: brightness(1.01) saturate(1.25);
+  }
+}
+
+@keyframes phantomColorShift {
+  0%, 100% {
+    filter: hue-rotate(0deg) saturate(1.2) brightness(1);
+  }
+  16.66% {
+    filter: hue-rotate(15deg) saturate(1.3) brightness(1.01);
+  }
+  33.33% {
+    filter: hue-rotate(-10deg) saturate(1.4) brightness(1.02);
+  }
+  50% {
+    filter: hue-rotate(20deg) saturate(1.25) brightness(1.015);
+  }
+  66.66% {
+    filter: hue-rotate(-15deg) saturate(1.35) brightness(1.01);
+  }
+  83.33% {
+    filter: hue-rotate(10deg) saturate(1.3) brightness(1.02);
+  }
 }
 
 @keyframes stealthThemePulse {
