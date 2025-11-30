@@ -419,17 +419,15 @@ export function Settings() {
                     }
                   }}
                 >
-                  <img
-                    src="/assets/Phantom/Phantom-Icon-Black.svg"
-                    alt="Ghost"
-                    className="w-5 h-5"
-                    style={{
-                      filter: theme === 'ghost'
-                        ? 'none'
-                        : 'brightness(0) invert(0.5)',
-                      opacity: theme === 'ghost' ? 1 : 0.6
-                    }}
-                  />
+                  <span className="text-xl" style={{
+                    filter: theme === 'ghost'
+                      ? 'none'
+                      : 'brightness(0) invert(0.5)',
+                    opacity: theme === 'ghost' ? 1 : 0.6,
+                    fontFamily: 'var(--font-helvetica)'
+                  }}>
+                    👻
+                  </span>
                   <span className="text-xs font-medium" style={{
                     color: theme === 'ghost' ? themeConfig.colors.primary : themeConfig.colors.textMuted,
                     fontFamily: 'var(--font-helvetica)'

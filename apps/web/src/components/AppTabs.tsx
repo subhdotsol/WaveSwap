@@ -237,7 +237,7 @@ export function AppTabs() {
                     className="text-sm xs:text-base sm:text-lg md:text-xl font-bold italic font-work-sans"
                     style={{ color: theme.colors.textPrimary }}
                   >
-                    WAVETEK
+                    WAVETEK &#127754;
                   </h1>
                   <p
                     className="text-xs hidden md:block"
@@ -252,7 +252,7 @@ export function AppTabs() {
                     className="text-sm font-bold italic font-work-sans"
                     style={{ color: theme.colors.textPrimary }}
                   >
-                    WAVETEK
+                    WAVETEK &#127754;
                   </h1>
                 </div>
               </div>
