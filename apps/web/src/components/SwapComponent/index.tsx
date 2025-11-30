@@ -487,9 +487,15 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     setInputAmount(amount)
   }
 
-  // Enhanced token list for selector
+  // Enhanced token list for selector - only show curated TODO.md tokens
   const optimizedTokens = useMemo(() => {
     if (!availableTokens || availableTokens.length === 0) return []
+
+    // Define our curated TODO.md token symbols
+    const curatedTokens = new Set([
+      'WAVE', 'SOL', 'USDC', 'USDT', 'ZEC', 'PUMP', 'CASH',  // Popular
+      'WEALTH', 'FTP', 'AURA', 'MEW', 'STORE'  // Other
+    ])
 
     const hasTokenBalance = (tokenAddress: string): boolean => {
       if (!balances) return false
@@ -497,24 +503,26 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
       return balance !== undefined && parseFloat(balance) > 0
     }
 
-    const userTokens = availableTokens.filter(token => hasTokenBalance(token.address))
+    // Only include tokens that are in our curated list
+    const userTokens = availableTokens.filter(token =>
+      hasTokenBalance(token.address) && curatedTokens.has(token.symbol || '')
+    )
+
     const popularTokens = availableTokens.filter(token => {
       const hasBalance = hasTokenBalance(token.address)
       const isPopular = !hasBalance && (
         token.tags?.includes('popular') ||
-        ['WAVE', 'SOL', 'USDC', 'USDT', 'ZEC', 'PUMP', 'WEALTH', 'FTP', 'AURA', 'MEW', 'STORE'].includes(token.symbol || '')
+        ['WAVE', 'SOL', 'USDC', 'USDT', 'ZEC', 'PUMP', 'CASH'].includes(token.symbol || '')
       )
-      return isPopular
+      return isPopular && curatedTokens.has(token.symbol || '')
     })
 
-    const otherTokens = availableTokens
-      .filter(token => {
-        const hasBalance = hasTokenBalance(token.address)
-        const isPopular = token.tags?.includes('popular') ||
-                        ['WAVE', 'SOL', 'USDC', 'USDT', 'ZEC', 'PUMP', 'WEALTH', 'FTP', 'AURA', 'MEW', 'STORE'].includes(token.symbol || '')
-        return !hasBalance && !isPopular
-      })
-      .slice(0, 20)
+    const otherTokens = availableTokens.filter(token => {
+      const hasBalance = hasTokenBalance(token.address)
+      const isPopular = token.tags?.includes('popular') ||
+                      ['WAVE', 'SOL', 'USDC', 'USDT', 'ZEC', 'PUMP', 'CASH'].includes(token.symbol || '')
+      return !hasBalance && !isPopular && curatedTokens.has(token.symbol || '')
+    })
 
     return [...userTokens, ...popularTokens, ...otherTokens]
   }, [availableTokens, balances])

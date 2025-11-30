@@ -236,16 +236,15 @@ export class JupiterTokenService {
     try {
       console.log(`[JupiterTokenService] Loading popular tokens using fallback method`)
 
-      // Since /popular endpoint doesn't exist, use fallback method directly
+      // Only return our curated TODO.md popular tokens
       const popularTokens: JupiterToken[] = POPULAR_TOKEN_ADDRESSES.map((address) => {
-        // Fallback to hardcoded data
         return {
           id: address,
           name: this.getTokenNameByAddress(address),
           symbol: this.getTokenSymbolByAddress(address),
           icon: this.getTokenIconByAddress(address),
           decimals: this.getTokenDecimalsByAddress(address),
-          tags: [],
+          tags: ['popular'],
           verified: true,
           isPopular: true,
           isConfidentialSupported: this.getIsConfidentialSupportedByAddress(address)
@@ -267,16 +266,15 @@ export class JupiterTokenService {
     try {
       console.log(`[JupiterTokenService] Loading other tokens using fallback method`)
 
-      // Since /other endpoint doesn't exist, use fallback method directly
+      // Only return our curated TODO.md other tokens
       const otherTokens: JupiterToken[] = OTHER_TOKEN_ADDRESSES.map((address) => {
-        // Fallback to hardcoded data
         return {
           id: address,
           name: this.getTokenNameByAddress(address),
           symbol: this.getTokenSymbolByAddress(address),
           icon: this.getTokenIconByAddress(address),
           decimals: this.getTokenDecimalsByAddress(address),
-          tags: [],
+          tags: ['other'],
           verified: true,
           isPopular: false,
           isConfidentialSupported: this.getIsConfidentialSupportedByAddress(address)

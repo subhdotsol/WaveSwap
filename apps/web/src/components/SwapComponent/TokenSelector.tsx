@@ -53,7 +53,7 @@ const jupiterToToken = (jupiterToken: JupiterToken): Token => ({
   symbol: jupiterToken.symbol || 'UNKNOWN',
   logoURI: jupiterToken.icon || getLocalFallbackIcon(jupiterToken.symbol || '', jupiterToken.id) || '/icons/default-token.svg',
   tags: jupiterToken.tags || [],
-  isConfidentialSupported: false,
+  isConfidentialSupported: jupiterToken.isConfidentialSupported || false,
   isNative: jupiterToken.id === 'So11111111111111111111111111111111111111112',
   addressable: true
 })
@@ -239,7 +239,7 @@ export function TokenSelector({
                         : '0 0 10px rgba(33, 188, 255, 0.3)'
                     }}
                   >
-                    {isPrivacyMode && isOutputSelector && currentToken.isConfidentialSupported ? 'c' + currentToken.symbol : currentToken.symbol}
+                    {isOutputSelector && currentToken.isConfidentialSupported ? 'c' + currentToken.symbol : currentToken.symbol}
                   </span>
                   {currentToken.isConfidentialToken && (
                     <div
@@ -619,7 +619,7 @@ function TokenListItem({ token, balance, onSelect, isSelected, isPopularToken = 
                 opacity: 1
               }}
             >
-              {isPrivacyMode && isOutputSelector && token.isConfidentialSupported ? 'c' + token.symbol : token.symbol}
+              {isOutputSelector && token.isConfidentialSupported ? 'c' + token.symbol : token.symbol}
             </span>
             {/* Confidential token badge */}
             {token.isConfidentialToken && (
