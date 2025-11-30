@@ -461,7 +461,7 @@ export class JupiterTokenService {
       website: tokenData.website,
       twitter: tokenData.twitter,
       telegram: tokenData.telegram,
-      isConfidentialSupported: this.getIsConfidentialSupportedByAddress(tokenData.id || tokenData.address || '')
+      isConfidentialSupported: true
     }
 
     // Debug logging for MEW token (commented out)

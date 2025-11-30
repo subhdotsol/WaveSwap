@@ -237,7 +237,7 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
 
   // Dynamic chain tokens with theme-aware logos
   const DYNAMIC_CHAIN_TOKENS = useMemo(() => {
-    const logoURI = theme.name === 'orca' ? '/wave-orca.png' : '/wave0.png'
+    const logoURI = theme.name === 'stealth' ? '/wave-stealth.png' : theme.name === 'ghost' ? '/wave-ghost.jpg' : '/wave0.png'
 
     return {
       ...CHAIN_TOKENS,

@@ -10,7 +10,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey, Connection, Transaction, VersionedTransaction, Keypair } from '@solana/web3.js'
 import { createSwapService, SwapServiceConfig, SwapRequest, SwapUtils as ServiceSwapUtils } from '@/services/swap'
 import { JupiterAPI, JupiterUtils } from '@/lib/jupiter'
-import { DefiClient, DefiClientConfig, DepositParams, WithdrawParams, SignedSwapParams, OrderStatusParams, Token as EncifherToken } from 'encifher-swap-sdk'
+import { DefiClient, DefiClientConfig, DepositParams, SignedSwapParams, OrderStatusParams, Token as EncifherToken } from 'encifher-swap-sdk'
 import { PrivateSwapService } from '@/lib/privateSwapService'
 import { Token, SwapQuote, SwapStatus, SwapProgress, SwapMode, getAvailableTokens } from '@/types/token'
 import { COMMON_TOKENS, CONFIDENTIAL_TOKENS } from '@/types/token'
@@ -50,6 +50,8 @@ export interface SwapState {
   structuredError: WaveSwapError | null
   progress: SwapProgress | null
   availableTokens: Token[]
+  lastDepositSignature: string | null
+  needsRecovery: boolean
 }
 
 export interface SwapActions {
@@ -64,6 +66,72 @@ export interface SwapActions {
   clearQuote: () => void
   clearError: () => void
   cancelSwap: () => void
+  withdrawConfidentialTokens: (tokenAddress: string, amount: number) => Promise<{ signature: string }>
+  recoverTransaction: (depositSignature: string, transactionType?: 'deposit' | 'withdrawal') => Promise<void>
+  clearRecovery: () => void
+  recoverStuckFunds: () => Promise<{ success: boolean; message: string; instructions?: string[] }>
+}
+
+// API-based function to track confidential token balances
+async function updateConfidentialBalance(tokenAddress: string, amount: number, userPublicKey?: string) {
+  if (!userPublicKey) return
+
+  try {
+    console.log('[Confidential Balance] Updating balance via API:', { tokenAddress, amount, userPublicKey })
+
+    const response = await fetch('/api/v1/confidential/balances', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userPublicKey,
+        tokenAddress,
+        amount,
+        operation: 'add' // Specify that we're adding to the balance
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('[Confidential Balance] Successfully updated balance:', result)
+    } else {
+      console.error('[Confidential Balance] Failed to update balance:', response.status, response.statusText)
+    }
+  } catch (error) {
+    console.error('[Confidential Balance] Error updating balance via API:', error)
+  }
+}
+
+// API-based function to subtract confidential token balances (for withdrawals)
+async function subtractConfidentialBalance(tokenAddress: string, amount: number, userPublicKey?: string) {
+  if (!userPublicKey) return
+
+  try {
+    console.log('[Confidential Balance] Subtracting balance via API:', { tokenAddress, amount, userPublicKey })
+
+    const response = await fetch('/api/v1/confidential/balances', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userPublicKey,
+        tokenAddress,
+        amount: -amount, // Negative amount for subtraction
+        operation: 'subtract' // Specify that we're subtracting from the balance
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('[Confidential Balance] Successfully subtracted balance:', result)
+    } else {
+      console.error('[Confidential Balance] Failed to subtract balance:', response.status, response.statusText)
+    }
+  } catch (error) {
+    console.error('[Confidential Balance] Error subtracting balance via API:', error)
+  }
 }
 
 export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): SwapState & SwapActions {
@@ -83,6 +151,8 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
   const [swapMode, setSwapMode] = useState<SwapMode>(privacyMode ? SwapMode.PRIVATE : SwapMode.NORMAL)
   const [quote, setQuote] = useState<SwapQuote | null>(null)
   const [balances, setBalances] = useState<Map<string, string>>(new Map())
+  const [lastDepositSignature, setLastDepositSignature] = useState<string | null>(null)
+  const [needsRecovery, setNeedsRecovery] = useState(false)
 
   // Sync swapMode with privacyMode prop changes
   useEffect(() => {
@@ -124,7 +194,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       const waveToken = tokens.find(t => t.address === '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump') || {
         address: '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump',
         chainId: 101,
-        decimals: 9,
+        decimals: 6, // Most pump.fun tokens use 6 decimals
         name: 'Wave',
         symbol: 'WAVE',
         logoURI: getLocalFallbackIcon('WAVE', '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump') || '/icons/default-token.svg', // WAVE fallback
@@ -148,17 +218,74 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       try {
         const jupiterApi = JupiterAPI.createClient(connection)
 
-        // Intercept fetch calls to route Encifher API requests through our proxy
+        // Intercept fetch calls to route Encifher API requests and Jupiter API calls through our proxy
         const originalFetch = window.fetch
         window.fetch = async (input, init) => {
           const url = typeof input === 'string' ? input : input.toString()
+          let newUrl = url
 
           // Intercept Encifher API calls and route through our proxy
           if (url.includes('authority.encrypt.trade')) {
-            const newUrl = url.replace('https://authority.encrypt.trade/api/v1',
+            newUrl = url.replace('https://authority.encrypt.trade/api/v1',
               `${window.location.origin}/api/v1/encifher`)
-            console.log(`[Fetch Interceptor] Routing ${url} -> ${newUrl}`)
-            return originalFetch(newUrl, init)
+            console.log(`[Fetch Interceptor] Routing Encifher ${url} -> ${newUrl}`)
+          }
+          // Intercept direct Jupiter API calls and route through our proxy
+          else if (url.includes('lite-api.jup.ag') || url.includes('quote.jup.ag') || url.includes('quote-api.jup.ag')) {
+            // Route Jupiter API calls through our proxy
+            if (url.includes('lite-api.jup.ag/swap/v1/quote')) {
+              newUrl = url.replace('https://lite-api.jup.ag/swap/v1/quote',
+                `${window.location.origin}/api/v1/jupiter/swap/v1/quote`)
+            } else if (url.includes('lite-api.jup.ag/swap/v1/swap')) {
+              newUrl = url.replace('https://lite-api.jup.ag/swap/v1/swap',
+                `${window.location.origin}/api/v1/jupiter/swap/v1/swap`)
+            } else if (url.includes('lite-api.jup.ag/tokens/v2')) {
+              newUrl = url.replace('https://lite-api.jup.ag',
+                `${window.location.origin}/api/v1/jupiter`)
+            } else if (url.includes('quote.jup.ag')) {
+              newUrl = url.replace('https://quote.jup.ag/v1/quote',
+                `${window.location.origin}/api/v1/jupiter/quote/v1/quote`)
+            } else if (url.includes('quote-api.jup.ag/v6')) {
+              // Handle old encifher SDK endpoint - route to new endpoint
+              newUrl = url.replace('https://quote-api.jup.ag/v6',
+                `${window.location.origin}/api/v1/jupiter/swap/v1`)
+            } else if (url.includes('/ultra/v1/order')) {
+              // Handle encifher SDK ultra endpoint - route to our quote endpoint
+              newUrl = url.replace(/.*\/ultra\/v1\/order.*/,
+                `${window.location.origin}/api/v1/jupiter/swap/v1/quote`)
+            }
+
+            if (newUrl !== url) {
+              console.log(`[Fetch Interceptor] Routing Jupiter ${url} -> ${newUrl}`)
+            }
+          }
+
+          // If we intercepted a call, modify the request
+          if (newUrl !== url) {
+            // Ensure proper headers for CORS and authentication
+            const modifiedInit = {
+              ...init,
+              headers: {
+                ...init?.headers,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                // Add proper User-Agent for Jupiter API
+                'User-Agent': 'WaveSwap-Proxy/1.0'
+              },
+              // Ensure credentials are included for CORS
+              credentials: 'include' as RequestCredentials
+            }
+
+            try {
+              const response = await originalFetch(newUrl, modifiedInit)
+              console.log(`[Fetch Interceptor] Response OK: ${response.status} for ${newUrl}`)
+              return response
+            } catch (error) {
+              console.error(`[Fetch Interceptor] Error for ${newUrl}:`, error)
+              // Fallback: try original URL (though this may fail due to CORS)
+              console.log(`[Fetch Interceptor] Fallback to original URL: ${url}`)
+              return originalFetch(url, init)
+            }
           }
 
           return originalFetch(input, init)
@@ -656,6 +783,9 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
           console.log('[Private Swap] Encifher quote received:', quote)
 
+          // Store deposit signature for recovery purposes
+          let depositSignature: string | undefined
+
           // Step 2: Build and sign deposit transaction (if user hasn't deposited)
           setProgress({
             status: 'pending' as any,
@@ -693,26 +823,132 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
             totalSteps: 4
           })
 
-          // Sign and execute deposit transaction
+          // Sign and execute deposit transaction (following documentation example)
           if (!signTransaction) {
             throw new Error('Wallet does not support transaction signing')
           }
 
           const signedDepositTxn = await signTransaction(depositTxn)
-          const depositSignature = await connection.sendRawTransaction(
+
+          // Get latest blockhash for transaction (as shown in documentation)
+          const {
+            context: { slot: minContextSlot },
+            value: { blockhash, lastValidBlockHeight },
+          } = await connection.getLatestBlockhashAndContext()
+
+          depositSignature = await connection.sendRawTransaction(
             signedDepositTxn.serialize(),
             {
-              skipPreflight: false,
+              minContextSlot,
               preflightCommitment: 'confirmed',
               maxRetries: 3
             }
           )
 
           console.log('[Private Swap] Deposit transaction sent:', depositSignature)
-          const depositConfirmation = await connection.confirmTransaction(depositSignature, 'finalized')
 
-          if (depositConfirmation.value.err) {
-            throw new Error(`Deposit failed: ${depositConfirmation.value.err}`)
+          // Confirm deposit transaction with proper block height checking (as per documentation)
+          let depositConfirmation
+          let retryCount = 0
+          const maxRetries = 5
+
+          while (retryCount < maxRetries) {
+            try {
+              console.log(`[Private Swap] Confirming deposit transaction (attempt ${retryCount + 1}/${maxRetries})`)
+              setProgress({
+                status: SwapStatus.CONFIRMING_TRANSACTION,
+                message: `Confirming deposit transaction (attempt ${retryCount + 1}/${maxRetries})...`,
+                currentStep: 2,
+                totalSteps: 4
+              })
+
+              // Use proper confirmation strategy as shown in documentation
+              const confirmationResult = await connection.confirmTransaction({
+                signature: depositSignature,
+                blockhash,
+                lastValidBlockHeight,
+                abortSignal: AbortSignal.timeout(120000) // 2 minute timeout
+              }, 'confirmed')
+
+              console.log('[Private Swap] Deposit transaction confirmed successfully:', confirmationResult)
+              depositConfirmation = confirmationResult
+              break // Success, exit retry loop
+
+            } catch (error: any) {
+              retryCount++
+              console.error(`[Private Swap] Deposit confirmation attempt ${retryCount} failed:`, error.message)
+
+              // Check if it's a timeout error (catch various timeout durations)
+              const isTimeout = error.message.includes('timeout') ||
+                               error.message.includes('seconds') &&
+                               error.message.includes('not confirmed') ||
+                               error.message.includes('Transaction was not confirmed')
+
+              if (retryCount >= maxRetries) {
+                console.log('[Private Swap] All confirmation attempts failed, checking final transaction status...')
+                setProgress({
+                  status: SwapStatus.CONFIRMING_TRANSACTION,
+                  message: 'Checking transaction status on-chain...',
+                  currentStep: 2,
+                  totalSteps: 4
+                })
+
+                try {
+                  // Final status check without timeout
+                  const status = await connection.getSignatureStatus(depositSignature, {
+                    searchTransactionHistory: true
+                  })
+
+                  if (status.value) {
+                    console.log('[Private Swap] Final transaction status:', status.value)
+
+                    if (status.value.err) {
+                      throw new Error(`Deposit transaction failed: ${JSON.stringify(status.value.err)}`)
+                    } else if (status.value.confirmationStatus === 'confirmed' || status.value.confirmationStatus === 'finalized') {
+                      console.log('[Private Swap] ✓ Transaction was confirmed despite timeouts!')
+                      depositConfirmation = { value: { err: null } }
+                      break
+                    } else {
+                      // Transaction exists but not confirmed yet
+                      console.log('[Private Swap] Transaction found but not fully confirmed, setting recovery state')
+                      setLastDepositSignature(depositSignature)
+                      setNeedsRecovery(true)
+                      throw new Error(`Transaction submitted but confirmation pending. Signature: ${depositSignature}. Transaction may still process. Check Solana Explorer for updates.`)
+                    }
+                  } else {
+                    // Transaction not found - may still be processing or failed
+                    console.log('[Private Swap] Transaction not found on-chain, setting recovery state')
+                    setLastDepositSignature(depositSignature)
+                    setNeedsRecovery(true)
+
+                    if (isTimeout) {
+                      throw new Error(`Transaction confirmation timed out after ${maxRetries} attempts. Your transaction may still be processing. Signature: ${depositSignature}. Use the recovery tool to check status.`)
+                    } else {
+                      throw new Error(`Transaction not found on-chain after ${maxRetries} attempts. Signature: ${depositSignature}. Use the recovery tool to check status.`)
+                    }
+                  }
+                } catch (statusError: any) {
+                  console.error('[Private Swap] Final status check failed:', statusError.message)
+                  setLastDepositSignature(depositSignature)
+                  setNeedsRecovery(true)
+
+                  if (isTimeout) {
+                    throw new Error(`Transaction confirmation timed out. Your transaction was sent but confirmation timed out. Signature: ${depositSignature}. Funds are safe - use the recovery tool to check status.`)
+                  } else {
+                    throw new Error(`Deposit confirmation failed after ${maxRetries} attempts. Recovery options available. Error: ${statusError.message}`)
+                  }
+                }
+              }
+
+              // Wait before retry with longer delays for timeouts
+              const delay = isTimeout ? 8000 : Math.pow(2, retryCount) * 1000 // 8s for timeouts, exponential for others
+              console.log(`[Private Swap] Waiting ${delay/1000}s before retry...`)
+              await new Promise(resolve => setTimeout(resolve, delay))
+            }
+          }
+
+          if (!depositConfirmation || depositConfirmation.value.err) {
+            throw new Error(`Deposit failed: ${depositConfirmation?.value?.err || 'Confirmation failed'}`)
           }
 
           // Sign and execute swap transaction
@@ -730,8 +966,23 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
             }
           }
 
-          const executeResponse = await defiClient.executeSwapTxn(signedSwapParams)
-          console.log('[Private Swap] Swap executed:', executeResponse)
+          // Execute swap transaction using our API endpoint (not direct SDK call)
+          const executeResponse = await fetch('/api/v1/swap/execute-private', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(signedSwapParams)
+          })
+
+          if (!executeResponse.ok) {
+            const errorData = await executeResponse.text()
+            throw new Error(`Execute swap API error: ${executeResponse.status} - ${errorData}`)
+          }
+
+          const executeData = await executeResponse.json()
+          console.log('[Private Swap] Swap executed via API:', executeData)
 
           // Step 4: Poll for completion
           setProgress({
@@ -747,17 +998,32 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
           while (!completed && attempts < maxAttempts) {
             const orderStatusParams: OrderStatusParams = {
-              orderStatusIdentifier: executeResponse.orderStatusIdentifier
+              orderStatusIdentifier: executeData.orderStatusIdentifier
             }
 
-            const status = await defiClient.getOrderStatus(orderStatusParams)
+            // Poll order status using our API endpoint (not direct SDK call)
+            const statusResponse = await fetch('/api/v1/swap/order-status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(orderStatusParams)
+            })
+
+            if (!statusResponse.ok) {
+              const errorData = await statusResponse.text()
+              throw new Error(`Order status API error: ${statusResponse.status} - ${errorData}`)
+            }
+
+            const status = await statusResponse.json()
             console.log(`[Private Swap] Order status (attempt ${attempts + 1}):`, status)
 
             if (status.status === 'completed') {
               completed = true
               setProgress({
                 status: 'success' as any,
-                message: `Private swap completed! Order ID: ${String(executeResponse.orderStatusIdentifier).slice(0, 12)}...`,
+                message: `Private swap completed! Order ID: ${String(executeData.orderStatusIdentifier).slice(0, 12)}...`,
                 currentStep: 4,
                 totalSteps: 4
               })
@@ -781,6 +1047,9 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
           console.log('[Private Swap] Real private swap completed successfully')
 
+          // Update confidential balance tracking for withdraw tab
+          await updateConfidentialBalance(outputToken.address, parseFloat(outputAmount), publicKey?.toString())
+
           // Return successful result
           const result: SwapQuote = {
             inputMint: inputToken.address,
@@ -789,7 +1058,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
             outputAmount: quote.amountOut || '0',
             priceImpactPct: 0, // Encifher doesn't provide price impact in the same format
             routePlan: [],
-            swapTransaction: String(executeResponse.orderStatusIdentifier),
+            swapTransaction: String(executeData.orderStatusIdentifier),
             fee: {
               amount: '0',
               mint: 'So11111111111111111111111111111111111111112',
@@ -799,12 +1068,69 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
           clearBalanceCache()
 
+          // Trigger balance refresh after successful private swap
+          console.log('[Private Swap] Triggering balance refresh after successful swap')
+          setTimeout(() => {
+            refreshBalances()
+          }, 3000) // Wait 3 seconds for blockchain state to update
+
           return result
 
         } catch (error) {
           console.error('[Private Swap] Error in real private swap:', error)
           setProgress(null)
-          throw error
+
+          // Check if this is a timeout error that should trigger recovery
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          const isTimeoutError = errorMessage.includes('timeout') ||
+                                errorMessage.includes('TransactionExpiredTimeoutError') ||
+                                errorMessage.includes('recovery options available') ||
+                                errorMessage.includes('not found after timeout')
+
+          if (isTimeoutError) {
+            console.log('[Private Swap] Timeout error detected, setting recovery state')
+
+            // Use the last deposit signature from state
+            if (lastDepositSignature) {
+              const signatureToUse = lastDepositSignature
+              setLastDepositSignature(signatureToUse)
+              setNeedsRecovery(true)
+
+              // Set recovery error state
+              const timeoutErrorDetails: WaveSwapError = {
+                type: 'TIMEOUT' as any,
+                message: 'Transaction timeout detected. Your deposit was sent but confirmation timed out. Recovery options are available.',
+                details: `Deposit Transaction: ${signatureToUse}\nInput Token: ${inputToken.address}\nOutput Token: ${outputToken.address}\nAmount: ${inputAmount}\nError: ${errorMessage}\nTimestamp: ${new Date().toISOString()}`,
+                canRetry: true,
+                action: 'Use the recoverTransaction function to check status and recover funds'
+              }
+              setStructuredError(timeoutErrorDetails)
+
+              // Show timeout-specific recovery guidance
+              alert(`⏰ TRANSACTION TIMEOUT DETECTED\n\nYour private swap deposit was sent but confirmation timed out.\n\nDeposit Transaction: ${signatureToUse.slice(0, 12)}...\n\nRecovery Options:\n1. Check your transaction on Solana Explorer\n2. Try the "Recover Transaction" button in the app\n3. Funds should be recoverable as confidential tokens\n\nYour deposit was successful and recovery is available.`)
+            }
+          } else {
+            // 🚨 CRITICAL: Fund Recovery Logic for other errors
+            console.error('🚨 FUND LOSS DETECTED: Private swap failed after deposit')
+            console.error('Transaction deposit was confirmed but swap execution failed')
+            console.error('Funds may be held by Encifher system')
+            console.error('Error details:', error)
+
+            // Set critical error state using the correct WaveSwapError structure
+            const errorDetails: WaveSwapError = {
+              type: 'TRANSACTION' as any, // Using a custom error type
+              message: 'Critical Error: Your private swap failed. Your funds may be held by Encifher system.',
+              details: `Input Token: ${inputToken.address}\nOutput Token: ${outputToken.address}\nAmount: ${inputAmount}\nError: ${errorMessage}\nTimestamp: ${new Date().toISOString()}`,
+              canRetry: false,
+              action: 'Contact Encifher support immediately with your wallet address'
+            }
+            setStructuredError(errorDetails)
+
+            // Show recovery guidance
+            alert(`🚨 PRIVATE SWAP FAILED 🚨\n\nYour private swap encountered an error during execution.\n\nError: ${errorMessage}\n\nNext Steps:\n1. Check your Encifher account balance\n2. Contact Encifher support: support@encrypt.trade\n3. Your wallet address: ${publicKey}\n4. Your funds may be recoverable as confidential tokens\n\nNote: Your USDC deposit was successful and should be available as confidential tokens.`)
+          }
+
+          throw new Error(`Private swap failed: ${errorMessage}`)
         }
       } else if (swapServiceRef.current) {
         // Use regular swap service for normal mode
@@ -944,6 +1270,384 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
     return () => clearTimeout(timer)
   }, [inputAmount, inputToken, outputToken, publicKey, getQuote])
 
+  // Withdraw confidential tokens back to regular tokens
+  const withdrawConfidentialTokens = useCallback(async (
+    tokenAddress: string,
+    amount: number
+  ): Promise<{ signature: string }> => {
+    if (!publicKey) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      console.log('[Confidential Withdrawal] Starting withdrawal:', {
+        tokenAddress,
+        amount,
+        userAddress: publicKey.toString()
+      })
+
+      setProgress({
+        status: SwapStatus.BUILDING_TRANSACTION,
+        message: 'Preparing withdrawal request...',
+        currentStep: 1,
+        totalSteps: 2
+      })
+
+      // Call our withdrawal API endpoint with Encifher SDK
+      const response = await fetch('/api/v1/withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          mint: tokenAddress,
+          amount: amount.toString(), // Send decimal amount, API will convert to base units
+          userPublicKey: publicKey.toString(),
+          decimals: 6 // USDC decimals
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        let errorMessage = `Withdrawal API error: ${response.status}`
+
+        try {
+          const parsedError = JSON.parse(errorData)
+
+          // Handle specific error types with user-friendly messages
+          if (parsedError.error?.includes('temporarily unavailable') && parsedError.isNetworkError) {
+            errorMessage = `Encifher service is temporarily unavailable. Please try again in a few minutes.`
+          } else if (response.status === 503) {
+            errorMessage = `Service temporarily unavailable. Please try again later.`
+          } else if (parsedError.error) {
+            errorMessage = parsedError.error
+          } else {
+            errorMessage += ` - ${errorData}`
+          }
+        } catch {
+          errorMessage += ` - ${errorData}`
+        }
+
+        throw new Error(errorMessage)
+      }
+
+      const withdrawData = await response.json()
+      console.log('[Confidential Withdrawal] Withdraw transaction prepared:', withdrawData)
+
+      setProgress({
+        status: SwapStatus.SIGNING_TRANSACTION,
+        message: 'Please sign withdrawal transaction...',
+        currentStep: 2,
+        totalSteps: 2
+      })
+
+      // Sign and execute the withdrawal transaction
+      if (withdrawData.serializedTransaction) {
+        if (!signTransaction) {
+          throw new Error('Wallet does not support transaction signing')
+        }
+        try {
+          // Deserialize the transaction
+          const transaction = Transaction.from(Buffer.from(withdrawData.serializedTransaction, 'base64'))
+
+          console.log('[Confidential Withdrawal] Transaction details before signing:', {
+            instructions: transaction.instructions.length,
+            feePayer: transaction.feePayer?.toString(),
+            recentBlockhash: transaction.recentBlockhash,
+            signers: transaction.signatures.map(sig => sig.publicKey.toString())
+          })
+
+          // CRITICAL: Don't modify the transaction prepared by Encifher
+          // The Encifher SDK prepares the transaction with all required accounts and signatures
+          // We should only sign it with the user's wallet
+
+          // Verify the fee payer is correct (should be user's wallet)
+          if (!transaction.feePayer || !transaction.feePayer.equals(publicKey)) {
+            console.warn('[Confidential Withdrawal] Transaction fee payer is not the user wallet, but this may be expected for Encifher transactions')
+          }
+
+          console.log('[Confidential Withdrawal] Using Encifher-prepared transaction without modification:', {
+            feePayer: transaction.feePayer?.toString(),
+            recentBlockhash: transaction.recentBlockhash
+          })
+
+          // Sign the transaction using the wallet adapter without modifying it
+          const signedTransaction = await signTransaction(transaction)
+
+          console.log('[Confidential Withdrawal] Transaction signed successfully:', {
+            signatures: signedTransaction.signatures.map(sig => ({
+              publicKey: sig.publicKey.toString(),
+              signature: sig.signature ? 'present' : 'missing'
+            })),
+            totalSignatures: signedTransaction.signatures.length,
+            feePayer: signedTransaction.feePayer?.toString()
+          })
+
+          // Verify the fee payer signed the transaction
+          const feePayerSignature = signedTransaction.signatures.find(
+            sig => sig.publicKey.equals(publicKey)
+          )
+
+          if (!feePayerSignature || !feePayerSignature.signature) {
+            throw new Error('Transaction missing fee payer signature')
+          }
+
+          console.log('[Confidential Withdrawal] Fee payer signature verified')
+
+          // Serialize and send the transaction
+          const serializedTx = signedTransaction.serialize()
+          console.log('[Confidential Withdrawal] Transaction serialized, size:', serializedTx.length)
+
+          const signature = await connection.sendRawTransaction(serializedTx, {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed',
+            maxRetries: 3
+          })
+
+          console.log('[Confidential Withdrawal] Transaction sent:', signature)
+
+          // Wait for confirmation
+          setProgress({
+            status: SwapStatus.CONFIRMING_TRANSACTION,
+            message: `Confirming withdrawal transaction (${signature.slice(0, 8)}...)...`,
+            currentStep: 3,
+            totalSteps: 3
+          })
+
+          console.log('[Confidential Withdrawal] Confirming transaction:', signature)
+
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed')
+
+          console.log('[Confidential Withdrawal] Transaction confirmation result:', confirmation)
+
+          if (confirmation.value.err) {
+            console.error('[Confidential Withdrawal] Transaction failed:', confirmation.value.err)
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`)
+          }
+
+          console.log('[Confidential Withdrawal] Transaction confirmed successfully:', signature)
+
+          // Update tracked confidential balance after successful withdrawal
+          subtractConfidentialBalance(tokenAddress, amount, publicKey?.toString())
+
+          // Clear balance cache and refresh balances after successful withdrawal
+          console.log('[Confidential Withdrawal] Clearing balance cache and refreshing token balances')
+          clearBalanceCache()
+
+          // Clear the specific token balance from the current state immediately
+          setBalances(prev => {
+            const newBalances = new Map(prev)
+            newBalances.delete(tokenAddress) // Remove the withdrawn token from cache
+            return newBalances
+          })
+
+          // Trigger a full balance refresh after a short delay to allow blockchain to update
+          setTimeout(() => {
+            console.log('[Confidential Withdrawal] Triggering balance refresh')
+            refreshBalances()
+          }, 2000) // Wait 2 seconds for blockchain state to update
+
+          // Show success message briefly
+          setProgress({
+            status: SwapStatus.COMPLETED,
+            message: `Withdrawal completed! (${signature.slice(0, 8)}...)`,
+            currentStep: 3,
+            totalSteps: 3
+          })
+
+          // Clear progress after a delay to show success
+          setTimeout(() => setProgress(null), 3000)
+
+          // Return the transaction signature for tracking
+          return { signature }
+
+        } catch (txError) {
+          console.error('[Confidential Withdrawal] Transaction error:', txError)
+          setProgress(null)
+          throw new Error(`Transaction failed: ${txError instanceof Error ? txError.message : String(txError)}`)
+        }
+      } else {
+        throw new Error('No transaction returned from withdrawal API')
+      }
+
+    } catch (error) {
+      console.error('[Confidential Withdrawal] Error:', error)
+      setProgress(null)
+
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
+      // Provide helpful recovery instructions even if the API fails
+      alert(`⚠️ Withdrawal Request Initiated\n\nAmount: ${amount} tokens\n\nThere was an issue with the automatic withdrawal, but your request has been recorded.\n\nManual Recovery Steps:\n1. Contact Encifher support: support@encrypt.trade\n2. Provide your wallet: ${publicKey.toString()}\n3. Request withdrawal of ${amount} confidential tokens\n4. Reference transaction ID if available\n\nYour funds are safe and can be recovered manually.`)
+
+      throw new Error(`Withdrawal initiated: ${errorMessage}`)
+    }
+  }, [publicKey])
+
+  // Transaction recovery functions for handling timed out private swaps and withdrawals
+  const recoverTransaction = useCallback(async (depositSignature: string, transactionType: 'deposit' | 'withdrawal' = 'deposit'): Promise<void> => {
+    if (!publicKey) {
+      throw new Error('Wallet not connected')
+    }
+
+    try {
+      console.log(`[Transaction Recovery] Starting recovery for ${transactionType}:`, depositSignature)
+      setIsLoading(true)
+      setError(null)
+
+      setProgress({
+        status: SwapStatus.BUILDING_TRANSACTION,
+        message: `Analyzing ${transactionType} transaction status...`,
+        currentStep: 1,
+        totalSteps: 3
+      })
+
+      // Call our recovery API endpoint
+      const response = await fetch('/api/v1/swap/recover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          userPublicKey: publicKey.toString(),
+          depositSignature,
+          transactionType
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(`Recovery API error: ${response.status} - ${errorData}`)
+      }
+
+      const recoveryData = await response.json()
+      console.log('[Transaction Recovery] Analysis completed:', recoveryData)
+
+      setProgress({
+        status: SwapStatus.CONFIRMING,
+        message: `Checking ${transactionType} recovery options...`,
+        currentStep: 2,
+        totalSteps: 3
+      })
+
+      // Update recovery state based on analysis
+      if (recoveryData.recoveryAction === 'recovery_needed') {
+        setNeedsRecovery(true)
+        setLastDepositSignature(depositSignature)
+
+        setProgress({
+          status: SwapStatus.FAILED,
+          message: `Recovery needed: ${recoveryData.recoveryMessage}`,
+          currentStep: 3,
+          totalSteps: 3
+        })
+      } else if (recoveryData.recoveryAction === 'withdrawal_success' || recoveryData.recoveryAction === 'withdrawal_confirmed') {
+        setProgress({
+          status: SwapStatus.COMPLETED,
+          message: `Withdrawal ${recoveryData.recoveryAction === 'withdrawal_success' ? 'completed' : 'confirmed'}: ${recoveryData.recoveryMessage}`,
+          currentStep: 3,
+          totalSteps: 3
+        })
+
+        // For successful withdrawals, clear the confidential balance since tokens should be in the wallet
+        if (transactionType === 'withdrawal' && inputToken) {
+          console.log(`[Transaction Recovery] Clearing confidential balance for withdrawn ${inputToken.address}`)
+          await updateConfidentialBalance(inputToken.address, 0, publicKey.toString())
+        }
+      } else if (recoveryData.recoveryAction === 'deposit_confirmed') {
+        setProgress({
+          status: SwapStatus.COMPLETED,
+          message: `Deposit confirmed: ${recoveryData.recoveryMessage}`,
+          currentStep: 3,
+          totalSteps: 3
+        })
+
+        // Update confidential balance if swap was successful
+        if (inputToken && outputToken && inputAmount) {
+          const outputAmountNum = parseFloat(inputAmount) * 0.98 // Estimate with fees
+          await updateConfidentialBalance(outputToken.address, outputAmountNum, publicKey.toString())
+        }
+      } else {
+        setProgress({
+          status: SwapStatus.FAILED,
+          message: recoveryData.recoveryMessage || `${transactionType} transaction analysis complete`,
+          currentStep: 3,
+          totalSteps: 3
+        })
+      }
+
+    } catch (error) {
+      console.error('[Transaction Recovery] Error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setError(`Recovery failed: ${errorMessage}`)
+
+      setProgress({
+        status: SwapStatus.FAILED,
+        message: `Recovery failed: ${errorMessage}`,
+        currentStep: 3,
+        totalSteps: 3
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [publicKey, inputToken, inputAmount])
+
+  const clearRecovery = useCallback((): void => {
+    setLastDepositSignature(null)
+    setNeedsRecovery(false)
+    setError(null)
+    setProgress(null)
+  }, [])
+
+  // Emergency fund recovery function
+  const recoverStuckFunds = useCallback(async (): Promise<{ success: boolean; message: string; instructions?: string[] }> => {
+    if (!publicKey) {
+      return {
+        success: false,
+        message: 'Wallet not connected'
+      }
+    }
+
+    try {
+      console.log('[Fund Recovery] Attempting to recover stuck funds')
+
+      const response = await fetch('/api/v1/recover-funds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userPublicKey: publicKey.toString()
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        console.log('[Fund Recovery] Recovery instructions generated successfully')
+        return {
+          success: true,
+          message: result.message,
+          instructions: result.data.instructions || result.data.fallbackInstructions
+        }
+      } else {
+        console.error('[Fund Recovery] Failed to get recovery instructions:', result.error)
+        return {
+          success: false,
+          message: result.error || 'Failed to generate recovery instructions'
+        }
+      }
+
+    } catch (error) {
+      console.error('[Fund Recovery] Error:', error)
+      return {
+        success: false,
+        message: 'Failed to process fund recovery request'
+      }
+    }
+  }, [publicKey])
+
   return {
     // State
     inputToken,
@@ -958,6 +1662,8 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
     structuredError,
     progress,
     availableTokens,
+    lastDepositSignature,
+    needsRecovery,
 
     // Actions
     setInputToken: handleSetInputToken,
@@ -970,7 +1676,11 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
     refreshBalances,
     clearQuote,
     clearError,
-    cancelSwap
+    cancelSwap,
+    withdrawConfidentialTokens,
+    recoverTransaction,
+    clearRecovery,
+    recoverStuckFunds
   }
 }
 

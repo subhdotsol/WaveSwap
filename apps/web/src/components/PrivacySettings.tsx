@@ -10,6 +10,7 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline'
 import { EncifherUtils } from '@/lib/encifher'
+import { useThemeConfig } from '@/lib/theme'
 
 interface PrivacySettingsProps {
   privacyMode: boolean
@@ -56,6 +57,7 @@ export function PrivacySettings({
   onPrivacyModeChange,
   onPrivacyProviderChange
 }: PrivacySettingsProps) {
+  const theme = useThemeConfig()
   const [isEncifherConfigured, setIsEncifherConfigured] = useState(false)
 
   useEffect(() => {
@@ -321,28 +323,47 @@ export function PrivacySettings({
 
       {/* Privacy Provider Selection */}
       {privacyMode && (
-        <div className="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-800/60 p-6">
+        <div
+            className="backdrop-blur-xl rounded-2xl border p-6"
+            style={{
+              background: `${theme.colors.surface}96`,
+              borderColor: theme.colors.border
+            }}
+          >
           <h3 className="text-lg font-semibold text-white mb-4">Privacy Provider</h3>
 
           <div className="space-y-4">
             {privacyProviders.map((provider) => (
               <div
                 key={provider.id}
-                className={`relative rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                  privacyProvider === provider.id
-                    ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-gray-700/60 hover:border-gray-600/60 hover:bg-gray-800/40'
-                }`}
+                className="relative rounded-xl border-2 transition-all duration-200 cursor-pointer"
+                style={{
+                  borderColor: privacyProvider === provider.id ? '#10b981' : theme.colors.border + '99',
+                  backgroundColor: privacyProvider === provider.id ? '#10b98120' : 'transparent'
+                }}
                 onClick={() => onPrivacyProviderChange(provider.id as 'encifher' | 'arcium')}
+                onMouseEnter={(e) => {
+                  if (privacyProvider !== provider.id) {
+                    e.currentTarget.style.backgroundColor = theme.colors.surfaceHover + '66'
+                    e.currentTarget.style.borderColor = theme.colors.border + '99'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (privacyProvider !== provider.id) {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.borderColor = theme.colors.border + '99'
+                  }
+                }}
               >
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        privacyProvider === provider.id
-                          ? 'border-emerald-400'
-                          : 'border-gray-500'
-                      }`}>
+                      <div
+                        className="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                        style={{
+                          borderColor: privacyProvider === provider.id ? '#34d399' : theme.colors.textMuted
+                        }}
+                      >
                         {privacyProvider === provider.id && (
                           <div className="w-2 h-2 bg-emerald-400 rounded-full" />
                         )}
@@ -414,7 +435,13 @@ export function PrivacySettings({
       )}
 
       {/* Privacy Information */}
-      <div className="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-800/60 p-6">
+      <div
+            className="backdrop-blur-xl rounded-2xl border p-6"
+            style={{
+              background: `${theme.colors.surface}96`,
+              borderColor: theme.colors.border
+            }}
+          >
         <h3 className="text-lg font-semibold text-white mb-4">About Private Swaps</h3>
 
         <div className="space-y-4 text-sm text-gray-300">

@@ -176,7 +176,7 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
                   fontSize: '0.7rem'
                 }}>
                 {tab.label === 'WaveSwap' ? 'SWAP' :
-                 tab.label === 'WavePortal' ? 'BRIDGE' :
+                 tab.label === 'WavePortal' ? 'PORTAL' :
                  tab.label === 'WaveStake' ? 'STAKE' :
                  tab.label}
               </span>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import type { WalletSelectorModal } from '@near-wallet-selector/modal-ui'
 import { nearWalletService } from '../../lib/wallets/near'
+import { useThemeConfig } from '@/lib/theme'
 
 interface NearWalletModalProps {
   modal: WalletSelectorModal | null
@@ -11,6 +12,7 @@ interface NearWalletModalProps {
 }
 
 export function NearWalletModal({ modal, onClose, onWalletConnected }: NearWalletModalProps) {
+  const theme = useThemeConfig()
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -95,8 +97,8 @@ export function NearWalletModal({ modal, onClose, onWalletConnected }: NearWalle
       }
 
       .near-wallet-selector-wallet-button:hover {
-        border-color: #6366f1 !important;
-        background: #f9fafb !important;
+        border-color: ${theme.colors.primary} !important;
+        background: ${theme.colors.surfaceHover} !important;
         transform: translateY(-1px) !important;
       }
 
@@ -107,9 +109,9 @@ export function NearWalletModal({ modal, onClose, onWalletConnected }: NearWalle
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        background: #f3f4f6 !important;
+        background: ${theme.colors.surface} !important;
         font-weight: 600 !important;
-        color: #374151 !important;
+        color: ${theme.colors.textSecondary} !important;
       }
 
       .near-wallet-selector-wallet-info {

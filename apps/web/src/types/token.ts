@@ -82,6 +82,7 @@ export interface SwapContext {
   clearQuote: () => void
   clearError: () => void
   cancelSwap: () => void
+  withdrawConfidentialTokens: (tokenAddress: string, amount: number) => Promise<void>
 }
 
 export interface SwapQuote {
@@ -208,18 +209,6 @@ export const COMMON_TOKENS: Token[] = [
     symbol: 'GOLD',
     logoURI: '/icons/fallback/token/gold.png',
     tags: ['defi', 'gold', 'asset'],
-    isConfidentialSupported: false,
-    isNative: false,
-    addressable: true
-  },
-  {
-    address: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-    chainId: 101,
-    decimals: 6,
-    name: 'Raydium',
-    symbol: 'RAY',
-    logoURI: 'https://img-cdn.jup.ag/tokens/RAY.svg',
-    tags: ['defi', 'dex', 'raydium'],
     isConfidentialSupported: false,
     isNative: false,
     addressable: true
@@ -399,10 +388,19 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
     const missingTodoTokens = TODO_TOKENS.filter(todoToken => !jupiterTokenMap.has(todoToken.address))
       .map(todoToken => {
         const commonToken = COMMON_TOKENS.find(ct => ct.address === todoToken.address)
+
+        // Special handling for WAVE token - most pump.fun tokens use 6 decimals
+        let decimals = 9 // default
+        if (todoToken.address === '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump') {
+          decimals = 6 // WAVE token uses 6 decimals
+        } else if (commonToken?.decimals) {
+          decimals = commonToken.decimals
+        }
+
         return {
           address: todoToken.address,
           chainId: 101,
-          decimals: commonToken?.decimals || 9,
+          decimals: decimals,
           name: commonToken?.name || todoToken.name,
           symbol: commonToken?.symbol || todoToken.symbol,
           logoURI: getLocalFallbackIcon(todoToken.symbol, todoToken.address) || '/icons/default-token.svg', // Local fallback
@@ -492,10 +490,19 @@ export async function getAvailableTokens(privacyMode: boolean): Promise<Token[]>
     // Add missing TODO tokens with fallback data
     const fallbackTodoTokens = TODO_TOKENS.map(todoToken => {
       const commonToken = COMMON_TOKENS.find(ct => ct.address === todoToken.address)
+
+      // Special handling for WAVE token - most pump.fun tokens use 6 decimals
+      let decimals = 9 // default
+      if (todoToken.address === '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump') {
+        decimals = 6 // WAVE token uses 6 decimals
+      } else if (commonToken?.decimals) {
+        decimals = commonToken.decimals
+      }
+
       return {
         address: todoToken.address,
         chainId: 101,
-        decimals: commonToken?.decimals || 9,
+        decimals: decimals,
         name: commonToken?.name || todoToken.name,
         symbol: commonToken?.symbol || todoToken.symbol,
         logoURI: getLocalFallbackIcon(todoToken.symbol, todoToken.address) || '/icons/default-token.svg', // Local fallback
@@ -579,6 +586,7 @@ export interface SwapContextType {
   clearQuote: () => void
   clearError: () => void
   cancelSwap: () => void
+  withdrawConfidentialTokens: (tokenAddress: string, amount: number) => Promise<void>
 }
 
 export interface WaveSwapError {

@@ -164,11 +164,13 @@ async function proxyRequest(
 
     // Return the Encifher response to the client
     return NextResponse.json(responseData, {
-      status: 200,
+      status: encifherResponse.status,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, x-api-key',
+        'Access-Control-Allow-Credentials': 'true',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
     })
 
@@ -186,13 +188,15 @@ async function proxyRequest(
 }
 
 export async function OPTIONS() {
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests with comprehensive headers
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, x-api-key',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400' // Cache preflight for 24 hours
     }
   })
 }

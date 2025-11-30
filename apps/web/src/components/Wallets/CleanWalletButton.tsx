@@ -1,6 +1,6 @@
 'use client'
 
-import { Wallet, ChevronDown, Check, Copy, LogOut, Settings } from 'lucide-react'
+import { Wallet, ChevronDown, Copy, LogOut, Settings } from 'lucide-react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useWalletModal } from '@/contexts/WalletModalContext'
 import { useState, useRef, useEffect } from 'react'
@@ -246,10 +246,14 @@ export function CleanWalletButton() {
         {connecting ? (
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : publicKey ? (
-          <Check className="w-4 h-4" style={{
-            color: `${theme.colors.success}e6`,
-            filter: `drop-shadow(0 0 8px ${theme.colors.success}40)`
-          }} />
+          <img
+            src="/assets/Phantom/Phantom-Icon-Purple.svg"
+            alt="Phantom Wallet"
+            className="w-4 h-4"
+            style={{
+              filter: `drop-shadow(0 0 8px ${theme.colors.success}40)`
+            }}
+          />
         ) : (
           <Wallet className="w-4 h-4" style={{
             color: theme.name === 'light' ? '#ffffff' : theme.colors.textPrimary,
@@ -355,7 +359,12 @@ export function CleanWalletButton() {
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ background: `${theme.colors.success}20` }}
             >
-              <Check className="w-4 h-4" style={{ color: theme.colors.success }} />
+              <img
+                src="/assets/Phantom/Phantom-Icon-Purple.svg"
+                alt="Phantom Wallet"
+                className="w-4 h-4"
+                style={{ objectFit: 'contain' }}
+              />
             </div>
             <div className="flex-1">
               <div

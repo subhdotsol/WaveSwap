@@ -30,7 +30,7 @@ function TabContent({ tabId, privacyMode }: TabContentProps) {
   switch (tabId) {
     case 'swap':
       return (
-        <div className="w-full flex justify-center">
+        <div className="w-full">
           <SwapComponent privacyMode={privacyMode} />
         </div>
       )
@@ -105,50 +105,101 @@ export function AppTabs() {
     <div
       className="min-h-screen relative"
     >
-      {/* Animated gradient overlay - theme-aware */}
-      <div
-        className="absolute inset-0"
-        style={{
-          opacity: theme.name === 'light' ? 0.6 : 0.4,
-          background: theme.name === 'light'
-            ? `radial-gradient(circle at 20% 50%, rgba(33, 188, 255, 0.15) 0%, rgba(33, 188, 255, 0.05) 30%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(74, 74, 255, 0.12) 0%, rgba(74, 74, 255, 0.03) 35%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(6, 182, 212, 0.10) 0%, rgba(6, 182, 212, 0.02) 40%, transparent 50%),
-                radial-gradient(circle at 60% 30%, rgba(33, 188, 255, 0.08) 0%, transparent 40%)`
-            : `radial-gradient(circle at 20% 50%, rgba(33, 188, 255, 0.25) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(46, 46, 209, 0.20) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(25, 153, 212, 0.18) 0%, transparent 50%),
-                radial-gradient(circle at 60% 30%, rgba(0, 191, 255, 0.15) 0%, transparent 40%)`,
-          animation: 'gradientFloat 20s ease-in-out infinite'
-        }}
-      />
+      {/* Regular gradient overlay for light/dark modes only */}
+      {theme.name !== 'stealth' && (
+        <div
+          className="absolute inset-0"
+          style={{
+            opacity: theme.name === 'light' ? 0.6 : 0.4,
+            background: theme.name === 'light'
+              ? `radial-gradient(circle at 20% 50%, rgba(33, 188, 255, 0.15) 0%, rgba(33, 188, 255, 0.05) 30%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(74, 74, 255, 0.12) 0%, rgba(74, 74, 255, 0.03) 35%, transparent 50%),
+                  radial-gradient(circle at 40% 80%, rgba(6, 182, 212, 0.10) 0%, rgba(6, 182, 212, 0.02) 40%, transparent 50%),
+                  radial-gradient(circle at 60% 30%, rgba(33, 188, 255, 0.08) 0%, transparent 40%)`
+              : `radial-gradient(circle at 20% 50%, rgba(33, 188, 255, 0.25) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(46, 46, 209, 0.20) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 80%, rgba(25, 153, 212, 0.18) 0%, transparent 50%),
+                  radial-gradient(circle at 60% 30%, rgba(0, 191, 255, 0.15) 0%, transparent 40%)`,
+            animation: 'gradientFloat 20s ease-in-out infinite'
+          }}
+        />
+      )}
 
-      {/* Additional azul gradient layer - theme-aware */}
-      <div
-        className="absolute inset-0"
-        style={{
-          opacity: theme.name === 'light' ? 0.3 : 0.2,
-          background: theme.name === 'light'
-            ? `linear-gradient(45deg,
-                rgba(33, 188, 255, 0.05) 0%,
-                rgba(74, 74, 255, 0.08) 25%,
-                rgba(6, 182, 212, 0.06) 50%,
-                rgba(33, 188, 255, 0.04) 75%,
-                rgba(74, 74, 255, 0.07) 100%)`
-            : `linear-gradient(45deg, rgba(33, 188, 255, 0.08) 0%, rgba(46, 46, 209, 0.12) 25%, rgba(0, 191, 255, 0.10) 50%, rgba(33, 188, 255, 0.08) 75%, rgba(46, 46, 209, 0.12) 100%)`,
-          animation: 'gradientFloat 25s ease-in-out infinite reverse'
-        }}
-      />
+      {/* Additional gradient layer for light/dark modes only */}
+      {theme.name !== 'stealth' && (
+        <div
+          className="absolute inset-0"
+          style={{
+            opacity: theme.name === 'light' ? 0.3 : 0.2,
+            background: theme.name === 'light'
+              ? `linear-gradient(45deg,
+                  rgba(33, 188, 255, 0.05) 0%,
+                  rgba(74, 74, 255, 0.08) 25%,
+                  rgba(6, 182, 212, 0.06) 50%,
+                  rgba(33, 188, 255, 0.04) 75%,
+                  rgba(74, 74, 255, 0.07) 100%)`
+              : `linear-gradient(45deg, rgba(33, 188, 255, 0.08) 0%, rgba(46, 46, 209, 0.12) 25%, rgba(0, 191, 255, 0.10) 50%, rgba(33, 188, 255, 0.08) 75%, rgba(46, 46, 209, 0.12) 100%)`,
+            animation: 'gradientFloat 25s ease-in-out infinite reverse'
+          }}
+        />
+      )}
 
-      {/* Subtle noise texture overlay - theme-aware */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          opacity: theme.name === 'light' ? 0.03 : 0.05,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")`,
-          mixBlendMode: theme.name === 'light' ? 'soft-light' : 'overlay'
-        }}
-      />
+      {/* Stealth Mode - Three separate black and white animated blobs */}
+      {theme.name === 'stealth' && (
+        <>
+          {/* Large blob - top left */}
+          <div
+            className="absolute w-96 h-96 rounded-full"
+            style={{
+              top: '10%',
+              left: '5%',
+              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 40%, transparent 70%)',
+              filter: 'blur(40px)',
+              animation: 'stealthBlob1 20s ease-in-out infinite',
+              zIndex: 1
+            }}
+          />
+
+          {/* Medium blob - bottom right */}
+          <div
+            className="absolute w-80 h-80 rounded-full"
+            style={{
+              bottom: '15%',
+              right: '10%',
+              background: 'radial-gradient(circle, rgba(200, 200, 200, 0.03) 0%, rgba(200, 200, 200, 0.01) 50%, transparent 70%)',
+              filter: 'blur(30px)',
+              animation: 'stealthBlob2 25s ease-in-out infinite',
+              zIndex: 1
+            }}
+          />
+
+          {/* Small blob - middle right */}
+          <div
+            className="absolute w-64 h-64 rounded-full"
+            style={{
+              top: '45%',
+              right: '25%',
+              background: 'radial-gradient(circle, rgba(180, 180, 180, 0.05) 0%, rgba(180, 180, 180, 0.02) 40%, transparent 70%)',
+              filter: 'blur(25px)',
+              animation: 'stealthBlob3 30s ease-in-out infinite',
+              zIndex: 1
+            }}
+          />
+        </>
+      )}
+
+      {/* Subtle noise texture overlay - theme-aware (exclude stealth mode) */}
+      {theme.name !== 'stealth' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            opacity: theme.name === 'light' ? 0.03 : 0.05,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")`,
+            mixBlendMode: theme.name === 'light' ? 'soft-light' : 'overlay',
+            zIndex: 2
+          }}
+        />
+      )}
 
       {/* Content */}
       <div className="relative z-10">
@@ -176,7 +227,7 @@ export function AppTabs() {
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
                 <div className="relative">
                   <img
-                    src={theme.name === 'orca' ? '/wave-orca.png' : '/wave0.png'}
+                    src={theme.name === 'stealth' ? '/wave-stealth.png' : theme.name === 'ghost' ? '/wave-ghost.jpg' : '/wave0.png'}
                     alt="WaveSwap Logo"
                     className="w-6 h-6 xs:w-7 xs:h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 rounded-xl shadow-lg transition-all duration-200"
                   />
@@ -216,10 +267,10 @@ export function AppTabs() {
                 {/* Privacy Mode Toggle - Compact on mobile */}
                 <div className="flex items-center">
                   <div
-                    className="relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+                    className="relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02]"
                     style={{
                       ...createGlassStyles(theme),
-                      borderColor: privacyMode ? `${theme.colors.success}30` : `${theme.colors.primary}10`,
+                      border: `1px solid ${privacyMode ? `${theme.colors.success}30` : `${theme.colors.primary}10`}`,
                       backdropFilter: 'blur(20px) saturate(1.8)',
                       boxShadow: privacyMode
                         ? `0 8px 24px ${theme.colors.success}15, inset 0 1px 0 rgba(255, 255, 255, 0.1)`

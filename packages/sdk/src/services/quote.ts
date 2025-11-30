@@ -3,7 +3,7 @@ import { QuoteRequest, QuoteResponse } from '../types/quote'
 export class QuoteService {
   private endpoint: string
 
-  constructor(endpoint: string = 'https://quote-api.jup.ag/v6') {
+  constructor(endpoint: string = 'https://lite-api.jup.ag/swap/v1') {
     this.endpoint = endpoint
   }
 

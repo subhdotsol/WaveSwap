@@ -2,16 +2,17 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 
-export type ThemeMode = 'light' | 'dark' | 'orca'
+export type ThemeMode = 'light' | 'dark' | 'stealth' | 'ghost'
 
 interface ThemeContextType {
   theme: ThemeMode
   setTheme: (theme: ThemeMode) => void
   toggleLightDark: () => void
-  toggleOrca: () => void
+  toggleStealth: () => void
   setLightTheme: () => void
   setDarkTheme: () => void
-  setOrcaTheme: () => void
+  setStealthTheme: () => void
+  setGhostTheme: () => void
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
@@ -22,7 +23,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Load theme from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('wave-theme') as ThemeMode
-    if (savedTheme && ['light', 'dark', 'orca'].includes(savedTheme)) {
+    if (savedTheme && ['light', 'dark', 'stealth', 'ghost'].includes(savedTheme)) {
       setThemeState(savedTheme)
     }
   }, [])
@@ -34,42 +35,43 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Toggle between light and dark
   const toggleLightDark = () => {
-    if (theme === 'orca') {
+    if (theme === 'stealth') {
       setTheme('light')
     } else {
       setTheme(theme === 'light' ? 'dark' : 'light')
     }
   }
 
-  // Toggle orca mode (independent of light/dark)
-  const toggleOrca = () => {
-    setTheme(theme === 'orca' ? 'dark' : 'orca')
+  // Toggle stealth mode (independent of light/dark)
+  const toggleStealth = () => {
+    setTheme(theme === 'stealth' ? 'dark' : 'stealth')
   }
 
   // Direct theme setters for specific themes
   const setLightTheme = () => setTheme('light')
   const setDarkTheme = () => setTheme('dark')
-  const setOrcaTheme = () => setTheme('orca')
+  const setStealthTheme = () => setTheme('stealth')
+  const setGhostTheme = () => setTheme('ghost')
 
   // Set initial theme on mount
   useEffect(() => {
     // Apply dark theme by default
     const savedTheme = localStorage.getItem('wave-theme') as ThemeMode
-    const initialTheme = savedTheme && ['light', 'dark', 'orca'].includes(savedTheme) ? savedTheme : 'dark'
+    const initialTheme = savedTheme && ['light', 'dark', 'stealth', 'ghost'].includes(savedTheme) ? savedTheme : 'dark'
     setThemeState(initialTheme)
   }, [])
 
   // Apply theme when state changes
   useEffect(() => {
     const root = document.documentElement
-    root.classList.remove('light-theme', 'dark-theme', 'orca-theme')
+    root.classList.remove('light-theme', 'dark-theme', 'stealth-theme', 'ghost-theme')
     root.classList.add(`${theme}-theme`)
 
-    // Handle orca mode special case
-    if (theme === 'orca') {
-      root.classList.add('orca-mode')
+    // Handle stealth mode special case
+    if (theme === 'stealth') {
+      root.classList.add('stealth-mode')
     } else {
-      root.classList.remove('orca-mode')
+      root.classList.remove('stealth-mode')
     }
 
     // Store theme preference
@@ -81,10 +83,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       theme,
       setTheme,
       toggleLightDark,
-      toggleOrca,
+      toggleStealth,
       setLightTheme,
       setDarkTheme,
-      setOrcaTheme
+      setStealthTheme,
+      setGhostTheme
     }}>
       {children}
     </ThemeContext.Provider>

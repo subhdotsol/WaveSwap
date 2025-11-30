@@ -31,7 +31,7 @@ export async function GET(
     const query = historyQuerySchema.parse({
       limit: searchParams.get('limit'),
       offset: searchParams.get('offset'),
-      status: searchParams.get('status'),
+      status: searchParams.get('status') || undefined,
     })
 
     // Build where clause

@@ -1,0 +1,185 @@
+import { http } from 'msw/core/http'
+
+// Mock token data
+const mockTokens = [
+  {
+    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    chainId: 101,
+    decimals: 6,
+    name: 'USDC',
+    symbol: 'USDC',
+    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
+    tags: ['stablecoin'],
+    isConfidentialSupported: true
+  },
+  {
+    address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+    chainId: 101,
+    decimals: 6,
+    name: 'USDT',
+    symbol: 'USDT',
+    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.png',
+    tags: ['stablecoin'],
+    isConfidentialSupported: true
+  },
+  {
+    address: 'So11111111111111111111111111111111111111112',
+    chainId: 101,
+    decimals: 9,
+    name: 'Solana',
+    symbol: 'SOL',
+    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
+    tags: ['native'],
+    isConfidentialSupported: false
+  },
+  {
+    address: 'WAVE-token-address-here',
+    chainId: 101,
+    decimals: 9,
+    name: 'Wave',
+    symbol: 'WAVE',
+    logoURI: '/wave-logo.png',
+    tags: ['defi'],
+    isConfidentialSupported: true
+  }
+]
+
+// Mock Jupiter API handlers
+export const handlers = [
+  // Token search
+  http.get('*/api/v1/jupiter/tokens/v2/search', (req, res, ctx) => {
+    const url = new URL(req.url)
+    const query = url.searchParams.get('query') || ''
+    const limit = parseInt(url.searchParams.get('limit') || '20')
+
+    const filteredTokens = mockTokens.filter(token =>
+      token.symbol.toLowerCase().includes(query.toLowerCase()) ||
+      token.name.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, limit)
+
+    return res(
+      ctx.status(200),
+      ctx.json({
+        data: filteredTokens,
+        timeTaken: 12
+      })
+    )
+  }),
+
+  // Quote API
+  http.get('*/api/v1/jupiter/swap/v1/quote', (req, res, ctx) => {
+    const url = new URL(req.url)
+    const inputMint = url.searchParams.get('inputMint')
+    const outputMint = url.searchParams.get('outputMint')
+    const amount = url.searchParams.get('amount')
+
+    if (!inputMint || !outputMint || !amount) {
+      return res(
+        ctx.status(400),
+        ctx.json({ error: 'Missing required parameters' })
+      )
+    }
+
+    return res(
+      ctx.status(200),
+      ctx.json({
+        inputMint,
+        outputMint,
+        inputAmount: amount,
+        outputAmount: (parseFloat(amount) * 0.95).toString(), // Mock conversion
+        priceImpactPct: 0.12,
+        routePlan: [
+          {
+            swapInfo: {
+              ammKey: 'amm-key',
+              label: 'Serum',
+              notEnoughLiquidity: false,
+              inAmount: amount,
+              outAmount: (parseFloat(amount) * 0.95).toString(),
+              feeAmount: '1000',
+              feeMint: inputMint
+            }
+          }
+        ]
+      })
+    )
+  }),
+
+  // Swap API
+  http.post('*/api/v1/jupiter/swap/v1/swap', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json({
+        swapTransaction: 'base64-encoded-transaction-data',
+        lastValidBlockHeight: 123456,
+        prioritizationFeeLamports: 10000
+      })
+    )
+  }),
+
+  // Confidential balances API
+  http.get('*/api/v1/confidential/balances', (req, res, ctx) => {
+    const url = new URL(req.url)
+    const userPublicKey = url.searchParams.get('userPublicKey')
+
+    if (!userPublicKey) {
+      return res(
+        ctx.status(400),
+        ctx.json({ error: 'Missing userPublicKey' })
+      )
+    }
+
+    return res(
+      ctx.status(200),
+      ctx.json({
+        confidentialBalances: [
+          {
+            tokenAddress: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+            amount: '1000000000', // 1000 USDC
+            symbol: 'USDC',
+            decimals: 6
+          },
+          {
+            tokenAddress: 'WAVE-token-address-here',
+            amount: '500000000', // 0.5 WAVE
+            symbol: 'WAVE',
+            decimals: 9
+          }
+        ]
+      })
+    )
+  }),
+
+  // Transaction history API
+  http.get('*/api/v1/swap/history/:userAddress', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json({
+        transactions: [
+          {
+            signature: 'signature-123',
+            type: 'swap',
+            status: 'completed',
+            inputToken: 'USDC',
+            outputToken: 'WAVE',
+            inputAmount: '1000000',
+            outputAmount: '200000000',
+            timestamp: new Date().toISOString(),
+            isPrivate: true
+          },
+          {
+            signature: 'signature-456',
+            type: 'swap',
+            status: 'pending',
+            inputToken: 'SOL',
+            outputToken: 'USDC',
+            inputAmount: '1000000000',
+            outputAmount: '15000000',
+            timestamp: new Date().toISOString(),
+            isPrivate: false
+          }
+        ]
+      })
+    )
+  })
+]

@@ -19,7 +19,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
 
 export function Settings() {
-  const { theme, setLightTheme, setDarkTheme, setOrcaTheme } = useTheme()
+  const { theme, setLightTheme, setDarkTheme, setStealthTheme, setGhostTheme } = useTheme()
   const themeConfig = useThemeConfig()
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState(true)
@@ -268,7 +268,7 @@ export function Settings() {
               </div>
 
               {/* Theme Options */}
-              <div className="grid grid-cols-3 gap-1.5 xs:gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 xs:gap-2">
                 <button
                   onClick={setLightTheme}
                   className={`relative flex flex-col items-center gap-1.5 xs:gap-2 p-2 xs:p-3 rounded-xl transition-all duration-200 ${
@@ -348,42 +348,96 @@ export function Settings() {
                 </button>
 
                 <button
-                  onClick={setOrcaTheme}
+                  onClick={setStealthTheme}
                   className={`relative flex flex-col items-center gap-1.5 xs:gap-2 p-2 xs:p-3 rounded-xl transition-all duration-200 ${
-                    theme === 'orca' ? '' : ''
+                    theme === 'stealth' ? '' : ''
                   }`}
                   style={{
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: theme === 'orca' ? `${themeConfig.colors.textMuted}50` : `${themeConfig.colors.border}50`,
-                    background: theme === 'orca'
-                      ? `${themeConfig.colors.textMuted}10`
+                    borderColor: theme === 'stealth' ? `${themeConfig.colors.primary}50` : `${themeConfig.colors.border}50`,
+                    background: theme === 'stealth'
+                      ? `${themeConfig.colors.primary}10`
                       : `${themeConfig.colors.surface}30`,
                     backdropFilter: 'blur(8px) saturate(1.2)'
                   }}
                   onMouseEnter={(e) => {
-                    if (theme !== 'orca') {
-                      e.currentTarget.style.borderColor = `${themeConfig.colors.textMuted}30`
+                    if (theme !== 'stealth') {
+                      e.currentTarget.style.borderColor = `${themeConfig.colors.primary}30`
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (theme !== 'orca') {
+                    if (theme !== 'stealth') {
                       e.currentTarget.style.borderColor = `${themeConfig.colors.border}50`
                     }
                   }}
                 >
-                  <div className="w-5 h-5 rounded-full border-2" style={{
-                    backgroundColor: theme === 'orca' ? themeConfig.colors.textMuted : 'transparent',
-                    borderColor: themeConfig.colors.textMuted
-                  }} />
+                  <img
+                    src="/icons/ninja.svg"
+                    alt="Stealth"
+                    className="w-5 h-5"
+                    style={{
+                      filter: theme === 'stealth'
+                        ? 'brightness(0) invert(1)'
+                        : 'brightness(0) invert(0.5)',
+                      opacity: theme === 'stealth' ? 1 : 0.6
+                    }}
+                  />
                   <span className="text-xs font-medium" style={{
                     color: themeConfig.colors.textMuted,
                     fontFamily: 'var(--font-helvetica)'
                   }}>
-                    Orca
+                    Stealth
                   </span>
-                  {theme === 'orca' && (
-                    <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: themeConfig.colors.textMuted }} />
+                  {theme === 'stealth' && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: themeConfig.colors.primary }} />
+                  )}
+                </button>
+
+                <button
+                  onClick={setGhostTheme}
+                  className={`relative flex flex-col items-center gap-1.5 xs:gap-2 p-2 xs:p-3 rounded-xl transition-all duration-200 ${
+                    theme === 'ghost' ? '' : ''
+                  }`}
+                  style={{
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: theme === 'ghost' ? `${themeConfig.colors.primary}50` : `${themeConfig.colors.border}50`,
+                    background: theme === 'ghost'
+                      ? `${themeConfig.colors.primary}10`
+                      : `${themeConfig.colors.surface}30`,
+                    backdropFilter: 'blur(8px) saturate(1.2)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (theme !== 'ghost') {
+                      e.currentTarget.style.borderColor = `${themeConfig.colors.primary}30`
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (theme !== 'ghost') {
+                      e.currentTarget.style.borderColor = `${themeConfig.colors.border}50`
+                    }
+                  }}
+                >
+                  <img
+                    src="/assets/Phantom/Phantom-Icon-Black.svg"
+                    alt="Ghost"
+                    className="w-5 h-5"
+                    style={{
+                      filter: theme === 'ghost'
+                        ? 'none'
+                        : 'brightness(0) invert(0.5)',
+                      opacity: theme === 'ghost' ? 1 : 0.6
+                    }}
+                  />
+                  <span className="text-xs font-medium" style={{
+                    color: theme === 'ghost' ? themeConfig.colors.primary : themeConfig.colors.textMuted,
+                    fontFamily: 'var(--font-helvetica)'
+                  }}>
+                    Ghost
+                  </span>
+                  {theme === 'ghost' && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: themeConfig.colors.primary }} />
                   )}
                 </button>
               </div>

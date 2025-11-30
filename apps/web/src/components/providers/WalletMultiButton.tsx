@@ -194,7 +194,7 @@ export function WalletMultiButton() {
                       </div>
                       {wallet.readyState === 'Installed' && (
                         <div className="w-2 h-2 rounded-full" style={{
-                          background: '#22c55e'
+                          backgroundColor: 'var(--wave-success)'
                         }} />
                       )}
                     </button>

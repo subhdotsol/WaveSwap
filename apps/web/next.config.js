@@ -81,6 +81,12 @@ const nextConfig = {
 
   // Webpack configuration for Solana libraries
   webpack: (config, { isServer }) => {
+    // Exclude test files from build
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '^/test/mocks/(.*)$': false,
+    };
+
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

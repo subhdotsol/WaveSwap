@@ -463,7 +463,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                 backdropFilter: 'blur(12px) saturate(1.5)'
               }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <LockClosedIcon className="w-4 h-4" style={{ color: theme.name === 'orca' ? '#00cc88' : theme.colors.success }} />
+                  <LockClosedIcon className="w-4 h-4" style={{ color: theme.name === 'stealth' ? '#00cc88' : theme.colors.success }} />
                   <span className="text-xs font-medium" style={{ color: theme.colors.textSecondary }}>
                     30 Day Bonus
                   </span>
@@ -546,7 +546,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                       `
                     }}
                   >
-                    Lock In. &#40;Stake&#41; 
+                    Stake
                   </button>
 
                   {currentPool.isSecureBagAvailable && (
@@ -557,7 +557,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                         background: `
                           linear-gradient(135deg,
                             ${theme.colors.success} 0%,
-                            ${theme.name === 'orca' ? '#00cc88' : theme.colors.primaryHover} 100%
+                            ${theme.name === 'stealth' ? '#00cc88' : theme.colors.primaryHover} 100%
                           )
                         `,
                         border: `1px solid ${theme.colors.success}30`,
@@ -569,8 +569,8 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                         color: 'white'
                       }}
                     >
-                      <LockClosedIcon className="w-4 h-4 mr-2 inline" />
                       Secure The Bag
+                      <LockClosedIcon className="w-4 h-4 mr-2 inline" />
                     </button>
                   )}
                 </>
@@ -861,7 +861,7 @@ function SecureBagModal({
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <LockClosedIcon className="w-6 h-6" style={{ color: theme.name === 'orca' ? '#00cc88' : theme.colors.success }} />
+              <LockClosedIcon className="w-6 h-6" style={{ color: theme.name === 'stealth' ? '#00cc88' : theme.colors.success }} />
               <h3 className="text-xl font-bold" style={{ color: theme.colors.textPrimary }}>
                 Secure Bag
               </h3>
@@ -886,7 +886,7 @@ function SecureBagModal({
             border: `1px solid ${theme.colors.success}20`
           }}>
             <div className="flex items-center gap-2 mb-2">
-              <LockClosedIcon className="w-4 h-4" style={{ color: theme.name === 'orca' ? '#00cc88' : theme.colors.success }} />
+              <LockClosedIcon className="w-4 h-4" style={{ color: theme.name === 'stealth' ? '#00cc88' : theme.colors.success }} />
               <span className="font-medium" style={{ color: theme.colors.textPrimary }}>
                 30-Day Lock Period
               </span>
@@ -993,7 +993,7 @@ function SecureBagModal({
               background: `
                 linear-gradient(135deg,
                   ${theme.colors.success} 0%,
-                  ${theme.name === 'orca' ? '#00cc88' : theme.colors.primaryHover} 100%
+                  ${theme.name === 'stealth' ? '#00cc88' : theme.colors.primaryHover} 100%
                 )
               `,
               border: `1px solid ${theme.colors.success}30`,
@@ -1098,7 +1098,7 @@ function InfoModal({ onClose, theme }: { onClose: () => void, theme: any }) {
                   background: `${theme.colors.success}10`,
                   border: `1px solid ${theme.colors.success}20`
                 }}>
-                  <h5 className="font-medium text-sm" style={{ color: theme.name === 'orca' ? '#00cc88' : theme.colors.success }}>
+                  <h5 className="font-medium text-sm" style={{ color: theme.name === 'stealth' ? '#00cc88' : theme.colors.success }}>
                     Secure Bag
                   </h5>
                   <p className="text-xs mt-1" style={{ color: theme.colors.textSecondary }}>

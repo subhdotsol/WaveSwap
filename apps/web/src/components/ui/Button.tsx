@@ -69,9 +69,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           }
         case 'destructive':
           return {
-            background: '#dc2626',
+            background: 'var(--wave-error)',
             color: 'white',
-            border: '1px solid #dc2626',
+            border: '1px solid var(--wave-error)',
           }
         case 'glow':
           return {

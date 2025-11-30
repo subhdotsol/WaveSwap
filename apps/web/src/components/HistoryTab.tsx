@@ -14,9 +14,12 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   CalendarIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
+import { useTransactionHistory } from '@/hooks/useTransactionHistory'
+import { TokenIcon } from '@/components/TokenIcon'
 
 interface HistoryTabProps {
   privacyMode: boolean
@@ -31,26 +34,18 @@ interface Transaction {
     symbol: string
     amount: string
     logoURI?: string
+    address: string
   }
   toToken: {
     symbol: string
     amount: string
     logoURI?: string
+    address: string
   }
   txHash?: string
   priceImpact?: number
   privacyLevel?: 'public' | 'private'
-}
-
-// Real transaction data will be loaded from the application state or API
-// For now, return empty array which will show the empty state
-const getRealTransactions = (): Transaction[] => {
-  // TODO: Implement real transaction history fetching
-  // This could integrate with:
-  // - Local storage for transaction history
-  // - Solana RPC call to get transaction history
-  // - WaveSwap backend API for user transaction history
-  return []
+  intentId?: string
 }
 
 export function HistoryTab({ privacyMode }: HistoryTabProps) {
@@ -59,22 +54,31 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'pending' | 'failed'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'swap' | 'send' | 'receive'>('all')
 
-  // Get real transactions (empty for now until implemented)
-  const transactions = useMemo(() => getRealTransactions(), [])
+  // Get real transactions from API
+  const {
+    transactions: allTransactions,
+    loading,
+    error,
+    hasMore,
+    loadMore,
+    refresh,
+    isEmpty
+  } = useTransactionHistory(privacyMode)
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
+    return allTransactions.filter(tx => {
       const matchesSearch = searchQuery === '' ||
         tx.fromToken.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tx.toToken.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tx.txHash?.toLowerCase().includes(searchQuery.toLowerCase())
+        tx.txHash?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tx.intentId?.toLowerCase().includes(searchQuery.toLowerCase())
 
       const matchesStatus = statusFilter === 'all' || tx.status === statusFilter
       const matchesType = typeFilter === 'all' || tx.type === typeFilter
 
       return matchesSearch && matchesStatus && matchesType
     })
-  }, [transactions, searchQuery, statusFilter, typeFilter])
+  }, [allTransactions, searchQuery, statusFilter, typeFilter])
 
   const formatTimestamp = (date: Date) => {
     const now = new Date()
@@ -190,6 +194,23 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
 
           <div className="flex items-center gap-2">
             <button
+              onClick={refresh}
+              disabled={loading}
+              className="p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+              style={{
+                ...createGlassStyles(theme),
+                border: `1px solid ${theme.colors.border}`
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) e.currentTarget.style.background = theme.colors.surfaceHover
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = createGlassStyles(theme).background as string
+              }}
+            >
+              <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} style={{ color: theme.colors.textMuted }} />
+            </button>
+            <button
               className="p-2 rounded-lg transition-all duration-200"
               style={{
                 ...createGlassStyles(theme),
@@ -303,9 +324,83 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
         </div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div
+          className="relative p-8 rounded-2xl text-center overflow-hidden"
+          style={{
+            ...createGlassStyles(theme),
+            background: `${theme.colors.error}08`,
+            border: `1px solid ${theme.colors.error}20`,
+            backdropFilter: 'blur(16px) saturate(1.5)'
+          }}
+        >
+          <div className="relative z-10">
+            <div className="flex justify-center mb-4">
+              <ExclamationCircleIcon className="h-12 w-12" style={{ color: theme.colors.error }} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2" style={{
+              color: theme.colors.textPrimary,
+              fontFamily: 'var(--font-helvetica)'
+            }}>
+              Failed to Load History
+            </h3>
+            <p className="text-sm mb-4" style={{ color: theme.colors.textMuted }}>
+              {error}
+            </p>
+            <button
+              onClick={refresh}
+              disabled={loading}
+              className="px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+              style={{
+                background: theme.colors.error,
+                color: 'white',
+                fontFamily: 'var(--font-helvetica)',
+                fontWeight: 500
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, index) => (
+            <div
+              key={`loading-${index}`}
+              className="relative p-4 rounded-xl overflow-hidden"
+              style={{
+                ...createGlassStyles(theme),
+                background: `${theme.colors.surface}dd`,
+                border: `1px solid ${theme.colors.border}`,
+                backdropFilter: 'blur(16px) saturate(1.5)'
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-4 h-4 rounded-full animate-pulse" style={{ backgroundColor: theme.colors.surfaceHover }} />
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-8 rounded animate-pulse" style={{ backgroundColor: theme.colors.surface }} />
+                    <ArrowPathIcon className="h-4 w-4" style={{ color: theme.colors.textMuted }} />
+                    <div className="w-16 h-8 rounded animate-pulse" style={{ backgroundColor: theme.colors.surface }} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-4 rounded animate-pulse" style={{ backgroundColor: theme.colors.surfaceHover }} />
+                  <div className="w-8 h-8 rounded animate-pulse" style={{ backgroundColor: theme.colors.surface }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Transaction List */}
       <div className="space-y-3">
-        {filteredTransactions.length === 0 ? (
+        {!loading && !error && filteredTransactions.length === 0 ? (
           <div
             className="relative p-12 rounded-2xl text-center overflow-hidden"
             style={{
@@ -332,11 +427,11 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                 color: theme.colors.textPrimary,
                 fontFamily: 'var(--font-helvetica)'
               }}>
-                {privacyMode ? 'Private Transaction History' : 'Transaction History'}
+                {privacyMode ? 'No Private Transactions' : 'No Transaction History'}
               </h3>
               <p className="text-sm mb-4" style={{ color: theme.colors.textMuted }}>
                 {privacyMode
-                  ? 'Your confidential swap history will appear here once you start trading.'
+                  ? 'Your confidential swap history will appear here once you start private trading.'
                   : 'Your swap history will appear here once you start trading.'
                 }
               </p>
@@ -389,28 +484,46 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
 
                     {/* Tokens */}
                     <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-sm font-semibold" style={{
-                          color: theme.colors.textPrimary,
-                          fontFamily: 'var(--font-helvetica)'
-                        }}>
-                          {privacyMode && transaction.privacyLevel === 'private' ? '***' : transaction.fromToken.amount}
-                        </p>
-                        <p className="text-xs" style={{ color: theme.colors.textMuted }}>{transaction.fromToken.symbol}</p>
+                      <div className="flex items-center gap-2">
+                        <TokenIcon
+                          symbol={transaction.fromToken.symbol}
+                          mint={transaction.fromToken.address}
+                          logoURI={transaction.fromToken.logoURI}
+                          size={24}
+                          className="rounded-full"
+                        />
+                        <div className="text-right">
+                          <p className="text-sm font-semibold" style={{
+                            color: theme.colors.textPrimary,
+                            fontFamily: 'var(--font-helvetica)'
+                          }}>
+                            {privacyMode && transaction.privacyLevel === 'private' ? '***' : transaction.fromToken.amount}
+                          </p>
+                          <p className="text-xs" style={{ color: theme.colors.textMuted }}>{transaction.fromToken.symbol}</p>
+                        </div>
                       </div>
 
                       <div className="flex flex-col items-center">
                         <ArrowPathIcon className="h-4 w-4" style={{ color: theme.colors.textMuted }} />
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-sm font-semibold" style={{
-                          color: theme.colors.textPrimary,
-                          fontFamily: 'var(--font-helvetica)'
-                        }}>
-                          {privacyMode && transaction.privacyLevel === 'private' ? '***' : transaction.toToken.amount}
-                        </p>
-                        <p className="text-xs" style={{ color: theme.colors.textMuted }}>{transaction.toToken.symbol}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="text-sm font-semibold" style={{
+                            color: theme.colors.textPrimary,
+                            fontFamily: 'var(--font-helvetica)'
+                          }}>
+                            {privacyMode && transaction.privacyLevel === 'private' ? '***' : transaction.toToken.amount}
+                          </p>
+                          <p className="text-xs" style={{ color: theme.colors.textMuted }}>{transaction.toToken.symbol}</p>
+                        </div>
+                        <TokenIcon
+                          symbol={transaction.toToken.symbol}
+                          mint={transaction.toToken.address}
+                          logoURI={transaction.toToken.logoURI}
+                          size={24}
+                          className="rounded-full"
+                        />
                       </div>
                     </div>
                   </div>
@@ -487,10 +600,12 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
       </div>
 
       {/* Load more */}
-      {filteredTransactions.length > 0 && (
+      {hasMore && !loading && !error && filteredTransactions.length > 0 && (
         <div className="mt-6 text-center">
           <button
-            className="px-6 py-3 rounded-xl transition-all duration-200 font-medium"
+            onClick={loadMore}
+            disabled={loading}
+            className="px-6 py-3 rounded-xl transition-all duration-200 font-medium disabled:opacity-50"
             style={{
               background: `linear-gradient(135deg, ${theme.colors.primary}cc 0%, ${theme.colors.secondary}cc 100%)`,
               border: `1px solid ${theme.colors.primary}40`,
@@ -500,7 +615,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
               color: theme.colors.textPrimary
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = `linear-gradient(135deg, ${theme.colors.primary}dd 0%, ${theme.colors.secondary}dd 100%)`
+              if (!loading) e.currentTarget.style.background = `linear-gradient(135deg, ${theme.colors.primary}dd 0%, ${theme.colors.secondary}dd 100%)`
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = `linear-gradient(135deg, ${theme.colors.primary}cc 0%, ${theme.colors.secondary}cc 100%)`

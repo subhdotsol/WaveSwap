@@ -1,24 +1,434 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { ArrowsUpDownIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { Connection } from '@solana/web3.js'
+import { ArrowsUpDownIcon, ExclamationTriangleIcon, ArrowDownTrayIcon, WalletIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import { TokenSelector } from './TokenSelector'
 import { AmountInput } from './AmountInput'
 import { SwapButton } from './SwapButton'
+import { WithdrawConfirmModal, WithdrawSuccessModal, WithdrawErrorModal } from '@/components/ui/Modal'
 import { useSwap } from '@/hooks/useSwap'
 import { Token, SwapStatus } from '@/types/token'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
+import { EncifherClient, EncifherUtils } from '@/lib/encifher'
 
 interface SwapComponentProps {
   privacyMode: boolean
 }
 
-// The token selection is now handled by Jupiter Token Service
-
 export function SwapComponent({ privacyMode }: SwapComponentProps) {
-  const { publicKey } = useWallet()
+  const { publicKey, signMessage } = useWallet()
   const theme = useThemeConfig()
+  const [activeTab, setActiveTab] = useState<'swap' | 'withdraw'>('swap')
+
+  // Withdrawal modal states
+  const [showWithdrawConfirmModal, setShowWithdrawConfirmModal] = useState(false)
+  const [showWithdrawSuccessModal, setShowWithdrawSuccessModal] = useState(false)
+  const [showWithdrawErrorModal, setShowWithdrawErrorModal] = useState(false)
+  const [pendingWithdrawal, setPendingWithdrawal] = useState<{
+    tokenAddress: string
+    amount: number
+    symbol: string
+  } | null>(null)
+  const [withdrawalError, setWithdrawalError] = useState<string>('')
+  const [withdrawalTransactionSignature, setWithdrawalTransactionSignature] = useState<string>('')
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
+
+  // Withdrawal input amounts for each token
+  const [withdrawalAmounts, setWithdrawalAmounts] = useState<{ [key: string]: string }>({})
+  const [apiConfidentialBalances, setApiConfidentialBalances] = useState<any[]>([])
+  const [isLoadingConfidentialBalances, setIsLoadingConfidentialBalances] = useState(false)
+
+  // Fetch confidential balances from API when privacy mode is enabled and user is connected
+  useEffect(() => {
+    if (privacyMode && publicKey) {
+      fetchConfidentialBalances()
+    } else {
+      setApiConfidentialBalances([])
+    }
+  }, [privacyMode, publicKey])
+
+  // API function to fetch confidential balances
+  const fetchConfidentialBalances = async () => {
+    if (!publicKey) return
+
+    setIsLoadingConfidentialBalances(true)
+    try {
+      console.log('[SwapComponent] Fetching confidential balances from API for user:', publicKey.toString())
+
+      const response = await fetch(`/api/v1/confidential/balances?userPublicKey=${publicKey.toString()}`)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[SwapComponent] Successfully fetched confidential balances:', data)
+        setApiConfidentialBalances(data.confidentialBalances || [])
+      } else {
+        console.error('[SwapComponent] Failed to fetch confidential balances:', response.status, response.statusText)
+        setApiConfidentialBalances([])
+      }
+    } catch (error) {
+      console.error('[SwapComponent] Error fetching confidential balances:', error)
+      setApiConfidentialBalances([])
+    } finally {
+      setIsLoadingConfidentialBalances(false)
+    }
+  }
+
+  // API function to fetch authenticated confidential balances using Encifher SDK
+  const fetchAuthenticatedBalances = async () => {
+    if (!publicKey || !signMessage) {
+      console.error('[SwapComponent] Wallet not connected or signing not available')
+      alert('Please connect your wallet and ensure it supports message signing.')
+      return
+    }
+
+    setIsLoadingConfidentialBalances(true)
+    try {
+      console.log('[SwapComponent] Initiating authenticated balance fetch for user:', publicKey.toString())
+
+      // Initialize Encifher client
+      const connection = new Connection(
+        process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com'
+      )
+
+      const encifherConfig = EncifherUtils.getConfig()
+      if (!encifherConfig) {
+        throw new Error('Encifher SDK configuration not found')
+      }
+
+      const encifherClient = new EncifherClient(connection, encifherConfig)
+
+      // Check if client is ready
+      if (!encifherClient.isReady()) {
+        await encifherClient.initialize(encifherConfig)
+      }
+
+      console.log('[SwapComponent] Encifher client initialized, requesting message to sign...')
+
+      // Step 1: Get message to sign from Encifher SDK
+      const msgPayload = await (encifherClient as any).client.getMessageToSign()
+      console.log('[SwapComponent] Received message to sign:', msgPayload)
+
+      // Step 2: Sign the message with user's wallet
+      const messageBytes = new TextEncoder().encode(msgPayload.msgHash)
+      const signatureArray = await signMessage(messageBytes)
+      const signature = Buffer.from(signatureArray).toString('base64')
+
+      console.log('[SwapComponent] User signed message successfully')
+
+      // Step 3: Get ONLY user's actual deposited tokens from Encifher - NO HARDCODING!
+      console.log('[SwapComponent] Getting user deposited tokens from Encifher...')
+
+      let finalTokenMints: string[] = []
+
+      try {
+        const userTokensResponse = await (encifherClient as any).client.getUserTokenMints(
+          publicKey,
+          { signature, ...msgPayload },
+          encifherConfig.encifherKey
+        )
+
+        console.log('[SwapComponent] ✅ getUserTokenMints SUCCESS!')
+        console.log('[SwapComponent] Raw response:', userTokensResponse)
+        console.log('[SwapComponent] Response type:', typeof userTokensResponse)
+
+        // Extract token addresses - handle ALL possible response formats
+        if (Array.isArray(userTokensResponse)) {
+          console.log('[SwapComponent] Response is array with', userTokensResponse.length, 'items')
+          finalTokenMints = userTokensResponse.map((token, index) => {
+            console.log(`[SwapComponent] Processing token ${index}:`, token, typeof token)
+
+            if (typeof token === 'string') {
+              return token
+            } else if (token && typeof token === 'object') {
+              // Try all possible property names
+              const address = token.address || token.mint || token.tokenAddress || token.tokenMint
+              if (address && typeof address === 'string') {
+                return address
+              }
+              console.warn('[SwapComponent] Token object missing address property:', token)
+              return token.toString()
+            } else {
+              console.warn('[SwapComponent] Unexpected token format:', token)
+              return String(token)
+            }
+          })
+        } else if (userTokensResponse && typeof userTokensResponse === 'object') {
+          console.log('[SwapComponent] Response is object, looking for tokens array...')
+          finalTokenMints = userTokensResponse.tokens || userTokensResponse.mints || userTokensResponse.data || []
+        }
+
+        console.log(`[SwapComponent] 🎉 FINAL: Found ${finalTokenMints.length} user-deposited tokens!`)
+        console.log('[SwapComponent] Token addresses:', finalTokenMints)
+
+      } catch (tokenMintsError) {
+        console.error('[SwapComponent] ❌ getUserTokenMints FAILED:', tokenMintsError)
+        throw new Error(`Failed to get user tokens: ${tokenMintsError instanceof Error ? tokenMintsError.message : String(tokenMintsError)}`)
+      }
+
+      // If no tokens found, don't proceed - user needs to deposit first
+      if (finalTokenMints.length === 0) {
+        console.log('[SwapComponent] No tokens found - user has not deposited anything to Encifher yet')
+        setApiConfidentialBalances([])
+        alert('✅ Authentication successful! No tokens found in your Encifher account. Deposit some tokens first to see balances.')
+        return
+      }
+
+      console.log(`[SwapComponent] Final token list for balance checking (${finalTokenMints.length} tokens):`, finalTokenMints.slice(0, 20))
+
+      // Step 5: Get authenticated balances for user's actual tokens
+      const authenticatedBalance = await (encifherClient as any).client.getBalance(
+        publicKey,
+        { signature, ...msgPayload },
+        finalTokenMints,
+        encifherConfig.encifherKey
+      )
+
+      console.log('[SwapComponent] Successfully fetched authenticated balance:', authenticatedBalance)
+      console.log('[SwapComponent] Balance response type:', typeof authenticatedBalance)
+      console.log('[SwapComponent] Balance response isArray:', Array.isArray(authenticatedBalance))
+
+      if (Array.isArray(authenticatedBalance)) {
+        console.log('[SwapComponent] Balance array length:', authenticatedBalance.length)
+
+        // Debug each balance object completely (handle BigInt)
+        authenticatedBalance.forEach((balance, index) => {
+          console.log(`[SwapComponent] 🔍 Balance[${index}] COMPLETE DEBUG:`)
+          console.log('  - Raw object:', balance)
+          console.log('  - Object keys:', Object.keys(balance))
+
+          // Handle BigInt serialization
+          const balanceForStringify = { ...balance }
+          Object.keys(balanceForStringify).forEach(key => {
+            if (typeof balanceForStringify[key] === 'bigint') {
+              balanceForStringify[key] = balanceForStringify[key].toString()
+            }
+          })
+
+          try {
+            console.log('  - Stringified:', JSON.stringify(balanceForStringify, null, 2))
+          } catch (stringifyError) {
+            console.log('  - Stringify error:', stringifyError instanceof Error ? stringifyError.message : String(stringifyError))
+            console.log('  - Balance object keys:', Object.keys(balance))
+          }
+
+          // Check all possible amount fields
+          console.log('  - amount:', balance.amount, typeof balance.amount)
+          console.log('  - balanceAmount:', balance.balanceAmount, typeof balance.balanceAmount)
+          console.log('  - value:', balance.value, typeof balance.value)
+          console.log('  - quantity:', balance.quantity, typeof balance.quantity)
+          console.log('  - tokenAmount:', balance.tokenAmount, typeof balance.tokenAmount)
+
+          // Check for actual values (convert BigInt to string)
+          if (balance.amount && typeof balance.amount === 'bigint') {
+            console.log('  - ✅ Found BigInt amount:', balance.amount.toString())
+          }
+          if (balance.balanceAmount && typeof balance.balanceAmount === 'bigint') {
+            console.log('  - ✅ Found BigInt balanceAmount:', balance.balanceAmount.toString())
+          }
+
+          // Check token info fields
+          console.log('  - tokenSymbol:', balance.tokenSymbol)
+          console.log('  - symbol:', balance.symbol)
+          console.log('  - token:', balance.token)
+
+          // Check visibility
+          console.log('  - isVisible:', balance.isVisible)
+          console.log('  - visible:', balance.visible)
+        })
+      }
+
+      // Update the API confidential balances with real authenticated data
+      if (authenticatedBalance && Array.isArray(authenticatedBalance)) {
+        // Create a map of token addresses to token metadata for lookup (minimal to avoid rate limiting)
+        let tokenMetadataMap = new Map<string, any>()
+
+        // Basic token metadata for common tokens only
+        const basicTokenMetadata = {
+          'So11111111111111111111111111111111111111112': { symbol: 'SOL', name: 'Solana', decimals: 9 },
+          'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+          'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', name: 'Tether USD', decimals: 6 },
+        }
+
+        tokenMetadataMap = new Map(Object.entries(basicTokenMetadata))
+
+        // Debug token mapping
+        console.log('[SwapComponent] Token mapping debug:')
+        console.log('[SwapComponent] Total finalTokenMints requested:', finalTokenMints.length)
+        console.log('[SwapComponent] Total balances received:', authenticatedBalance.length)
+
+        // Check for mapping issues
+        if (authenticatedBalance.length !== finalTokenMints.length) {
+          console.warn('[SwapComponent] MISMATCH: balances length != finalTokenMints length!')
+          console.warn('[SwapComponent] This could indicate API response format issues')
+        }
+
+        // Debug filtering logic - show all balances first, then filter
+        console.log('[SwapComponent] Analyzing balances before filtering:')
+        authenticatedBalance.forEach((balance: any, index: number) => {
+          const tokenAddress = finalTokenMints[index] || 'unknown'
+
+          // Handle the actual balance format: { "tokenAddress": "amount" }
+          let amount: string | number | bigint | unknown = '0'
+          if (balance && typeof balance === 'object') {
+            // Extract amount from the balance object using token address as key
+            if (tokenAddress in balance) {
+              amount = balance[tokenAddress]
+            } else {
+              // Fallback: try common amount fields
+              amount = balance.amount || balance.balanceAmount || balance.value || balance.quantity || '0'
+            }
+          } else {
+            // Fallback for other formats
+            amount = balance?.amount || balance?.balanceAmount || balance?.value || balance?.quantity || '0'
+          }
+
+          // Ensure amount is a string for consistent handling
+          if (typeof amount === 'bigint') {
+            amount = amount.toString()
+          } else if (typeof amount === 'number') {
+            amount = amount.toString()
+          } else if (typeof amount === 'string') {
+            // Keep amount as string if it's already a string
+          } else {
+            amount = String(amount || '0')
+          }
+
+          // At this point, amount should be a string
+          const amountAsString = String(amount || '0')
+          const parsedAmount = parseFloat(amountAsString)
+          const hasBalance = amountAsString && amountAsString !== '0' && parsedAmount > 0
+
+          console.log(`[SwapComponent] Token ${index} (${tokenAddress}):`, {
+            balanceObject: balance,
+            rawAmount: amount,
+            parsedAmount,
+            hasBalance,
+            isVisible: balance.isVisible,
+            wouldBeFiltered: !hasBalance,
+            amountType: typeof amount,
+            tokenAddressInBalance: tokenAddress in balance
+          })
+        })
+
+        // Filter out tokens with zero balances and map to proper token info
+        const updatedBalances = authenticatedBalance
+          .filter((balance: any, index: number) => {
+            const tokenAddress = finalTokenMints[index]
+
+            // Handle the actual balance format: { "tokenAddress": "amount" }
+            let amount: string | number | bigint | unknown = '0'
+            if (balance && typeof balance === 'object') {
+              // Extract amount from the balance object using token address as key
+              if (tokenAddress && tokenAddress in balance) {
+                amount = balance[tokenAddress]
+              } else {
+                // Fallback: try common amount fields
+                amount = balance.amount || balance.balanceAmount || balance.value || balance.quantity || '0'
+              }
+            } else {
+              // Fallback for other formats
+              amount = balance?.amount || balance?.balanceAmount || balance?.value || balance?.quantity || '0'
+            }
+
+            if (typeof amount === 'bigint') {
+              amount = amount.toString()
+            }
+
+            const amountAsString = String(amount || '0')
+            const parsedAmount = parseFloat(amountAsString)
+            const hasBalance = amountAsString && amountAsString !== '0' && parsedAmount > 0
+
+            if (!hasBalance) {
+              console.log(`[SwapComponent] Filtering out token ${tokenAddress} - zero balance`)
+              return false
+            }
+
+            return hasBalance
+          })
+          .map((balance: any, index: number) => {
+            const tokenAddress = finalTokenMints[index] || balance.tokenAddress
+            const metadata = tokenMetadataMap.get(tokenAddress)
+
+            // Handle the actual balance format: { "tokenAddress": "amount" }
+            let amount: string | number | bigint | unknown = '0'
+            if (balance && typeof balance === 'object') {
+              // Extract amount from the balance object using token address as key
+              if (tokenAddress && tokenAddress in balance) {
+                amount = balance[tokenAddress]
+              } else {
+                // Fallback: try common amount fields
+                amount = balance.amount || balance.balanceAmount || balance.value || balance.quantity || '0'
+              }
+            } else {
+              // Fallback for other formats
+              amount = balance?.amount || balance?.balanceAmount || balance?.value || balance?.quantity || '0'
+            }
+
+            const finalAmount = String(amount || '0')
+
+            return {
+              tokenAddress,
+              tokenSymbol: metadata ? `c${metadata.symbol}` : balance.tokenSymbol || `cToken${index}`,
+              tokenName: metadata ? `Confidential ${metadata.name}` : balance.tokenName || 'Confidential Token',
+              decimals: metadata?.decimals || balance.decimals || 9,
+              amount: finalAmount,
+              isVisible: balance.isVisible !== false,
+              lastUpdated: new Date().toISOString(),
+              source: 'authenticated',
+              requiresAuth: false,
+              note: 'Balance successfully authenticated and loaded',
+              logoURI: metadata?.logoURI
+            }
+          })
+
+        // Sort by balance value (descending) for better UX
+        updatedBalances.sort((a: any, b: any) => {
+          const aValue = parseFloat(a.amount) / Math.pow(10, a.decimals)
+          const bValue = parseFloat(b.amount) / Math.pow(10, b.decimals)
+          return bValue - aValue
+        })
+
+        setApiConfidentialBalances(updatedBalances)
+
+        console.log('[SwapComponent] Successfully updated authenticated balances in UI:', {
+          totalTokens: updatedBalances.length,
+          tokens: updatedBalances.map(b => `${b.tokenSymbol}: ${b.amount}`)
+        })
+
+        // Show success message with count of tokens found
+        const tokenCount = updatedBalances.length
+        if (tokenCount > 0) {
+          alert(`✅ Authentication successful!\n\n🔍 Found ${tokenCount} confidential token${tokenCount > 1 ? 's' : ''} in your account:\n${updatedBalances.slice(0, 5).map(b => `• ${b.tokenSymbol}: ${b.amount}`).join('\n')}${tokenCount > 5 ? `\n... and ${tokenCount - 5} more` : ''}`)
+        } else {
+          alert('✅ Authentication successful! No confidential tokens found in your account. Try depositing some tokens first.')
+        }
+      } else {
+        console.log('[SwapComponent] No authenticated balance data received')
+        setApiConfidentialBalances([])
+        alert('Authentication successful, but no confidential balances found.')
+      }
+
+    } catch (error) {
+      console.error('[SwapComponent] Error in authentication process:', error)
+
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('sign')) {
+          alert('Wallet signature was cancelled or failed. Please try again.')
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          alert('Network error. Please check your connection and try again.')
+        } else {
+          alert(`Authentication error: ${error.message}`)
+        }
+      } else {
+        alert('Error during authentication. Please try again.')
+      }
+    } finally {
+      setIsLoadingConfidentialBalances(false)
+    }
+  }
 
   const {
     inputToken,
@@ -35,11 +445,12 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     setOutputToken,
     setInputAmount,
     swap,
-    getQuote,
-    refreshBalances,
+      refreshBalances,
     clearQuote,
     clearError,
-    cancelSwap
+    cancelSwap,
+    withdrawConfidentialTokens,
+    recoverTransaction
   } = useSwap(privacyMode, publicKey)
 
   // Handle input amount change
@@ -47,21 +458,17 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     setInputAmount(amount)
   }
 
-  // Enhanced token list for selector (user tokens + popular tokens + limited other tokens)
+  // Enhanced token list for selector
   const optimizedTokens = useMemo(() => {
     if (!availableTokens || availableTokens.length === 0) return []
 
-    // Helper function to check if token has balance
     const hasTokenBalance = (tokenAddress: string): boolean => {
       if (!balances) return false
       const balance = balances.get(tokenAddress)
       return balance !== undefined && parseFloat(balance) > 0
     }
 
-    // 1. User tokens with balance (highest priority)
     const userTokens = availableTokens.filter(token => hasTokenBalance(token.address))
-
-    // 2. Popular tokens (excluding those already in user tokens)
     const popularTokens = availableTokens.filter(token => {
       const hasBalance = hasTokenBalance(token.address)
       const isPopular = !hasBalance && (
@@ -71,8 +478,6 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
       return isPopular
     })
 
-  
-    // 3. Limited other tokens for discovery (max 20, excluding user and popular tokens)
     const otherTokens = availableTokens
       .filter(token => {
         const hasBalance = hasTokenBalance(token.address)
@@ -85,11 +490,8 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     return [...userTokens, ...popularTokens, ...otherTokens]
   }, [availableTokens, balances])
 
-  // Ensure we always have valid tokens with safe fallbacks
   const safeInputToken = inputToken || availableTokens[1] || availableTokens[0] || null
   const safeOutputToken = outputToken || availableTokens[0] || availableTokens[1] || null
-
-  console.log('[SwapComponent] received availableTokens:', availableTokens.length, availableTokens.map(t => ({ symbol: t.symbol, address: t.address })))
 
   // Handle token switch
   const handleTokenSwitch = () => {
@@ -101,34 +503,25 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     }
   }
 
-  // Handle input token change
+  // Handle token changes
   const handleInputTokenChange = (token: Token) => {
     setInputToken(token)
     if (safeOutputToken && token.address === safeOutputToken.address) {
-      // Find a different token for output
       const availableForOutput = availableTokens.filter(t => t.address !== token.address)
-      if (availableForOutput.length > 0) {
-        const newToken = availableForOutput[0]
-        if (newToken) {
-          setOutputToken(newToken)
-        }
+      if (availableForOutput.length > 0 && availableForOutput[0]) {
+        setOutputToken(availableForOutput[0])
       }
     }
     setInputAmount('')
     clearQuote()
   }
 
-  // Handle output token change
   const handleOutputTokenChange = (token: Token) => {
     setOutputToken(token)
     if (safeInputToken && token.address === safeInputToken.address) {
-      // Find a different token for input
       const availableForInput = availableTokens.filter(t => t.address !== token.address)
-      if (availableForInput.length > 0) {
-        const newToken = availableForInput[0]
-        if (newToken) {
-          setInputToken(newToken)
-        }
+      if (availableForInput.length > 0 && availableForInput[0]) {
+        setInputToken(availableForInput[0])
       }
     }
     setInputAmount('')
@@ -140,26 +533,133 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     try {
       await swap()
     } catch (error) {
-      // Swap failed - error is already handled by useSwap hook
+      // Error is already handled by useSwap hook
     }
   }
 
-  // Get input and output balances
+  // Handle withdrawal amount change
+  const handleWithdrawalAmountChange = (tokenAddress: string, amount: string) => {
+    setWithdrawalAmounts(prev => ({ ...prev, [tokenAddress]: amount }))
+  }
+
+  // Handle withdrawal confirmation
+  const handleWithdrawClick = (tokenAddress: string, maxAmount: number, symbol: string) => {
+    const inputAmount = withdrawalAmounts[tokenAddress] || maxAmount.toString()
+    const amount = parseFloat(inputAmount)
+
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid withdrawal amount')
+      return
+    }
+
+    if (amount > maxAmount) {
+      alert(`Amount exceeds available balance of ${maxAmount} ${symbol}`)
+      return
+    }
+
+    setPendingWithdrawal({ tokenAddress, amount, symbol })
+    setWithdrawalError('')
+    setShowWithdrawConfirmModal(true)
+  }
+
+  // Handle withdrawal execution
+  const handleWithdrawConfirm = async () => {
+    if (!withdrawConfidentialTokens || !pendingWithdrawal || !publicKey) return
+
+    setIsWithdrawing(true)
+    setWithdrawalError('')
+
+    try {
+      // Call the withdrawal API and get the real transaction signature
+      const withdrawalResponse = await withdrawConfidentialTokens(pendingWithdrawal.tokenAddress, pendingWithdrawal.amount)
+
+      // Use the real transaction signature from the API response
+      const realSignature = withdrawalResponse?.signature
+      if (realSignature) {
+        setWithdrawalTransactionSignature(realSignature)
+        console.log('[Withdrawal] Real transaction signature:', realSignature)
+      } else {
+        console.warn('[Withdrawal] No signature found in withdrawal response:', withdrawalResponse)
+        // Fallback to a more descriptive placeholder
+        setWithdrawalTransactionSignature(`withdrawal_${Date.now()}`)
+      }
+
+      setShowWithdrawConfirmModal(false)
+      setShowWithdrawSuccessModal(true)
+
+      setTimeout(() => {
+        refreshBalances()
+        // Also refresh confidential balances from API
+        fetchConfidentialBalances()
+      }, 2000)
+    } catch (error: any) {
+      console.error('[Withdrawal] Error:', error)
+      setWithdrawalError(error.message || 'Failed to process withdrawal')
+      setShowWithdrawConfirmModal(false)
+      setShowWithdrawErrorModal(true)
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
+
+  // Handle withdrawal retry
+  const handleWithdrawRetry = () => {
+    setShowWithdrawErrorModal(false)
+    if (pendingWithdrawal) {
+      setShowWithdrawConfirmModal(true)
+    }
+  }
+
+  
+  
+  // Reset modal states
+  const resetModalStates = () => {
+    setShowWithdrawConfirmModal(false)
+    setShowWithdrawSuccessModal(false)
+    setShowWithdrawErrorModal(false)
+    setPendingWithdrawal(null)
+    setWithdrawalError('')
+    setWithdrawalTransactionSignature('')
+    setIsWithdrawing(false)
+    // Refresh confidential balances when closing modals
+    fetchConfidentialBalances()
+  }
+
+  // Confidential token balances for withdraw tab - fetched from API
+  const confidentialBalances = useMemo(() => {
+    if (!privacyMode || !availableTokens || !publicKey) return []
+
+    // Use API-fetched confidential balances
+    return apiConfidentialBalances
+      .filter((apiBalance: any) => {
+        // Only include tokens that can actually be withdrawn (positive balance and doesn't require authentication)
+        // Authentication-required tokens will be handled in the empty state UI, not in the withdrawal list
+        return apiBalance.amount > 0 && apiBalance.requiresAuth !== true
+      })
+      .map((apiBalance: any) => {
+        const token = availableTokens.find(t => t.address === apiBalance.tokenAddress)
+        if (!token) return null
+
+        return {
+          tokenAddress: apiBalance.tokenAddress,
+          symbol: apiBalance.symbol || `c${token.symbol}`,
+          name: apiBalance.name || `Confidential ${token.name || token.symbol}`,
+          decimals: apiBalance.decimals || token.decimals || 9,
+          amount: apiBalance.amount,
+          usdValue: apiBalance.usdValue || 0, // Will be calculated later if needed
+          canWithdraw: apiBalance.canWithdraw !== false, // Default to true
+          logoURI: apiBalance.logoURI || token.logoURI,
+          isEstimatedBalance: false, // This is actual API data
+          lastUpdated: apiBalance.lastUpdated,
+          requiresAuth: apiBalance.requiresAuth || false // Pass through authentication requirement
+        }
+      })
+      .filter((balance): balance is NonNullable<typeof balance> => balance !== null) // Remove null entries with type guard
+  }, [privacyMode, availableTokens, publicKey, apiConfidentialBalances])
+
+  // Get balances
   const inputBalance = safeInputToken?.address ? (balances.get(safeInputToken.address) || '0') : '0'
   const outputBalance = safeOutputToken?.address ? (balances.get(safeOutputToken.address) || '0') : '0'
-
-  // Debug logging
-  console.log('[SwapComponent] Balance Debug:', {
-    publicKey: publicKey?.toString(),
-    inputToken: safeInputToken?.symbol,
-    inputTokenAddress: safeInputToken?.address,
-    outputToken: safeOutputToken?.symbol,
-    outputTokenAddress: safeOutputToken?.address,
-    inputBalance,
-    outputBalance,
-    balancesMapSize: balances.size,
-    allBalances: Object.fromEntries(balances)
-  })
 
   const inputBalanceFormatted = safeInputToken ? (() => {
     const amount = parseFloat(inputBalance) / Math.pow(10, safeInputToken.decimals || 9)
@@ -179,20 +679,13 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     return amount.toLocaleString(undefined, { maximumFractionDigits: 2 })
   })() : '0'
 
-  // Enhanced balance formatting - show real balances always
-  const displayInputBalance = inputBalanceFormatted
-  const displayOutputBalance = outputBalanceFormatted
-
-  // Check if user has sufficient balance
   const hasInsufficientBalance = safeInputToken && inputAmount && publicKey ? (() => {
     const inputAmountNum = parseFloat(inputAmount)
     if (isNaN(inputAmountNum) || inputAmountNum <= 0) return false
-
     const balanceNum = parseFloat(inputBalance) / Math.pow(10, safeInputToken.decimals || 9)
     return inputAmountNum > balanceNum
   })() : false
 
-  // Check if swap is possible
   const canSwap = !!(
     publicKey &&
     safeInputToken &&
@@ -202,109 +695,16 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     !isLoading &&
     !hasInsufficientBalance
   )
+
   const isProgressActive = !!(progress && progress.status !== SwapStatus.IDLE && progress.status !== SwapStatus.COMPLETED)
 
-  // Calculate price impact with safe fallback
-  const priceImpact = quote && typeof quote.priceImpactPct === 'number' ? quote.priceImpactPct : 0
-
-  // Map regular tokens to confidential versions when privacy mode is enabled
-  const getConfidentialToken = (token: Token | null): Token | null => {
-    if (!token || !privacyMode) return token
-
-    // Map regular tokens to their confidential equivalents
-    const confidentialMap: { [key: string]: Token } = {
-      'So11111111111111111111111111111111111111112': { // SOL
-        ...token,
-        address: 'cSo11111111111111111111111111111111111111112',
-        symbol: 'cSOL',
-        name: 'Confidential SOL',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { // USDC
-        ...token,
-        address: 'cEPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        symbol: 'cUSDC',
-        name: 'Confidential USDC',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { // USDT
-        ...token,
-        address: 'cEs9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-        symbol: 'cUSDT',
-        name: 'Confidential USDT',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump': { // WAVE
-        ...token,
-        address: 'c4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump',
-        symbol: 'cWAVE',
-        name: 'Confidential WAVE',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS': { // ZEC
-        ...token,
-        address: 'cA7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS',
-        symbol: 'cZEC',
-        name: 'Confidential ZEC',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn': { // PUMP
-        ...token,
-        address: 'cpumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn',
-        symbol: 'cPUMP',
-        name: 'Confidential PUMP',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump': { // WEALTH
-        ...token,
-        address: 'cBSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump',
-        symbol: 'cWEALTH',
-        name: 'Confidential WEALTH',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'J2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump': { // FTP
-        ...token,
-        address: 'cJ2eaKn35rp82T6RFEsNK9CLRHEKV9BLXjedFM3q6pump',
-        symbol: 'cFTP',
-        name: 'Confidential FTP',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'DtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2': { // AURA
-        ...token,
-        address: 'cDtR4D9FtVoTX2569gaL837ZgrB6wNjj6tkmnX9Rdk9B2',
-        symbol: 'cAURA',
-        name: 'Confidential AURA',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'MEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5': { // MEW
-        ...token,
-        address: 'cMEW1gQWJ3nEXg2qgERiKu7FAFj79PHvQVREQUzScPP5',
-        symbol: 'cMEW',
-        name: 'Confidential MEW',
-        logoURI: token.logoURI // Preserve the original logoURI
-      },
-      'FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump': { // STORE
-        ...token,
-        address: 'cFLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump',
-        symbol: 'cSTORE',
-        name: 'Confidential STORE',
-        logoURI: token.logoURI // Preserve the original logoURI
-      }
-    }
-
-    return token // Return original token - Encifher handles privacy internally
-  }
-
-  // Ensure token references are consistent throughout calculations
-  const displayInputToken = inputToken || safeInputToken || null
-  const displayOutputToken = outputToken || safeOutputToken || null
-
+  
   // Show confidential versions in display when privacy mode is enabled
-  const displayOutputTokenConfidential = getConfidentialToken(displayOutputToken)
+  const displayOutputToken = outputToken || safeOutputToken || null
+  const displayInputToken = inputToken || safeInputToken || null
 
   return (
     <div className="w-full max-w-lg sm:max-w-xl mx-auto px-2 xs:px-0">
-      {/* Swap Card */}
       <div className="relative">
         {/* Privacy Mode Indicator */}
         {privacyMode && (
@@ -330,9 +730,10 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
           </div>
         )}
 
-        {/* Main Swap Card */}
+        
+        {/* Main Card with Professional Tabs */}
         <div
-          className="relative p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 md:space-y-6 w-full rounded-2xl overflow-hidden"
+          className="relative overflow-hidden rounded-2xl"
           style={{
             background: `
               linear-gradient(135deg,
@@ -369,554 +770,660 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
               filter: 'contrast(1.2) brightness(1.1)'
             }}
           />
-          {/* Progress Display */}
-          {progress && isProgressActive && (
-            <div
-              className="relative z-10 p-4 rounded-xl"
-              style={{
-                background: `
-                  linear-gradient(135deg,
-                    ${theme.colors.primary}10 0%,
-                    ${theme.colors.primary}05 50%,
-                    ${theme.colors.primary}10 100%
-                  )
-                `,
-                border: `1px solid ${theme.colors.primary}20`,
-                backdropFilter: 'blur(16px) saturate(1.5)',
-                boxShadow: `
-                  0 8px 32px ${theme.colors.shadow},
-                  inset 0 1px 0 rgba(255, 255, 255, 0.1)
-                `
-              }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: theme.colors.primary }}
-                >
-                  {progress.message}
-                </span>
+
+          {/* Professional Tab Navigation */}
+          {privacyMode && (
+            <div className="relative z-10">
+              <div className="flex border-b" style={{ borderColor: `${theme.colors.border}30` }}>
                 <button
-                  onClick={cancelSwap}
-                  className="text-xs font-medium transition-colors px-2 py-1 rounded-md hover:bg-black/20"
-                  style={{ color: theme.colors.error }}
-                >
-                  Cancel
-                </button>
-              </div>
-              <div className="w-full rounded-full h-2 bg-black/50">
-                <div
-                  className="h-2 rounded-full transition-all duration-300"
+                  onClick={() => setActiveTab('swap')}
+                  className={`flex-1 px-4 py-3 text-sm font-bold transition-all duration-200 relative`}
                   style={{
-                    width: `${(progress.currentStep / progress.totalSteps) * 100}%`,
-                    background: theme.colors.primary,
-                    boxShadow: `0 0 10px ${theme.colors.primary}50`
+                    color: activeTab === 'swap' ? theme.colors.primary : theme.colors.textMuted,
+                    backgroundColor: activeTab === 'swap' ? `${theme.colors.primary}08` : 'transparent'
                   }}
-                />
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <ArrowsUpDownIcon className="h-4 w-4" />
+                    <span>SWAP</span>
+                  </div>
+                  {activeTab === 'swap' && (
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-0.5"
+                      style={{ backgroundColor: theme.colors.primary }}
+                    />
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('withdraw')}
+                  className={`flex-1 px-4 py-3 text-sm font-bold transition-all duration-200 relative`}
+                  style={{
+                    color: activeTab === 'withdraw' ? theme.colors.primary : theme.colors.textMuted,
+                    backgroundColor: activeTab === 'withdraw' ? `${theme.colors.primary}08` : 'transparent'
+                  }}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <ArrowDownTrayIcon className="h-4 w-4" />
+                    <span>WITHDRAW</span>
+                  </div>
+                  {activeTab === 'withdraw' && (
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-0.5"
+                      style={{ backgroundColor: theme.colors.primary }}
+                    />
+                  )}
+                </button>
               </div>
             </div>
           )}
 
-        {/* You Send Section */}
-        <div className="relative z-10 space-y-2 sm:space-y-3">
-          <div className="flex items-center justify-between">
-            <label
-              className="text-xs sm:text-sm font-bold tracking-wide"
-              style={{ color: theme.colors.textSecondary }}
-            >
-              You Send
-            </label>
-            <div className="flex items-center gap-1 sm:gap-2">
-              {publicKey && safeInputToken && (
-                <div className="flex items-center gap-1">
-                  {[
-                    { label: '25%', value: 0.25 },
-                    { label: '50%', value: 0.5 },
-                    { label: '75%', value: 0.75 },
-                    { label: 'MAX', value: 0.95 }
-                  ].map(({ label, value }) => (
-                    <button
-                      key={label}
-                      onClick={() => {
-                        const balanceNum = parseFloat(inputBalance)
-                        if (balanceNum > 0) {
-                          const maxAmount = balanceNum / Math.pow(10, safeInputToken.decimals || 9)
-                          // Use percentage of balance (MAX uses 95% to account for fees)
-                          const amountWithFees = maxAmount * value
-                          setInputAmount(amountWithFees.toString())
-                        } else {
-                          setInputAmount('0')
-                        }
-                        clearQuote()
-                      }}
-                      className="text-xs font-medium transition-all duration-200 px-1.5 sm:px-2 py-1 rounded-md hover:scale-105 active:scale-95"
-                      style={{
-                        color: label === 'MAX' ? theme.colors.success : theme.colors.primary,
-                        backgroundColor: label === 'MAX' ? `${theme.colors.success}08` : `${theme.colors.primary}05`,
-                        border: `1px solid ${label === 'MAX' ? theme.colors.success + '20' : theme.colors.primary + '15'}`,
-                        fontWeight: label === 'MAX' ? 700 : 500,
-                        opacity: value === 0.95 ? 1 : 0.9
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = label === 'MAX'
-                          ? `${theme.colors.success}15`
-                          : `${theme.colors.primary}10`
-                        e.currentTarget.style.opacity = '1'
-                        e.currentTarget.style.transform = 'scale(1.05)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = label === 'MAX'
-                          ? `${theme.colors.success}08`
-                          : `${theme.colors.primary}05`
-                        e.currentTarget.style.opacity = value === 0.95 ? '1' : '0.9'
-                        e.currentTarget.style.transform = 'scale(1)'
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <span
-                className="text-xs"
-                style={{ color: theme.colors.textMuted }}
-              >
-                Balance: {displayInputBalance}
-              </span>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="flex gap-2 sm:gap-3 items-stretch">
-              <div className="flex-1 min-w-0">
-                <AmountInput
-                  value={inputAmount}
-                  onChange={handleInputChange}
-                  disabled={isLoading || isProgressActive}
-                  placeholder="0.00"
-                  className="text-lg sm:text-xl font-bold"
-                />
-                {/* Fiat conversion display */}
-                {inputAmount && safeInputToken && (
-                  <div className="mt-2 text-xs font-medium" style={{ color: theme.colors.textMuted }}>
-                    ≈ ${(parseFloat(inputAmount || '0') * ((safeInputToken as any)?.price || 0)).toFixed(2)}
-                  </div>
-                )}
-
-                {/* Insufficient balance error */}
-                {hasInsufficientBalance && (
+          {/* Tab Content */}
+          <div className="relative z-10 p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 md:space-y-6">
+            {activeTab === 'swap' ? (
+              /* SWAP TAB CONTENT */
+              <div className="space-y-4 sm:space-y-5 md:space-y-6">
+                {/* Progress Display */}
+                {progress && isProgressActive && (
                   <div
-                    className="mt-2 flex items-center gap-1.5 p-2 rounded-lg text-xs font-medium"
+                    className="relative z-10 p-4 rounded-xl"
                     style={{
-                      background: `${theme.colors.error}08`,
-                      border: `1px solid ${theme.colors.error}20`,
-                      color: theme.colors.error
+                      background: `
+                        linear-gradient(135deg,
+                          ${theme.colors.primary}10 0%,
+                          ${theme.colors.primary}05 50%,
+                          ${theme.colors.primary}10 100%
+                        )
+                      `,
+                      border: `1px solid ${theme.colors.primary}20`,
+                      backdropFilter: 'blur(16px) saturate(1.5)',
+                      boxShadow: `
+                        0 8px 32px ${theme.colors.shadow},
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                      `
                     }}
                   >
-                    <ExclamationTriangleIcon className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Insufficient balance. You have {displayInputBalance} {safeInputToken?.symbol} available.</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span
+                        className="text-sm font-bold"
+                        style={{ color: theme.colors.primary }}
+                      >
+                        {progress.message}
+                      </span>
+                      <button
+                        onClick={cancelSwap}
+                        className="text-xs font-medium transition-colors px-2 py-1 rounded-md hover:bg-black/20"
+                        style={{ color: theme.colors.error }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="w-full rounded-full h-2 bg-black/50">
+                      <div
+                        className="h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${(progress.currentStep / progress.totalSteps) * 100}%`,
+                          background: theme.colors.primary,
+                          boxShadow: `0 0 10px ${theme.colors.primary}50`
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
-              </div>
-              <div className="flex-shrink-0">
-                <TokenSelector
-                  selectedToken={displayInputToken}
-                  onTokenChange={handleInputTokenChange}
-                  tokens={optimizedTokens}
-                  disabled={isLoading || isProgressActive}
-                  balances={balances}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Switch Button */}
-        <div className="flex justify-center -my-2 z-10">
-          <button
-            onClick={handleTokenSwitch}
-            className="p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-            style={{
-              ...createGlassStyles(theme),
-              border: '1px solid ' + theme.colors.border
-            }}
-            disabled={isLoading || isProgressActive}
-          >
-            <ArrowsUpDownIcon
-              className="h-5 w-5"
-              style={{ color: theme.colors.primary }}
-            />
-          </button>
-        </div>
-
-        {/* You Receive Section */}
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center justify-between">
-            <label
-              className="text-sm font-bold tracking-wide"
-              style={{ color: theme.colors.textSecondary }}
-            >
-              You Receive
-            </label>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-xs"
-                style={{ color: theme.colors.textMuted }}
-              >
-                Balance: {displayOutputBalance}
-              </span>
-              {quote && outputAmount && (
-                <span
-                  className="text-xs"
-                  style={{ color: theme.colors.success }}
-                >
-                  ✓
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="flex gap-2 sm:gap-3 items-stretch">
-              <div className="flex-1 min-w-0">
-                <AmountInput
-                  value={outputAmount}
-                  onChange={() => {}} // Output is read-only
-                  disabled={true}
-                  placeholder="0.00"
-                  readOnly={true}
-                  className="text-lg sm:text-xl font-bold opacity-75"
-                />
-                {/* Fiat conversion display */}
-                {outputAmount && safeOutputToken && (
-                  <div className="mt-2 text-xs font-medium" style={{ color: theme.colors.textMuted }}>
-                    ≈ ${(parseFloat(outputAmount || '0') * ((safeOutputToken as any)?.price || 0)).toFixed(2)}
-                  </div>
-                )}
-              </div>
-              <div className="flex-shrink-0">
-                <TokenSelector
-                  selectedToken={displayOutputTokenConfidential}
-                  onTokenChange={handleOutputTokenChange}
-                  tokens={optimizedTokens}
-                  disabled={isLoading || isProgressActive}
-                  balances={balances}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Professional Swap Details */}
-        {quote && (
-          <div
-            className="relative z-10"
-          >
-            <div
-              className="p-6 rounded-2xl"
-              style={{
-                background: `
-                  linear-gradient(135deg,
-                    ${theme.colors.surface}f0 0%,
-                    ${theme.colors.surfaceHover}dd 50%,
-                    ${theme.colors.surface}f0 100%
-                  ),
-                  radial-gradient(circle at 25% 25%,
-                    ${theme.colors.primary}08 0%,
-                    transparent 50%
-                  )
-                `,
-                border: `1px solid ${theme.colors.primary}15`,
-                backdropFilter: 'blur(24px) saturate(1.8)',
-                boxShadow: `
-                  0 20px 60px ${theme.colors.shadowHeavy},
-                  0 8px 24px ${theme.colors.primary}08,
-                  inset 0 1px 0 rgba(255, 255, 255, 0.1)
-                `
-              }}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full animate-pulse"
-                    style={{ backgroundColor: theme.colors.success }}
-                  />
-                  <span
-                    className="text-sm font-bold tracking-wide"
-                    style={{ color: theme.colors.textSecondary }}
-                  >
-                    SWAP DETAILS
-                  </span>
-                </div>
-                <div
-                  className="px-2 py-1 rounded-full text-xs font-medium"
-                  style={{
-                    background: `${theme.colors.success}10`,
-                    color: theme.colors.success,
-                    border: `1px solid ${theme.colors.success}20`
-                  }}
-                >
-                  LIVE RATE
-                </div>
-              </div>
-
-              {/* Details Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <span className="text-xs font-medium" style={{ color: theme.colors.textMuted }}>
-                    Exchange Rate
-                  </span>
-                  <div className="text-sm font-bold" style={{ color: theme.colors.textPrimary }}>
-                    {displayInputToken && displayOutputToken && displayOutputTokenConfidential && quote ? (() => {
-                      try {
-                        const inputDecimals = displayInputToken.decimals || 6
-                        const outputDecimals = displayOutputToken.decimals || 9
-
-                        // Use direct property access with fallbacks
-                        const quoteAny = quote as any
-                        const inputAmount = parseFloat(quoteAny.inAmount || quoteAny.inputAmount || quoteAny.amountIn || '0')
-                        const outputAmount = parseFloat(quoteAny.outAmount || quoteAny.outputAmount || quoteAny.amountOut || quoteAny.expectedOutAmount || '0')
-
-                        // If we still have zero amounts, return placeholder
-                        if (inputAmount === 0 || outputAmount === 0) {
-                          return `1 ${displayInputToken.symbol} = --- ${displayOutputTokenConfidential.symbol}`
-                        }
-
-                        // Normalize amounts to their proper decimal places
-                        const normalizedInput = inputAmount / Math.pow(10, inputDecimals)
-                        const normalizedOutput = outputAmount / Math.pow(10, outputDecimals)
-
-                        // Calculate exchange rate: 1 input token = X output tokens
-                        const exchangeRate = normalizedInput > 0 ? normalizedOutput / normalizedInput : 0
-
-                        if (isNaN(exchangeRate) || !isFinite(exchangeRate) || exchangeRate === 0) {
-                          return `1 ${displayInputToken.symbol} = --- ${displayOutputTokenConfidential.symbol}`
-                        }
-
-                        return `1 ${displayInputToken.symbol} = ${exchangeRate.toFixed(6)} ${displayOutputTokenConfidential.symbol}`
-                      } catch (error) {
-                        // Price calculation failed - fallback to placeholder
-                        return `1 ${displayInputToken.symbol} = --- ${displayOutputTokenConfidential.symbol}`
-                      }
-                    })() : '---'}
-                  </div>
-                </div>
-
-                {/* Price Impact */}
-                <div className="flex items-center justify-between">
-                  <span
-                    className="text-xs font-medium"
-                    style={{ color: theme.colors.textMuted }}
-                  >
-                    Price Impact
-                  </span>
-                  <span
-                    className="text-sm font-semibold"
-                    style={{
-                      color: priceImpact > 5 ? theme.colors.error :
-                             priceImpact > 2 ? theme.colors.warning :
-                             theme.colors.success
-                    }}
-                  >
-                    {typeof priceImpact === 'number' && !isNaN(priceImpact) ? priceImpact.toFixed(2) : '0.00'}%
-                  </span>
-                </div>
-
-                {/* Second Column - Additional Info */}
-                <div className="space-y-1">
-                  <span className="text-xs font-medium" style={{ color: theme.colors.textMuted }}>
-                    Minimum Received
-                  </span>
-                  <div className="text-sm font-bold" style={{ color: theme.colors.textPrimary }}>
-                    {displayOutputTokenConfidential && outputAmount && quote ? (() => {
-                      try {
-                        const outputDecimals = displayOutputToken?.decimals || 9
-                        const rawOutputAmount = parseFloat(quote.outputAmount) || 0
-                        const normalizedOutput = rawOutputAmount / Math.pow(10, outputDecimals)
-                        const minimumReceived = normalizedOutput * 0.98 // 2% slippage
-
-                        if (isNaN(minimumReceived) || !isFinite(minimumReceived)) {
-                          return '---'
-                        }
-
-                        return `${minimumReceived.toFixed(6)} ${displayOutputTokenConfidential?.symbol}`
-                      } catch (error) {
-                        return '---'
-                      }
-                    })() : '---'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Full Width Sections */}
-              <div className="space-y-2 pt-2" style={{ borderTop: `1px solid ${theme.colors.border}20` }}>
-                <div className="flex items-center justify-between">
-                  <span
-                    className="text-xs font-medium"
-                    style={{ color: theme.colors.textMuted }}
-                  >
-                    Network Fee
-                  </span>
-                  <span
-                    className="text-sm font-semibold"
-                    style={{ color: theme.colors.textPrimary }}
-                  >
-                    ~0.000005 SOL
-                  </span>
-                </div>
-                {privacyMode && (
-                  <div
-                    className="flex items-center justify-between pt-2"
-                    style={{ borderTop: `1px solid ${theme.colors.border}` }}
-                  >
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: theme.colors.success }}
+                {/* You Send Section */}
+                <div className="relative z-10 space-y-2 sm:space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label
+                      className="text-xs sm:text-sm font-bold tracking-wide"
+                      style={{ color: theme.colors.textSecondary }}
                     >
-                      Privacy Fee
-                    </span>
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: theme.colors.success }}
-                    >
-                      ~0.1%
-                    </span>
+                      You Send
+                    </label>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      {publicKey && safeInputToken && (
+                        <div className="flex items-center gap-1">
+                          {[
+                            { label: '25%', value: 0.25 },
+                            { label: '50%', value: 0.5 },
+                            { label: '75%', value: 0.75 },
+                            { label: 'MAX', value: 0.95 }
+                          ].map(({ label, value }) => (
+                            <button
+                              key={label}
+                              onClick={() => {
+                                const balanceNum = parseFloat(inputBalance)
+                                if (balanceNum > 0) {
+                                  const maxAmount = balanceNum / Math.pow(10, safeInputToken.decimals || 9)
+                                  const amountWithFees = maxAmount * value
+                                  setInputAmount(amountWithFees.toString())
+                                } else {
+                                  setInputAmount('0')
+                                }
+                                clearQuote()
+                              }}
+                              className="text-xs font-medium transition-all duration-200 px-1.5 sm:px-2 py-1 rounded-md hover:scale-105 active:scale-95"
+                              style={{
+                                color: label === 'MAX' ? theme.colors.success : theme.colors.primary,
+                                backgroundColor: label === 'MAX' ? `${theme.colors.success}08` : `${theme.colors.primary}05`,
+                                border: `1px solid ${label === 'MAX' ? theme.colors.success + '20' : theme.colors.primary + '15'}`,
+                                fontWeight: label === 'MAX' ? 700 : 500,
+                                opacity: value === 0.95 ? 1 : 0.9
+                              }}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <span
+                        className="text-xs"
+                        style={{ color: theme.colors.textMuted }}
+                      >
+                        Balance: {inputBalanceFormatted}
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Error Display */}
-        {error && (
-          <div
-            className="flex items-start gap-3 p-4 rounded-xl"
-            style={{
-              ...createGlassStyles(theme),
-              border: '1px solid ' + (error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}30` : `${theme.colors.error}30`),
-              backgroundColor: error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}05` : `${theme.colors.error}05`
-            }}
-          >
-            <ExclamationTriangleIcon
-              className="h-5 w-5 flex-shrink-0 mt-0.5"
-              style={{ color: error.includes('User rejected') || error.includes('cancelled') ? theme.colors.primary : theme.colors.error }}
-            />
-            <div className="flex-1">
-              <p
-                className="text-sm font-bold"
-                style={{
-                  color: error.includes('User rejected') || error.includes('cancelled')
-                    ? theme.colors.primary
-                    : theme.colors.error
-                }}
-              >
-                {error}
-              </p>
-              {error.includes('User rejected') && (
-                <p
-                  className="text-xs mt-1 opacity-70"
-                  style={{ color: theme.colors.textSecondary }}
-                >
-                  You can safely continue using the swap interface.
-                </p>
-              )}
-              {error.includes('insufficient') && (
-                <p
-                  className="text-xs mt-1 opacity-70"
-                  style={{ color: theme.colors.textSecondary }}
-                >
-                  Please check your wallet balance and try a smaller amount.
-                </p>
-              )}
-              <div className="flex items-center gap-3 mt-2">
-                {error.includes('route') || error.includes('liquidity') ? (
+                  <div className="relative">
+                    <div className="flex gap-2 sm:gap-3 items-stretch">
+                      <div className="flex-1 min-w-0">
+                        <AmountInput
+                          value={inputAmount}
+                          onChange={handleInputChange}
+                          disabled={isLoading || isProgressActive}
+                          placeholder="0.00"
+                          className="text-lg sm:text-xl font-bold"
+                        />
+                        {hasInsufficientBalance && (
+                          <div
+                            className="mt-2 flex items-center gap-1.5 p-2 rounded-lg text-xs font-medium"
+                            style={{
+                              background: `${theme.colors.error}08`,
+                              border: `1px solid ${theme.colors.error}20`,
+                              color: theme.colors.error
+                            }}
+                          >
+                            <ExclamationTriangleIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>Insufficient balance. You have {inputBalanceFormatted} {safeInputToken?.symbol} available.</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0">
+                        <TokenSelector
+                          selectedToken={displayInputToken}
+                          onTokenChange={handleInputTokenChange}
+                          tokens={optimizedTokens}
+                          disabled={isLoading || isProgressActive}
+                          balances={balances}
+                          isPrivacyMode={privacyMode}
+                          isOutputSelector={false}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Switch Button */}
+                <div className="flex justify-center -my-2 z-10">
                   <button
-                    onClick={() => {
-                      clearError()
-                      if (inputToken && outputToken) {
-                        getQuote()
-                      }
+                    onClick={handleTokenSwitch}
+                    className="p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                    style={{
+                      ...createGlassStyles(theme),
+                      border: '1px solid ' + theme.colors.border
                     }}
-                    className="text-xs font-bold transition-opacity hover:opacity-70"
-                    style={{ color: theme.colors.primary }}
+                    disabled={isLoading || isProgressActive}
                   >
-                    Try Again
+                    <ArrowsUpDownIcon
+                      className="h-5 w-5"
+                      style={{ color: theme.colors.primary }}
+                    />
                   </button>
-                ) : null}
-                <button
-                  onClick={clearError}
-                  className="text-xs font-medium transition-opacity hover:opacity-70"
-                  style={{
-                    color: error.includes('User rejected') || error.includes('cancelled')
-                      ? theme.colors.primary
-                      : theme.colors.error
-                  }}
-                >
-                  Dismiss
-                </button>
+                </div>
+
+                {/* You Receive Section */}
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label
+                      className="text-sm font-bold tracking-wide"
+                      style={{ color: theme.colors.textSecondary }}
+                    >
+                      You Receive
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-xs"
+                        style={{ color: theme.colors.textMuted }}
+                      >
+                        Balance: {outputBalanceFormatted}
+                      </span>
+                      {quote && outputAmount && (
+                        <span
+                          className="text-xs"
+                          style={{ color: theme.colors.success }}
+                        >
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <div className="flex gap-2 sm:gap-3 items-stretch">
+                      <div className="flex-1 min-w-0">
+                        <AmountInput
+                          value={outputAmount}
+                          onChange={() => {}}
+                          disabled={true}
+                          placeholder="0.00"
+                          readOnly={true}
+                          className="text-lg sm:text-xl font-bold opacity-75"
+                        />
+                      </div>
+                      <div className="flex-shrink-0">
+                        <TokenSelector
+                          selectedToken={displayOutputToken}
+                          onTokenChange={handleOutputTokenChange}
+                          tokens={optimizedTokens}
+                          disabled={isLoading || isProgressActive}
+                          balances={balances}
+                          isPrivacyMode={privacyMode}
+                          isOutputSelector={true}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Error Display */}
+                {error && (
+                  <div
+                    className="flex items-start gap-3 p-4 rounded-xl"
+                    style={{
+                      ...createGlassStyles(theme),
+                      border: '1px solid ' + (error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}30` : `${theme.colors.error}30`),
+                      backgroundColor: error.includes('User rejected') || error.includes('cancelled') ? `${theme.colors.primary}05` : `${theme.colors.error}05`
+                    }}
+                  >
+                    <ExclamationTriangleIcon
+                      className="h-5 w-5 flex-shrink-0 mt-0.5"
+                      style={{ color: error.includes('User rejected') || error.includes('cancelled') ? theme.colors.primary : theme.colors.error }}
+                    />
+                    <div className="flex-1">
+                      <p
+                        className="text-sm font-bold"
+                        style={{
+                          color: error.includes('User rejected') || error.includes('cancelled')
+                            ? theme.colors.primary
+                            : theme.colors.error
+                        }}
+                      >
+                        {error}
+                      </p>
+                      <button
+                        onClick={clearError}
+                        className="text-xs font-medium transition-opacity hover:opacity-70 mt-2"
+                        style={{
+                          color: error.includes('User rejected') || error.includes('cancelled')
+                            ? theme.colors.primary
+                            : theme.colors.error
+                        }}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Swap Button */}
+                <div className="w-full mt-4 sm:mt-6">
+                  <SwapButton
+                    inputAmount={inputAmount}
+                    inputToken={safeInputToken}
+                    outputToken={safeOutputToken}
+                    quote={quote}
+                    loading={isLoading}
+                    privacyMode={privacyMode}
+                    canSwap={canSwap}
+                    onSwap={handleSwap}
+                    onCancel={cancelSwap}
+                    progress={progress}
+                  />
+                </div>
+              </div>
+            ) : (
+              /* WITHDRAW TAB CONTENT */
+              <div className="space-y-4 sm:space-y-5 md:space-y-6">
+                {!publicKey ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: theme.colors.surface + '33' }}>
+                      <WalletIcon className="h-8 w-8" style={{ color: theme.colors.textMuted }} />
+                    </div>
+                    <p className="text-sm font-medium" style={{ color: theme.colors.textSecondary }}>
+                      Connect your wallet to view confidential balances
+                    </p>
+                  </div>
+                ) : confidentialBalances.length === 0 || (apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth) ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: theme.colors.surface + '33' }}>
+                      {apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth ?
+                        <LockClosedIcon className="h-8 w-8" style={{ color: theme.colors.textMuted }} /> :
+                        <ArrowDownTrayIcon className="h-8 w-8" style={{ color: theme.colors.textMuted }} />
+                      }
+                    </div>
+                    <p className="text-sm font-medium" style={{ color: theme.colors.textSecondary }}>
+                      {apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth ?
+                        'Balance requires wallet signature to view' :
+                        'No tracked confidential balances found'
+                      }
+                    </p>
+                    {apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth && (
+                      <p className="text-xs mt-2" style={{ color: theme.colors.textMuted }}>
+                        {apiConfidentialBalances[0].note}
+                      </p>
+                    )}
+                    {!(apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth) && (
+                      <p className="text-xs mt-2" style={{ color: theme.colors.textMuted }}>
+                        Complete a private swap to automatically track your confidential tokens,
+                        or manually add tokens you already have in your Encifher account.
+                      </p>
+                    )}
+                    {apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth && publicKey && (
+                      <button
+                        onClick={() => fetchAuthenticatedBalances()}
+                        disabled={isLoadingConfidentialBalances}
+                        className="mt-4 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                          background: `${theme.colors.primary}20`,
+                          border: `1px solid ${theme.colors.primary}40`,
+                          color: theme.colors.primary
+                        }}
+                      >
+                        {isLoadingConfidentialBalances ? 'Authenticating...' : 'Authenticate to View Balances'}
+                      </button>
+                    )}
+                    {!(apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth) && publicKey && (
+                      <button
+                        onClick={() => fetchConfidentialBalances()}
+                        disabled={isLoadingConfidentialBalances}
+                        className="mt-4 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                          background: `${theme.colors.primary}10`,
+                          border: `1px solid ${theme.colors.primary}20`,
+                          color: theme.colors.primary
+                        }}
+                      >
+                        {isLoadingConfidentialBalances ? 'Loading...' : 'Refresh Balances'}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h3 className="text-lg font-bold mb-2" style={{ color: theme.colors.textPrimary }}>
+                        Confidential Balances
+                      </h3>
+                      <p className="text-sm" style={{ color: theme.colors.textMuted }}>
+                        Your privacy-protected tokens that can be withdrawn back to regular tokens
+                      </p>
+                    </div>
+
+                    {confidentialBalances.map((balance, index) => (
+                      <div
+                        key={index}
+                        className="p-4 rounded-xl border"
+                        style={{
+                          background: `${theme.colors.surface}50`,
+                          borderColor: theme.colors.border
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            {balance.logoURI ? (
+                              <img
+                                src={balance.logoURI}
+                                alt={balance.symbol}
+                                className="w-10 h-10 rounded-full"
+                                onError={(e) => {
+                                  // Fallback to initials if image fails to load
+                                  e.currentTarget.style.display = 'none'
+                                  e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center ${balance.logoURI ? 'hidden' : ''}`}
+                              style={{ backgroundColor: `${theme.colors.primary}10` }}
+                            >
+                              <span className="text-sm font-bold" style={{ color: theme.colors.primary }}>
+                                {balance.symbol[0]}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium" style={{ color: theme.colors.textPrimary }}>
+                                {balance.name}
+                              </p>
+                              <p className="text-xs" style={{ color: theme.colors.textMuted }}>
+                                Confidential Token
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold" style={{ color: theme.colors.textPrimary }}>
+                              {(parseFloat(balance.amount) / Math.pow(10, balance.decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                            </p>
+                            <p className="text-xs" style={{ color: theme.colors.textMuted }}>
+                              ≈ ${balance.usdValue?.toLocaleString() || '0.00'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Withdrawal Amount Input */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium" style={{ color: theme.colors.textSecondary }}>
+                            Withdrawal Amount
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={withdrawalAmounts[balance.tokenAddress] || balance.amount.toString()}
+                              onChange={(e) => handleWithdrawalAmountChange(balance.tokenAddress, e.target.value)}
+                              max={balance.amount}
+                              min="0"
+                              step="0.000001"
+                              disabled={!balance.canWithdraw || isLoading}
+                              className="w-full py-2.5 px-3 pr-16 rounded-lg border text-sm font-mono transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0"
+                              style={{
+                                background: theme.colors.surface,
+                                borderColor: theme.colors.border,
+                                color: theme.colors.textPrimary,
+                                borderWidth: '1px',
+                                opacity: balance.canWithdraw ? 1 : 0.5,
+                                cursor: balance.canWithdraw ? 'text' : 'not-allowed'
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.borderColor = theme.colors.primary
+                                e.target.style.boxShadow = `0 0 0 2px ${theme.colors.primary}20`
+                              }}
+                              onBlur={(e) => {
+                                e.target.style.borderColor = theme.colors.border
+                                e.target.style.boxShadow = 'none'
+                              }}
+                            />
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                              <button
+                                onClick={() => handleWithdrawalAmountChange(balance.tokenAddress, (balance.amount / 2).toString())}
+                                disabled={!balance.canWithdraw || isLoading}
+                                className="text-xs px-1.5 py-0.5 rounded transition-all duration-200"
+                                style={{
+                                  background: theme.colors.surfaceHover + '30',
+                                  color: theme.colors.textMuted,
+                                  border: 'none',
+                                  opacity: balance.canWithdraw ? 1 : 0.5,
+                                  cursor: balance.canWithdraw ? 'pointer' : 'not-allowed'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (balance.canWithdraw) {
+                                    e.currentTarget.style.background = theme.colors.primary + '20'
+                                    e.currentTarget.style.color = theme.colors.primary
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = theme.colors.surfaceHover + '30'
+                                  e.currentTarget.style.color = theme.colors.textMuted
+                                }}
+                              >
+                                HALF
+                              </button>
+                              <button
+                                onClick={() => handleWithdrawalAmountChange(balance.tokenAddress, balance.amount.toString())}
+                                disabled={!balance.canWithdraw || isLoading}
+                                className="text-xs px-1.5 py-0.5 rounded transition-all duration-200"
+                                style={{
+                                  background: theme.colors.surfaceHover + '30',
+                                  color: theme.colors.textMuted,
+                                  border: 'none',
+                                  opacity: balance.canWithdraw ? 1 : 0.5,
+                                  cursor: balance.canWithdraw ? 'pointer' : 'not-allowed'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (balance.canWithdraw) {
+                                    e.currentTarget.style.background = theme.colors.primary + '20'
+                                    e.currentTarget.style.color = theme.colors.primary
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = theme.colors.surfaceHover + '30'
+                                  e.currentTarget.style.color = theme.colors.textMuted
+                                }}
+                              >
+                                MAX
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center text-xs" style={{ color: theme.colors.textMuted }}>
+                            <span>
+                              Available: {(parseFloat(balance.amount) / Math.pow(10, balance.decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 })} {balance.symbol}
+                            </span>
+                            <span>
+                              {/* No additional info needed since we now show actual balances */}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleWithdrawClick(balance.tokenAddress, balance.amount, balance.symbol)}
+                          disabled={!balance.canWithdraw || isLoading}
+                          className="w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{
+                            background: balance.canWithdraw ? `${theme.colors.success}10` : `${theme.colors.border}50`,
+                            border: balance.canWithdraw ? `1px solid ${theme.colors.success}20` : `1px solid ${theme.colors.border}`,
+                            color: balance.canWithdraw ? theme.colors.success : theme.colors.textMuted
+                          }}
+                        >
+                          <ArrowDownTrayIcon className="h-4 w-4" />
+                          {balance.canWithdraw ? 'Withdraw to Regular Token' : 'Withdrawal Unavailable'}
+                        </button>
+                      </div>
+                    ))}
+
+                    <div className="mt-6 p-4 rounded-xl" style={{ background: `${theme.colors.info}05`, borderColor: `${theme.colors.info}20` }}>
+                      <div className="flex items-start gap-3">
+                        <ArrowDownTrayIcon className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: theme.colors.info }} />
+                        <div>
+                          <p className="text-sm font-medium mb-1" style={{ color: theme.colors.info }}>
+                            Withdrawal Information
+                          </p>
+                          <p className="text-xs" style={{ color: theme.colors.textMuted }}>
+                            Your confidential tokens are privacy-protected and can only be accessed by you.
+                            Withdrawal converts them back to regular tokens instantly.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Security & Info Footer */}
+          {!privacyMode || activeTab === 'swap' ? (
+            <div
+              className="mt-6 pt-4"
+              style={{ borderTop: `1px solid ${theme.colors.border}` }}
+            >
+              <div
+                className="flex items-center justify-center gap-6 text-xs"
+                style={{ color: theme.colors.textMuted }}
+              >
+                <div className="flex items-center gap-1">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: theme.colors.primary }}
+                  />
+                  <span>Encrypted</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: theme.colors.primary }}
+                  />
+                  <span>{privacyMode ? 'Private' : 'Public'} Route</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Swap Button */}
-        <div className="w-full mt-4 sm:mt-6">
-          <SwapButton
-            inputAmount={inputAmount}
-            inputToken={safeInputToken}
-            outputToken={safeOutputToken}
-            quote={quote}
-            loading={isLoading}
-            privacyMode={privacyMode}
-            canSwap={canSwap}
-            onSwap={handleSwap}
-            onCancel={cancelSwap}
-            progress={progress}
-          />
+          ) : null}
         </div>
 
-        {/* Security & Info Footer */}
-        <div
-          className="mt-6 pt-4"
-          style={{ borderTop: `1px solid ${theme.colors.border}` }}
-        >
-          <div
-            className="flex items-center justify-center gap-6 text-xs"
+        {/* Disclaimer */}
+        <div className="mt-4 text-center">
+          <p
+            className="text-xs max-w-md mx-auto"
             style={{ color: theme.colors.textMuted }}
           >
-            <div className="flex items-center gap-1">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: theme.colors.primary }}
-              />
-              <span>Encrypted</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: theme.colors.primary }}
-              />
-              <span>{privacyMode ? 'Private' : 'Public'} Route</span>
-            </div>
-          </div>
+            {activeTab === 'withdraw'
+              ? "Withdrawal converts your confidential tokens back to regular tokens. This process may take a few seconds to complete."
+              : privacyMode
+                ? "Private swaps use enhanced encryption to protect transaction privacy. Fees may be higher than public swaps."
+                : "Public swaps are executed on-chain transparently. All transaction details are publicly visible."
+            }
+          </p>
         </div>
       </div>
 
-      {/* Disclaimer */}
-      <div className="mt-4 text-center">
-        <p
-          className="text-xs max-w-md mx-auto"
-          style={{ color: theme.colors.textMuted }}
-        >
-          {privacyMode
-            ? "Private swaps use enhanced encryption to protect transaction privacy. Fees may be higher than public swaps."
-            : "Public swaps are executed on-chain transparently. All transaction details are publicly visible."
-          }
-        </p>
-      </div>
-    </div>
+      {/* Withdrawal Modals */}
+      {pendingWithdrawal && (
+        <>
+          <WithdrawConfirmModal
+            isOpen={showWithdrawConfirmModal}
+            onClose={() => setShowWithdrawConfirmModal(false)}
+            onConfirm={handleWithdrawConfirm}
+            tokenSymbol={pendingWithdrawal.symbol}
+            tokenAmount={pendingWithdrawal.amount.toString()}
+            recipientAddress={publicKey?.toString() || ''}
+            isLoading={isWithdrawing}
+          />
+
+          <WithdrawSuccessModal
+            isOpen={showWithdrawSuccessModal}
+            onClose={resetModalStates}
+            transactionSignature={withdrawalTransactionSignature}
+            tokenSymbol={pendingWithdrawal.symbol}
+            tokenAmount={pendingWithdrawal.amount.toString()}
+            recipientAddress={publicKey?.toString() || ''}
+          />
+
+          <WithdrawErrorModal
+            isOpen={showWithdrawErrorModal}
+            onClose={resetModalStates}
+            error={withdrawalError}
+            onRetry={handleWithdrawRetry}
+            tokenSymbol={pendingWithdrawal.symbol}
+            tokenAmount={pendingWithdrawal.amount.toString()}
+          />
+        </>
+      )}
     </div>
   )
 }

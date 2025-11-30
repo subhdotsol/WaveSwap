@@ -322,17 +322,6 @@ const DEFAULT_TOKENS_METADATA = [
     isNative: false,
     addressable: true,
   },
-  {
-    address: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-    chainId: 101,
-    decimals: 6,
-    name: 'Raydium',
-    symbol: 'RAY',
-    tags: ['defi', 'dex'],
-    isConfidentialSupported: false,
-    isNative: false,
-    addressable: true,
-  },
 ]
 
 // Default tokens - logoURI set to fallback URL

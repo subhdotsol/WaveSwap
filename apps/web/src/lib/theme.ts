@@ -172,55 +172,111 @@ const darkTheme: ThemeConfig = {
   }
 }
 
-const orcaTheme: ThemeConfig = {
-  name: 'orca',
+const stealthTheme: ThemeConfig = {
+  name: 'stealth',
   colors: {
-    // Background colors - pure black to white scale
-    background: '#000000',
+    // Background colors - stealth dark theme
+    background: '#0a0a0a',
     surface: '#1a1a1a',
     surfaceHover: '#2a2a2a',
-    glass: 'rgba(42, 42, 42, 0.9)',
-    glassBorder: 'rgba(128, 128, 128, 0.3)',
+    glass: 'rgba(26, 26, 26, 0.95)',
+    glassBorder: 'rgba(255, 255, 255, 0.1)',
 
-    // Text colors - white to grey scale
+    // Text colors - stealth theme in greyscale
     textPrimary: '#ffffff',
     textSecondary: '#e0e0e0',
-    textMuted: '#b0b0b0',
-    textInverse: '#000000',
+    textMuted: '#808080', // Grey for stealth theme
+    textInverse: '#0a0a0a',
 
-    // Brand colors - Orca Black/White Theme
-    primary: '#808080',
-    primaryHover: '#666666',
-    secondary: '#999999',
-    accent: '#a0a0a0',
+    // Brand colors - Stealth Theme in greyscale
+    primary: '#ffffff', // White
+    primaryHover: '#f0f0f0', // Light grey hover
+    secondary: '#666666', // Medium grey
+    accent: '#999999', // Light grey
 
-    // Status colors - grey scale with standard red/yellow
-    success: '#ffffff',
-    warning: '#fbbf24',
-    error: '#f87171',
-    info: '#60a5fa',
+    // Status colors - stealth themed
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    info: '#06b6d4',
 
-    // Border and outline - grey scale
-    border: '#333333',
-    borderLight: '#404040',
-    outline: '#808080',
-    outlineFocus: '#666666',
+    // Border and outline - stealth theme in greyscale
+    border: '#2a2a2a',
+    borderLight: '#3a3a3a',
+    outline: '#ffffff',
+    outlineFocus: '#f0f0f0',
 
-    // Shadow colors - pure black and grey
-    shadow: 'rgba(0, 0, 0, 0.7)',
-    shadowLight: 'rgba(0, 0, 0, 0.4)',
-    shadowHeavy: 'rgba(0, 0, 0, 0.9)',
+    // Shadow colors - stealth shadows
+    shadow: 'rgba(0, 0, 0, 0.8)',
+    shadowLight: 'rgba(0, 0, 0, 0.5)',
+    shadowHeavy: 'rgba(0, 0, 0, 0.95)',
 
-    // Special colors - Orca Black/White Theme gradient
-    gradientStart: '#808080',
-    gradientEnd: '#404040',
-    overlay: 'rgba(0, 0, 0, 0.8)'
+    // Special colors - Stealth Theme gradient in greyscale
+    gradientStart: '#1a1a1a', // Dark grey
+    gradientEnd: '#0a0a0a', // Very dark grey
+    overlay: 'rgba(0, 0, 0, 0.9)'
   },
   glassStyles: {
-    backdrop: 'blur(24px) saturate(1.6)',
+    backdrop: 'blur(24px) saturate(1.8)',
     blur: '24px',
-    border: '1px solid rgba(128, 128, 128, 0.3)',
-    background: 'rgba(42, 42, 42, 0.9)'
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: 'rgba(26, 26, 26, 0.95)'
+  },
+  animations: {
+    duration: '0.3s',
+    easing: 'cubic-bezier(0.4, 0, 0.2, 1)' // Smooth stealth animation
+  }
+}
+
+const ghostTheme: ThemeConfig = {
+  name: 'ghost',
+  colors: {
+    // Background colors - Ghost Theme (light background from provided colors)
+    background: '#fffdf8', // Main background
+    surface: '#ffffff',
+    surfaceHover: '#f8f8f8',
+    glass: 'rgba(255, 253, 248, 0.9)',
+    glassBorder: 'rgba(171, 159, 242, 0.2)', // Using ab9ff2
+
+    // Text colors - Ghost Theme (dark foreground from provided colors)
+    textPrimary: '#1c1c1c', // Dark text from provided
+    textSecondary: '#3c315b', // From secondary colors
+    textMuted: '#8d8c8a', // From greyscale
+    textInverse: '#fffdf8',
+
+    // Brand colors - Ghost Theme (using provided colors)
+    primary: '#ab9ff2', // Primary purple from provided
+    primaryHover: '#9b8fe2', // Darker version
+    secondary: '#ffd13f', // Yellow from provided
+    accent: '#e2dffe', // Light purple from provided
+
+    // Additional colors from provided palette
+    success: '#2ec08b', // Green from provided
+    warning: '#ff7243', // Orange from provided
+    error: '#ff7243', // Using orange for error
+    info: '#4a8712', // Green from provided
+
+    // Border and outline - Ghost theme (using provided greyscale)
+    border: '#d2d0cc', // From greyscale
+    borderLight: '#e8e6e2', // From greyscale
+    outline: '#ab9ff2', // Primary purple
+    outlineFocus: '#9b8fe2',
+
+    // Shadow colors - Ghost theme (subtle for light theme)
+    shadow: 'rgba(28, 28, 28, 0.08)',
+    shadowLight: 'rgba(28, 28, 28, 0.04)',
+    shadowHeavy: 'rgba(28, 28, 28, 0.12)',
+
+    // Special colors - Ghost Theme gradient (using provided colors)
+    gradientStart: '#fffdf8', // Light start
+    gradientEnd: '#e2dffe', // Light purple end
+    overlay: 'rgba(171, 159, 242, 0.08)'
+  },
+  glassStyles: {
+    backdrop: 'blur(20px) saturate(1.8)',
+    blur: '20px',
+    border: '1px solid rgba(171, 159, 242, 0.2)',
+    background: 'rgba(255, 253, 248, 0.9)'
   },
   animations: {
     duration: '0.2s',
@@ -231,7 +287,8 @@ const orcaTheme: ThemeConfig = {
 export const themes: Record<string, ThemeConfig> = {
   light: lightTheme,
   dark: darkTheme,
-  orca: orcaTheme
+  stealth: stealthTheme,
+  ghost: ghostTheme
 }
 
 export function useThemeConfig() {
