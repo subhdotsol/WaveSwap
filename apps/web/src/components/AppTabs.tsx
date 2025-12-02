@@ -16,10 +16,12 @@ import {
   ClockIcon,
   LinkIcon,
   SparklesIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline'
 import { Switch } from '@headlessui/react'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
+import { Modal } from '@/components/ui/Modal'
 
 interface TabContentProps {
   tabId: string
@@ -27,18 +29,374 @@ interface TabContentProps {
 }
 
 function TabContent({ tabId, privacyMode }: TabContentProps) {
+  const [showInfoModal, setShowInfoModal] = useState(false)
+  const [showBridgeInfoModal, setShowBridgeInfoModal] = useState(false)
+  const theme = useThemeConfig()
   switch (tabId) {
     case 'swap':
       return (
         <div className="w-full">
+          {/* Header Section - between tabs and swap component */}
+          <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2
+                  className="text-xl sm:text-2xl font-bold"
+                  style={{ color: theme.colors.textPrimary }}
+                >
+                  Swap Encrypted
+                </h2>
+                <div className="flex items-center gap-1 mt-1">
+                  <span
+                    className="text-xs sm:text-sm"
+                    style={{ color: theme.colors.textMuted }}
+                  >
+                    Powered by
+                  </span>
+                  <a
+                    href="https://app.encifher.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs sm:text-sm font-medium transition-all duration-200 hover:opacity-80"
+                    style={{ color: theme.colors.primary }}
+                  >
+                    Encifher
+                  </a>
+                </div>
+              </div>
+
+              {/* Info Button */}
+              <button
+                onClick={() => setShowInfoModal(true)}
+                className="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                style={{
+                  ...createGlassStyles(theme),
+                  border: `1px solid ${theme.colors.primary}20`,
+                  background: `${theme.colors.primary}10`
+                }}
+              >
+                <InformationCircleIcon
+                  className="h-5 w-5"
+                  style={{ color: theme.colors.primary }}
+                />
+              </button>
+            </div>
+          </div>
+
           <SwapComponent privacyMode={privacyMode} />
+
+          {/* Info Modal */}
+          <Modal
+            isOpen={showInfoModal}
+            onClose={() => setShowInfoModal(false)}
+            title="WaveSwap Information"
+          >
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: theme.colors.textPrimary }}>
+                  How WaveSwap Works
+                </h3>
+                <div className="space-y-3 text-sm" style={{ color: theme.colors.textSecondary }}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                      <span className="text-xs font-bold">1</span>
+                    </div>
+                    <p>
+                      <strong>Connect Your Wallet:</strong> Start by connecting your Solana wallet to WaveSwap. We support Phantom, Solflare, and other popular wallets.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                      <span className="text-xs font-bold">2</span>
+                    </div>
+                    <p>
+                      <strong>Choose Your Mode:</strong> Select between Public mode (transparent on-chain swaps) or Private mode (enhanced privacy with encryption).
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                      <span className="text-xs font-bold">3</span>
+                    </div>
+                    <p>
+                      <strong>Select Tokens:</strong> Choose the tokens you want to swap from and to. We support a wide variety of Solana tokens with real-time price feeds.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                      <span className="text-xs font-bold">4</span>
+                    </div>
+                    <p>
+                      <strong>Enter Amount:</strong> Input the amount you want to swap. Our interface will show you the estimated output and current exchange rate.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                      <span className="text-xs font-bold">5</span>
+                    </div>
+                    <p>
+                      <strong>Review & Swap:</strong> Review the transaction details, including fees and exchange rate, then click "Swap" to execute your trade.
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                      <span className="text-xs font-bold">6</span>
+                    </div>
+                    <p>
+                      <strong>Confirmation:</strong> Approve the transaction in your wallet. Your swap will be executed instantly on the Solana blockchain.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl" style={{ background: `${theme.colors.info}05`, border: `1px solid ${theme.colors.info}20` }}>
+                <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: theme.colors.info }}>
+                  <SparklesIcon className="h-4 w-4" />
+                  Privacy & Security
+                </h4>
+                <ul className="text-xs space-y-1" style={{ color: theme.colors.textMuted }}>
+                  <li>• <strong>Private Mode:</strong> Enhanced encryption protects your transaction details</li>
+                  <li>• <strong>Public Mode:</strong> Standard transparent swaps on the Solana blockchain</li>
+                  <li>• <strong>Non-Custodial:</strong> You always maintain control of your funds</li>
+                  <li>• <strong>Audited:</strong> Our smart contracts are regularly security audited</li>
+                </ul>
+              </div>
+
+              <div className="p-4 rounded-xl" style={{ background: `${theme.colors.success}05`, border: `1px solid ${theme.colors.success}20` }}>
+                <h4 className="font-semibold mb-2" style={{ color: theme.colors.success }}>
+                  Why Choose WaveSwap?
+                </h4>
+                <ul className="text-xs space-y-1" style={{ color: theme.colors.textMuted }}>
+                  <li>• Best-in-class exchange rates through Jupiter aggregator</li>
+                  <li>• Lightning-fast swaps on Solana's high-speed blockchain</li>
+                  <li>• Minimal fees and maximum capital efficiency</li>
+                  <li>• User-friendly interface with advanced privacy options</li>
+                </ul>
+              </div>
+
+              <div className="pt-4 border-t text-center" style={{ borderColor: theme.colors.border }}>
+                <p className="text-xs mb-2" style={{ color: theme.colors.textMuted }}>
+                  Powered by
+                </p>
+                <a
+                  href="https://app.encifher.io/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium transition-all duration-200 hover:opacity-80"
+                  style={{ color: theme.colors.primary }}
+                >
+                  Encifher
+                </a>
+              </div>
+            </div>
+          </Modal>
         </div>
       )
 
     case 'bridge':
       return (
-        <div className="w-full flex justify-center">
-          <WavePortal privacyMode={privacyMode} comingSoon={false} />
+        <div className="w-full">
+          {/* Header Section - between tabs and bridge component */}
+          <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2
+                  className="text-xl sm:text-2xl font-bold"
+                  style={{ color: theme.colors.textPrimary }}
+                >
+                  Bridge Tokens
+                </h2>
+                <div className="flex items-center gap-1 mt-1">
+                  <span
+                    className="text-xs sm:text-sm"
+                    style={{ color: theme.colors.textMuted }}
+                  >
+                    Powered by
+                  </span>
+                  <a
+                    href="https://near-intents.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs sm:text-sm font-medium transition-all duration-200 hover:opacity-80"
+                    style={{ color: theme.colors.primary }}
+                  >
+                    NEAR
+                  </a>
+                  <span
+                    className="text-xs sm:text-sm"
+                    style={{ color: theme.colors.textMuted }}
+                  >
+                    and
+                  </span>
+                  <a
+                    href="https://starkgate.starknet.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs sm:text-sm font-medium transition-all duration-200 hover:opacity-80"
+                    style={{ color: theme.colors.primary }}
+                  >
+                    Starknet
+                  </a>
+                </div>
+              </div>
+
+              {/* Info Button */}
+              <button
+                onClick={() => setShowBridgeInfoModal(true)}
+                className="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                style={{
+                  ...createGlassStyles(theme),
+                  border: `1px solid ${theme.colors.primary}20`,
+                  background: `${theme.colors.primary}10`
+                }}
+              >
+                <InformationCircleIcon
+                  className="h-5 w-5"
+                  style={{ color: theme.colors.primary }}
+                />
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full flex justify-center">
+            <WavePortal privacyMode={privacyMode} comingSoon={false} />
+          </div>
+
+          {/* Bridge Info Modal */}
+          <Modal
+            isOpen={showBridgeInfoModal}
+            onClose={() => setShowBridgeInfoModal(false)}
+            title="WavePortal Bridge Information"
+          >
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: theme.colors.textPrimary }}>
+                  Bringing Liquidity to Solana
+                </h3>
+                <p className="text-sm mb-4" style={{ color: theme.colors.textSecondary }}>
+                  WavePortal is designed to bring liquidity back to Solana from other blockchains, enabling users from Zcash and Starknet ecosystems to access Solana's high-performance DeFi landscape.
+                </p>
+              </div>
+
+              <div className="space-y-3 text-sm" style={{ color: theme.colors.textSecondary }}>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                    <span className="text-xs font-bold">1</span>
+                  </div>
+                  <p>
+                    <strong>Cross-Chain Access:</strong> Bridge your assets from Zcash and Starknet to Solana, gaining access to the fastest and most efficient DeFi ecosystem.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                    <span className="text-xs font-bold">2</span>
+                  </div>
+                  <p>
+                    <strong>Liquidity Expansion:</strong> Our bridge brings external liquidity into Solana, strengthening the ecosystem and providing more trading opportunities for all users.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                    <span className="text-xs font-bold">3</span>
+                  </div>
+                  <p>
+                    <strong>Privacy-Preserving:</strong> Zcash users can maintain their privacy while accessing Solana's DeFi protocols, bringing private capital into public markets.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                    <span className="text-xs font-bold">4</span>
+                  </div>
+                  <p>
+                    <strong>Starknet Integration:</strong> Leverage Starknet's Layer 2 scaling solutions to efficiently move assets to Solana with minimal fees and fast finality.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl" style={{ background: `${theme.colors.info}05`, border: `1px solid ${theme.colors.info}20` }}>
+                <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: theme.colors.info }}>
+                  <LinkIcon className="h-4 w-4" />
+                  Supported Tokens
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs" style={{ color: theme.colors.textMuted }}>
+                    <span><strong>SOL</strong> - Solana's native token for staking and governance</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs" style={{ color: theme.colors.textMuted }}>
+                    <span><strong>USDC</strong> - Circle's stablecoin for stable value transfers</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs" style={{ color: theme.colors.textMuted }}>
+                    <span><strong>USDT</strong> - Tether's stablecoin for trading and liquidity</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs" style={{ color: theme.colors.textMuted }}>
+                    <span><strong>ZEC</strong> - Zcash's privacy-focused cryptocurrency</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl" style={{ background: `${theme.colors.success}05`, border: `1px solid ${theme.colors.success}20` }}>
+                <h4 className="font-semibold mb-2" style={{ color: theme.colors.success }}>
+                  Why Bridge to Solana?
+                </h4>
+                <ul className="text-xs space-y-1" style={{ color: theme.colors.textMuted }}>
+                  <li>• Lightning-fast transactions with sub-second finality</li>
+                  <li>• Extremely low fees compared to other blockchains</li>
+                  <li>• Access to a thriving DeFi ecosystem with 500+ protocols</li>
+                  <li>• Advanced trading features and high liquidity pools</li>
+                  <li>• Cross-chain composability and innovative dApps</li>
+                </ul>
+              </div>
+
+              <div className="pt-4 border-t text-center" style={{ borderColor: theme.colors.border }}>
+                <p className="text-xs mb-2" style={{ color: theme.colors.textMuted }}>
+                  Powered by
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <a
+                    href="https://near-intents.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium transition-all duration-200 hover:opacity-80"
+                    style={{ color: theme.colors.primary }}
+                  >
+                    NEAR
+                  </a>
+                  <span
+                    className="text-sm"
+                    style={{ color: theme.colors.textMuted }}
+                  >
+                    and
+                  </span>
+                  <a
+                    href="https://starkgate.starknet.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium transition-all duration-200 hover:opacity-80"
+                    style={{ color: theme.colors.primary }}
+                  >
+                    Starknet
+                  </a>
+                </div>
+              </div>
+            </div>
+          </Modal>
         </div>
       )
 
@@ -188,8 +546,24 @@ export function AppTabs() {
         </>
       )}
 
-      {/* Subtle noise texture overlay - theme-aware (exclude stealth mode) */}
-      {theme.name !== 'stealth' && (
+      {/* Background image overlay for dark theme */}
+      {theme.name === 'dark' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url("/bg.jpg")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            filter: 'blur(20px) saturate(1.2) brightness(0.3)',
+            opacity: 0.4,
+            zIndex: 2
+          }}
+        />
+      )}
+
+      {/* Subtle noise texture overlay - theme-aware (exclude stealth and dark modes) */}
+      {theme.name !== 'stealth' && theme.name !== 'dark' && (
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -215,18 +589,7 @@ export function AppTabs() {
               : createGlassStyles(theme).background
           }}
         >
-          {/* Noise overlay for header - theme-aware */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              opacity: theme.name === 'light' ? 0.02 : theme.name === 'ghost' ? 0.04 : 0.03,
-              backgroundImage: theme.name === 'ghost'
-                ? `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='1.5'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0.67 0 1 0 0 0.63 0 0 1 0 0.95 0 0 0 1 0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`
-                : `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E")`,
-              mixBlendMode: theme.name === 'ghost' ? 'soft-light' : theme.name === 'light' ? 'soft-light' : 'overlay'
-            }}
-          />
-          <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 relative z-10">
+                    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 relative z-10">
             <div className="flex items-center justify-between">
               {/* Logo - Optimized for all screens */}
               <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
@@ -286,16 +649,7 @@ export function AppTabs() {
                         : `0 8px 32px ${theme.colors.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px ${theme.colors.primary}05`
                     }}
                   >
-                    {/* Noise grain overlay - theme-aware */}
-                    <div
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        opacity: theme.name === 'light' ? 0.01 : 0.03,
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-                        filter: theme.name === 'light' ? 'contrast(1.1) brightness(1.05)' : 'contrast(1.3) brightness(1.1)'
-                      }}
-                    />
-
+                    
                     <div className="relative z-10 flex items-center gap-1 sm:gap-2">
                       <SparklesIcon
                         className="h-3 w-3 sm:h-4 sm:w-4 transition-all duration-300"

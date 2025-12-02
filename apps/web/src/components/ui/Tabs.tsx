@@ -72,7 +72,7 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
         style={{
           ...createGlassStyles(theme),
           border: `1px solid ${theme.colors.primary}10`,
-          backdropFilter: 'blur(20px) saturate(1.8)',
+          backdropFilter: 'none',
           boxShadow: `
             0 8px 32px ${theme.colors.shadow},
             inset 0 1px 0 rgba(255, 255, 255, 0.1),
@@ -129,7 +129,7 @@ export function Tabs({ tabs, defaultTab, onTabChange, className = '' }: TabsProp
                 border: isSelected
                   ? `1px solid ${theme.colors.primary}30`
                   : '1px solid transparent',
-                backdropFilter: isSelected ? 'blur(12px) saturate(1.5)' : 'none',
+                backdropFilter: 'none',
                 boxShadow: isSelected
                   ? `0 8px 24px ${theme.colors.primary}20, inset 0 1px 0 rgba(255, 255, 255, 0.2)`
                   : 'none',

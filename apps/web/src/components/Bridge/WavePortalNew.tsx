@@ -75,7 +75,14 @@ const BRIDGE_PROVIDERS = {
   'starknet-solana': 'starkgate'
 } as const
 
-// Token mapping for different chains - convert to Token type
+// Define valid bridge routes - Zcash <> Starknet is NOT allowed
+const VALID_BRIDGE_ROUTES = {
+  'zec': ['solana'],      // Zcash can only bridge to/from Solana
+  'solana': ['zec', 'starknet'], // Solana can bridge to/from Zcash and Starknet
+  'starknet': ['solana']  // Starknet can only bridge to/from Solana
+} as const
+
+// Token mapping for different chains - BRIDGE SPECIFIC TOKENS
 const CHAIN_TOKENS = {
   zec: [
     {
@@ -84,7 +91,7 @@ const CHAIN_TOKENS = {
       decimals: 8,
       name: 'Zcash',
       symbol: 'ZEC',
-      logoURI: '/icons/fallback/network/zcash.svg',
+      logoURI: getLocalFallbackIcon('ZEC', 'zec') || '/icons/fallback/token/zec.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: true,
@@ -98,7 +105,7 @@ const CHAIN_TOKENS = {
       decimals: 9,
       name: 'Solana',
       symbol: 'SOL',
-      logoURI: getLocalFallbackIcon('SOL', 'So11111111111111111111111111111111111111112') || '/icons/default-token.svg', // Local fallback
+      logoURI: getLocalFallbackIcon('SOL', 'So11111111111111111111111111111111111111112') || '/icons/fallback/token/sol.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: true,
@@ -110,7 +117,7 @@ const CHAIN_TOKENS = {
       decimals: 6,
       name: 'USD Coin',
       symbol: 'USDC',
-      logoURI: getLocalFallbackIcon('USDC', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') || '/icons/default-token.svg', // Local fallback
+      logoURI: getLocalFallbackIcon('USDC', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') || '/icons/fallback/token/usdc.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: false,
@@ -122,43 +129,31 @@ const CHAIN_TOKENS = {
       decimals: 6,
       name: 'USDT',
       symbol: 'USDT',
-      logoURI: getLocalFallbackIcon('USDT', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB') || '/icons/default-token.svg', // Local fallback
+      logoURI: getLocalFallbackIcon('USDT', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB') || '/icons/fallback/token/usdt.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: false,
       addressable: true
     },
     {
-      address: 'So11111111111111111111111111111111111111112',
+      address: 'ZEC_TOKEN_SOLANA', // Placeholder for ZEC on Solana
       chainId: 101,
-      decimals: 9,
-      name: 'Wrapped SOL',
-      symbol: 'wSOL',
-      logoURI: getLocalFallbackIcon('SOL', 'So11111111111111111111111111111111111111112') || '/icons/default-token.svg', // Local fallback
+      decimals: 8,
+      name: 'Zcash',
+      symbol: 'ZEC',
+      logoURI: getLocalFallbackIcon('ZEC', 'zec') || '/icons/fallback/token/zec.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: false,
       addressable: true
     },
     {
-      address: 'wave',
+      address: 'PUMP_TOKEN_SOLANA', // Placeholder for PUMP on Solana
       chainId: 101,
-      decimals: 9,
-      name: 'Wave Token',
-      symbol: 'WAVE',
-      logoURI: '/wave0.png', // Will be updated dynamically
-      tags: [],
-      isConfidentialSupported: true,
-      isNative: false,
-      addressable: true
-    },
-    {
-      address: 'wealth',
-      chainId: 101,
-      decimals: 9,
-      name: 'Wealth Token',
-      symbol: 'WEALTH',
-      logoURI: '/wave0.png', // Will be updated dynamically
+      decimals: 6,
+      name: 'Pump',
+      symbol: 'PUMP',
+      logoURI: getLocalFallbackIcon('PUMP', 'pump') || '/icons/fallback/token/pump.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: false,
@@ -167,60 +162,24 @@ const CHAIN_TOKENS = {
   ],
   starknet: [
     {
-      address: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7',
+      address: 'ZEC_TOKEN_STARKNET', // Placeholder for ZEC on Starknet
       chainId: 1, // StarkNet mainnet
       decimals: 18,
-      name: 'Ethereum',
-      symbol: 'ETH',
-      logoURI: '/static/icons/network/ethereum.svg',
-      tags: [],
-      isConfidentialSupported: true,
-      isNative: true,
-      addressable: true
-    },
-    {
-      address: '0x053c9123bc8a2a8f2e6b47d0f9d3c4b1a2e3f4d5a6b7c8d9e0f1a2b3c4d5e6f',
-      chainId: 1,
-      decimals: 6,
-      name: 'USD Coin',
-      symbol: 'USDC',
-      logoURI: getLocalFallbackIcon('USDC', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') || '/icons/default-token.svg', // Local fallback
+      name: 'Zcash',
+      symbol: 'ZEC',
+      logoURI: getLocalFallbackIcon('ZEC', 'zec') || '/icons/fallback/token/zec.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: false,
       addressable: true
     },
     {
-      address: '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d',
+      address: 'PUMP_TOKEN_STARKNET', // Placeholder for PUMP on Starknet
       chainId: 1,
       decimals: 18,
-      name: 'StarkNet Token',
-      symbol: 'STRK',
-      logoURI: '/icons/fallback/network/starknet.svg',
-      tags: [],
-      isConfidentialSupported: true,
-      isNative: true,
-      addressable: true
-    },
-    {
-      address: '0x07394cbe418daa16e42b87ba67372d4ab4a5df0b05c6e554d158458ce245bc10',
-      chainId: 1,
-      decimals: 18,
-      name: 'wstETH',
-      symbol: 'wstETH',
-      logoURI: '/static/icons/network/ethereum.svg',
-      tags: [],
-      isConfidentialSupported: true,
-      isNative: false,
-      addressable: true
-    },
-    {
-      address: '0x05a7f0a0a91e8eebf2ac5f4e1fcdac74d67a9d7a876a2b3e0b5e9e1f2a3d4e5f',
-      chainId: 1,
-      decimals: 6,
-      name: 'USDT',
-      symbol: 'USDT',
-      logoURI: getLocalFallbackIcon('USDT', 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB') || '/icons/default-token.svg', // Local fallback
+      name: 'Pump',
+      symbol: 'PUMP',
+      logoURI: getLocalFallbackIcon('PUMP', 'pump') || '/icons/fallback/token/pump.png',
       tags: [],
       isConfidentialSupported: true,
       isNative: false,
@@ -249,17 +208,55 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
     }
   }, [theme.name])
 
+  // Helper function to get tokens for specific bridge route
+  const getBridgeTokensForRoute = (from: string, to: string) => {
+    const allFromTokens = DYNAMIC_CHAIN_TOKENS[from as keyof typeof DYNAMIC_CHAIN_TOKENS]
+    const allToTokens = DYNAMIC_CHAIN_TOKENS[to as keyof typeof DYNAMIC_CHAIN_TOKENS]
+
+    // Filter tokens based on bridge route requirements
+    if ((from === 'zec' && to === 'solana') || (from === 'solana' && to === 'zec')) {
+      // Zcash <> Solana: Only ZEC supported
+      return {
+        from: allFromTokens.filter(token => token.symbol === 'ZEC'),
+        to: allToTokens.filter(token => token.symbol === 'ZEC')
+      }
+    } else if ((from === 'starknet' && to === 'solana') || (from === 'solana' && to === 'starknet')) {
+      // Starknet <> Solana: ZEC and PUMP supported
+      return {
+        from: allFromTokens.filter(token => ['ZEC', 'PUMP'].includes(token.symbol)),
+        to: allToTokens.filter(token => ['ZEC', 'PUMP'].includes(token.symbol))
+      }
+    } else {
+      // Default: return all tokens (shouldn't happen with our restrictions)
+      return {
+        from: allFromTokens,
+        to: allToTokens
+      }
+    }
+  }
+
   // UI State
   const [fromChain, setFromChain] = useState<string>('zec')
   const [toChain, setToChain] = useState<string>('solana')
   const [fromToken, setFromToken] = useState<Token | undefined>(DYNAMIC_CHAIN_TOKENS.zec[0])
-  const [toToken, setToToken] = useState<Token | undefined>(DYNAMIC_CHAIN_TOKENS.solana[0])
+  const [toToken, setToToken] = useState<Token | undefined>(getBridgeTokensForRoute('zec', 'solana').to[0])
   const [amount, setAmount] = useState('')
   const [isBridging, setIsBridging] = useState(false)
   const [showStarknetWalletModal, setShowStarknetWalletModal] = useState(false)
   const [isReversed, setIsReversed] = useState(false)
 
-  
+  // Check if a bridge route is valid
+  const isValidBridgeRoute = (from: string, to: string): boolean => {
+    const validDestinations = VALID_BRIDGE_ROUTES[from as keyof typeof VALID_BRIDGE_ROUTES]
+    return validDestinations ? validDestinations.includes(to as 'solana' | 'zec' | 'starknet') : false
+  }
+
+  // Get available destination chains for a source chain
+  const getAvailableDestinationChains = (sourceChain: string): string[] => {
+    const destinations = VALID_BRIDGE_ROUTES[sourceChain as keyof typeof VALID_BRIDGE_ROUTES]
+    return destinations ? [...destinations] : []
+  }
+
   const getBridgeProvider = (from: string, to: string) => {
     const routeKey = `${from}-${to}` as keyof typeof BRIDGE_PROVIDERS
     return BRIDGE_PROVIDERS[routeKey] || 'near-intents'
@@ -270,69 +267,62 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
     return chain ? chain.name : chainId.toUpperCase()
   }
 
-  const getDynamicQuote = (toChainId: string) => {
-    const quotes = {
-      solana: "Bridge assets seamlessly to the Solana ecosystem.",
-      near: "Cross into the NEAR protocol's user-centric world.",
-      zec: "Transfer assets to the privacy-focused Zcash network.",
-      starknet: "Enter the StarkNet layer 2 scaling solution.",
-      ethereum: "Connect to the world's largest smart contract platform.",
-      polygon: "Move assets to Polygon's fast and affordable network.",
-      bsc: "Bridge to Binance Smart Chain's vibrant ecosystem.",
-      arbitrum: "Access Arbitrum's layer 2 scaling and low fees.",
-      optimism: "Transfer to Optimism's optimistic rollup solution.",
-      avalanche: "Enter Avalanche's high-throughput blockchain.",
-      base: "Connect to Coinbase's Layer 2 network.",
-      aptos: "Move to Aptos's next-generation blockchain.",
-      sui: "Bridge to Sui's object-oriented smart contract platform.",
-      intents: "Leverage cross-chain intent protocols."
-    }
-    return quotes[toChainId as keyof typeof quotes] || "Bridge assets seamlessly across the most innovative networks."
-  }
-
   const handleChainSelect = (chainType: 'from' | 'to', chainId: string) => {
+    let newFromChain = fromChain
+    let newToChain = toChain
+
     if (chainType === 'from') {
-      // Prevent selecting the same chain as destination
-      if (chainId === toChain) {
-        // Swap chains
-        setFromChain(toChain)
-        setToChain(chainId)
-        setIsReversed(!isReversed)
+      // Check if this is a valid bridge route
+      if (!isValidBridgeRoute(chainId, toChain)) {
+        // If invalid route, find the first valid destination chain
+        const validDestinations = getAvailableDestinationChains(chainId)
+        if (validDestinations.length > 0) {
+          newFromChain = chainId
+          newToChain = validDestinations[0]
+          setIsReversed(chainId !== toChain) // Track if direction changed
+        } else {
+          return // No valid route, do nothing
+        }
       } else {
-        setFromChain(chainId)
+        newFromChain = chainId
       }
     } else {
-      // Prevent selecting the same chain as source
-      if (chainId === fromChain) {
-        // Swap chains
-        setToChain(fromChain)
-        setFromChain(chainId)
-        setIsReversed(!isReversed)
+      // Check if this is a valid bridge route
+      if (!isValidBridgeRoute(fromChain, chainId)) {
+        // If invalid route, find a valid source chain for this destination
+        const allChains = ['zec', 'solana', 'starknet'] as const
+        const validSource = allChains.find(source =>
+          source !== chainId && isValidBridgeRoute(source, chainId)
+        )
+        if (validSource) {
+          newFromChain = validSource
+          newToChain = chainId
+          setIsReversed(validSource !== fromChain) // Track if direction changed
+        } else {
+          return // No valid route, do nothing
+        }
       } else {
-        setToChain(chainId)
+        newToChain = chainId
       }
     }
 
-    // Update tokens after chain change
-    const newFromChain = chainType === 'from' ? chainId : (chainId === fromChain ? toChain : fromChain)
-    const newToChain = chainType === 'to' ? chainId : (chainId === toChain ? fromChain : toChain)
-
-    const fromTokens = DYNAMIC_CHAIN_TOKENS[newFromChain as keyof typeof DYNAMIC_CHAIN_TOKENS]
-    const toTokens = DYNAMIC_CHAIN_TOKENS[newToChain as keyof typeof DYNAMIC_CHAIN_TOKENS]
-
-    setFromToken(fromTokens[0])
-    setToToken(toTokens.find(t => t.symbol === 'USDC') || toTokens[0])
-    setAmount('')
+    setFromChain(newFromChain)
+    setToChain(newToChain)
+    setAmount('') // Reset amount when chains change
   }
 
-  // Auto-update tokens when chains change
+  // Auto-update tokens when chains change - use bridge-specific filtering
   React.useEffect(() => {
-    const fromTokens = DYNAMIC_CHAIN_TOKENS[fromChain as keyof typeof DYNAMIC_CHAIN_TOKENS]
-    const toTokens = DYNAMIC_CHAIN_TOKENS[toChain as keyof typeof DYNAMIC_CHAIN_TOKENS]
+    const bridgeTokens = getBridgeTokensForRoute(fromChain, toChain)
 
-    setFromToken(fromTokens[0])
-    setToToken(toTokens.find(t => t.symbol === 'USDC') || toTokens[0])
-  }, [fromChain, toChain, DYNAMIC_CHAIN_TOKENS])
+    // Set the first available token for each side
+    if (bridgeTokens.from.length > 0) {
+      setFromToken(bridgeTokens.from[0])
+    }
+    if (bridgeTokens.to.length > 0) {
+      setToToken(bridgeTokens.to[0])
+    }
+  }, [fromChain, toChain])
 
   const getWalletConnectionStatus = () => {
     const sourceChain = fromChain
@@ -489,11 +479,13 @@ const handleBridge = async () => {
   }
 
   const getAvailableFromTokens = () => {
-    return DYNAMIC_CHAIN_TOKENS[fromChain as keyof typeof DYNAMIC_CHAIN_TOKENS]
+    const bridgeTokens = getBridgeTokensForRoute(fromChain, toChain)
+    return bridgeTokens.from
   }
 
   const getAvailableToTokens = () => {
-    return DYNAMIC_CHAIN_TOKENS[toChain as keyof typeof DYNAMIC_CHAIN_TOKENS]
+    const bridgeTokens = getBridgeTokensForRoute(fromChain, toChain)
+    return bridgeTokens.to
   }
 
   const walletStatus = getWalletConnectionStatus()
@@ -534,11 +526,11 @@ const handleBridge = async () => {
           {/* From Chain */}
           <div className="flex-1">
             <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.textSecondary }}>
-              From
+              From Chain
             </label>
             <div className="grid grid-cols-3 gap-2">
               {SUPPORTED_CHAINS.map((chain) => {
-                const isDisabled = chain.id === toChain
+                const isDisabled = !isValidBridgeRoute(chain.id, toChain)
                 return (
                 <button
                   key={chain.id}
@@ -744,7 +736,7 @@ const handleBridge = async () => {
             </label>
             <div className="grid grid-cols-3 gap-2">
               {SUPPORTED_CHAINS.map((chain) => {
-                const isDisabled = chain.id === fromChain
+                const isDisabled = !isValidBridgeRoute(fromChain, chain.id)
                 return (
                 <button
                   key={chain.id}

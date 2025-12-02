@@ -198,17 +198,33 @@ export function HeliusSearchBar() {
           backdropFilter: 'blur(16px) saturate(1.5)'
         }}
       >
-        {/* Noise grain overlay */}
-        <div
-          className="absolute inset-0 opacity-3 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-            filter: 'contrast(1.2) brightness(1.1)'
-          }}
-        />
+        {/* Background image overlay for dark theme */}
+        {theme.name === 'dark' && (
+          <div
+            className="absolute inset-0 opacity-40 pointer-events-none"
+            style={{
+              backgroundImage: `url("/bg.jpg")`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'blur(20px) saturate(1.2) brightness(0.3)'
+            }}
+          />
+        )}
 
         <div className="relative z-10">
           <div className="relative">
+            {/* Search icon on the left */}
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center pointer-events-none z-10">
+              <Search
+                className="w-4 h-4"
+                style={{
+                  color: theme.colors.textMuted,
+                  opacity: 0.7
+                }}
+              />
+            </div>
+
             <input
               type="text"
               value={query}
@@ -219,7 +235,7 @@ export function HeliusSearchBar() {
               onFocus={() => setIsOpen(true)}
               onKeyDown={handleKeyPress}
               placeholder="Explore in the Orb..."
-              className="w-full pl-3 pr-12 py-1 rounded-md text-xs"
+              className="w-full pl-10 pr-12 py-1 rounded-md text-xs"
               style={{
                 border: `1px solid ${theme.colors.border}`,
                 background: `${theme.colors.surface}99`,
@@ -250,7 +266,7 @@ export function HeliusSearchBar() {
             {/* Clear button */}
             <button
               onClick={() => setQuery('')}
-              className="absolute right-10 top-1/2 transform -translate-y-1/2 flex items-center opacity-60 hover:opacity-100 transition-opacity z-10"
+              className="absolute right-11 top-1/2 transform -translate-y-1/2 flex items-center opacity-60 hover:opacity-100 transition-opacity z-10"
             >
               {query && <X className="h-3 w-3" style={{ color: theme.colors.textMuted }} />}
             </button>
@@ -273,14 +289,19 @@ export function HeliusSearchBar() {
             overflowY: 'auto'
           }}
         >
-          {/* Noise grain overlay for dropdown */}
-          <div
-            className="absolute inset-0 opacity-3 pointer-events-none"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-              filter: 'contrast(1.2) brightness(1.1)'
-            }}
-          />
+          {/* Background image overlay for dropdown */}
+          {theme.name === 'dark' && (
+            <div
+              className="absolute inset-0 opacity-30 pointer-events-none"
+              style={{
+                backgroundImage: `url("/bg.jpg")`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'blur(15px) saturate(1.2) brightness(0.3)'
+              }}
+            />
+          )}
 
           <div className="relative z-10 p-1">
             <div className="px-2 py-1 text-xs font-medium" style={{ color: theme.colors.textMuted }}>

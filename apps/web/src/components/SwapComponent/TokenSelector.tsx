@@ -202,12 +202,8 @@ export function TokenSelector({
           borderWidth: '2px',
           borderStyle: 'solid',
           borderColor: (theme.name === 'light' || theme.name === 'ghost') ? theme.colors.primary + '20' : theme.colors.border,
-          backdropFilter: (theme.name === 'light' || theme.name === 'ghost')
-            ? 'blur(20px) saturate(1.5) contrast(1.02)'
-            : 'blur(24px) saturate(1.9) contrast(1.05)',
-          WebkitBackdropFilter: (theme.name === 'light' || theme.name === 'ghost')
-            ? 'blur(20px) saturate(1.5) contrast(1.02)'
-            : 'blur(24px) saturate(1.9) contrast(1.05)',
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none',
           boxShadow: (theme.name === 'light' || theme.name === 'ghost')
             ? '0 8px 32px ' + theme.colors.shadow + ', 0 4px 16px ' + theme.colors.primary + '20'
             : '0 12px 40px ' + theme.colors.shadowHeavy + ', 0 6px 20px ' + theme.colors.primary + '30'
@@ -329,7 +325,7 @@ export function TokenSelector({
                     background: 'linear-gradient(135deg, ' + theme.colors.surface + 'f8 0%, ' + theme.colors.surfaceHover + 'f2 50%, ' + theme.colors.surface + 'f6 100%)',
                     border: '1px solid ' + theme.colors.primary + '30',
                     boxShadow: '0 50px 100px -20px ' + theme.colors.shadow + ', 0 25px 50px -12px ' + theme.colors.shadow + 'cc, inset 0 1px 0 rgba(255, 255, 255, ' + (theme.name === 'light' || theme.name === 'ghost' ? '0.3' : '0.1') + ')',
-                    backdropFilter: 'blur(40px) saturate(1.5)'
+                    backdropFilter: 'none'
                   }}
                 >
                   {/* Modal Header */}

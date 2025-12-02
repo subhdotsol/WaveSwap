@@ -178,9 +178,25 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
       {/* Pool Selector */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold" style={{ color: theme.colors.textPrimary }}>
-            Staking Pools
-          </h2>
+          <div>
+              <h2 className="text-xl font-bold" style={{ color: theme.colors.textPrimary }}>
+                Staking Pools
+              </h2>
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-xs" style={{ color: theme.colors.textMuted }}>
+                  Powered by
+                </span>
+                <a
+                  href="https://www.arcium.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium transition-all duration-200 hover:opacity-80"
+                  style={{ color: theme.colors.primary }}
+                >
+                  Arcium
+                </a>
+              </div>
+            </div>
           <button
             onClick={() => setShowInfoModal(true)}
             className="p-2 rounded-lg transition-all duration-300 hover:scale-[1.05]"
@@ -1133,10 +1149,25 @@ function InfoModal({ onClose, theme }: { onClose: () => void, theme: any }) {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <InformationCircleIcon className="w-6 h-6" style={{ color: theme.colors.primary }} />
-              <h3 className="text-xl font-bold" style={{ color: theme.colors.textPrimary }}>
-                Wave Dark Pool
-              </h3>
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: theme.colors.textPrimary }}>
+                  Wave Dark Pool
+                </h3>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-xs" style={{ color: theme.colors.textMuted }}>
+                    Powered by
+                  </span>
+                  <a
+                    href="https://www.arcium.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium transition-all duration-200 hover:opacity-80"
+                    style={{ color: theme.colors.primary }}
+                  >
+                    Arcium
+                  </a>
+                </div>
+              </div>
             </div>
             <button
               onClick={onClose}

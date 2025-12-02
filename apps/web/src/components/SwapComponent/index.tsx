@@ -3,11 +3,11 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { Connection } from '@solana/web3.js'
-import { ArrowsUpDownIcon, ExclamationTriangleIcon, ArrowDownTrayIcon, WalletIcon, LockClosedIcon } from '@heroicons/react/24/outline'
+import { ArrowsUpDownIcon, ExclamationTriangleIcon, ArrowDownTrayIcon, WalletIcon, LockClosedIcon, InformationCircleIcon } from '@heroicons/react/24/outline'
 import { TokenSelector } from './TokenSelector'
 import { AmountInput } from './AmountInput'
 import { SwapButton } from './SwapButton'
-import { WithdrawConfirmModal, WithdrawSuccessModal, WithdrawErrorModal } from '@/components/ui/Modal'
+import { Modal, WithdrawConfirmModal, WithdrawSuccessModal, WithdrawErrorModal } from '@/components/ui/Modal'
 import { useSwap } from '@/hooks/useSwap'
 import { Token, SwapStatus } from '@/types/token'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
@@ -107,6 +107,9 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
   const [withdrawalAmounts, setWithdrawalAmounts] = useState<{ [key: string]: string }>({})
   const [apiConfidentialBalances, setApiConfidentialBalances] = useState<any[]>([])
   const [isLoadingConfidentialBalances, setIsLoadingConfidentialBalances] = useState(false)
+
+  // Info modal state
+  const [showInfoModal, setShowInfoModal] = useState(false)
 
   // Fetch confidential balances from API when privacy mode is enabled and user is connected
   useEffect(() => {
@@ -936,7 +939,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
               )
             `,
             border: `1px solid ${theme.colors.primary}15`,
-            backdropFilter: 'blur(24px) saturate(1.8)',
+            backdropFilter: 'none',
             boxShadow: `
               0 20px 60px ${theme.colors.shadowHeavy},
               0 8px 24px ${theme.colors.primary}08,
@@ -945,15 +948,6 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
             `
           }}
         >
-          {/* Noise grain overlay */}
-          <div
-            className="absolute inset-0 opacity-4 pointer-events-none"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-              filter: 'contrast(1.2) brightness(1.1)'
-            }}
-          />
-
           {/* Professional Tab Navigation */}
           {privacyMode && (
             <div className="relative z-10">
@@ -1018,7 +1012,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                         )
                       `,
                       border: `1px solid ${theme.colors.primary}20`,
-                      backdropFilter: 'blur(16px) saturate(1.5)',
+                      backdropFilter: 'none',
                       boxShadow: `
                         0 8px 32px ${theme.colors.shadow},
                         inset 0 1px 0 rgba(255, 255, 255, 0.1)
@@ -1610,6 +1604,122 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
           />
         </>
       )}
+
+      {/* Info Modal */}
+      <Modal
+        isOpen={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        title="WaveSwap Information"
+      >
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: theme.colors.textPrimary }}>
+              How WaveSwap Works
+            </h3>
+            <div className="space-y-3 text-sm" style={{ color: theme.colors.textSecondary }}>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                  <span className="text-xs font-bold">1</span>
+                </div>
+                <p>
+                  <strong>Connect Your Wallet:</strong> Start by connecting your Solana wallet to WaveSwap. We support Phantom, Solflare, and other popular wallets.
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                  <span className="text-xs font-bold">2</span>
+                </div>
+                <p>
+                  <strong>Choose Your Mode:</strong> Select between Public mode (transparent on-chain swaps) or Private mode (enhanced privacy with encryption).
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                  <span className="text-xs font-bold">3</span>
+                </div>
+                <p>
+                  <strong>Select Tokens:</strong> Choose the tokens you want to swap from and to. We support a wide variety of Solana tokens with real-time price feeds.
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                  <span className="text-xs font-bold">4</span>
+                </div>
+                <p>
+                  <strong>Enter Amount:</strong> Input the amount you want to swap. Our interface will show you the estimated output and current exchange rate.
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                  <span className="text-xs font-bold">5</span>
+                </div>
+                <p>
+                  <strong>Review & Swap:</strong> Review the transaction details, including fees and exchange rate, then click "Swap" to execute your trade.
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: `${theme.colors.primary}20`, color: theme.colors.primary }}>
+                  <span className="text-xs font-bold">6</span>
+                </div>
+                <p>
+                  <strong>Confirmation:</strong> Approve the transaction in your wallet. Your swap will be executed instantly on the Solana blockchain.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl" style={{ background: `${theme.colors.info}05`, border: `1px solid ${theme.colors.info}20` }}>
+            <h4 className="font-semibold mb-2 flex items-center gap-2" style={{ color: theme.colors.info }}>
+              <LockClosedIcon className="h-4 w-4" />
+              Privacy & Security
+            </h4>
+            <ul className="text-xs space-y-1" style={{ color: theme.colors.textMuted }}>
+              <li>• <strong>Private Mode:</strong> Enhanced encryption protects your transaction details</li>
+              <li>• <strong>Public Mode:</strong> Standard transparent swaps on the Solana blockchain</li>
+              <li>• <strong>Non-Custodial:</strong> You always maintain control of your funds</li>
+              <li>• <strong>Audited:</strong> Our smart contracts are regularly security audited</li>
+            </ul>
+          </div>
+
+          <div className="p-4 rounded-xl" style={{ background: `${theme.colors.success}05`, border: `1px solid ${theme.colors.success}20` }}>
+            <h4 className="font-semibold mb-2" style={{ color: theme.colors.success }}>
+              Why Choose WaveSwap?
+            </h4>
+            <ul className="text-xs space-y-1" style={{ color: theme.colors.textMuted }}>
+              <li>• Best-in-class exchange rates through Jupiter aggregator</li>
+              <li>• Lightning-fast swaps on Solana's high-speed blockchain</li>
+              <li>• Minimal fees and maximum capital efficiency</li>
+              <li>• User-friendly interface with advanced privacy options</li>
+            </ul>
+          </div>
+
+          <div className="pt-4 border-t text-center" style={{ borderColor: theme.colors.border }}>
+            <p className="text-xs mb-2" style={{ color: theme.colors.textMuted }}>
+              Powered by
+            </p>
+            <a
+              href="https://app.encifher.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium transition-all duration-200 hover:opacity-80"
+              style={{ color: theme.colors.primary }}
+            >
+              Encifher
+            </a>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

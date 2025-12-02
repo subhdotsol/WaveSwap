@@ -198,15 +198,7 @@ export function HeliusSearchBar() {
           backdropFilter: 'blur(16px) saturate(1.5)'
         }}
       >
-        {/* Noise grain overlay - matching history tab */}
-        <div
-          className="absolute inset-0 opacity-3 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-            filter: 'contrast(1.2) brightness(1.1)'
-          }}
-        />
-
+        
         <div className="relative z-10">
           <div className="relative">
             <input
@@ -273,28 +265,26 @@ export function HeliusSearchBar() {
 
       {/* Search Suggestions Dropdown */}
       {isOpen && (
-        <div
-          className="absolute top-full left-0 right-0 mt-1 z-50"
-          style={{
-            ...createGlassStyles(theme),
-            background: `${theme.colors.surface}cc`,
-            border: `1px solid ${theme.colors.border}`,
-            backdropFilter: 'blur(16px) saturate(1.5)',
-            borderRadius: '8px',
-            boxShadow: `0 4px 12px ${theme.colors.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.1)`,
-            maxHeight: '240px',
-            overflowY: 'auto'
-          }}
-        >
-          {/* Noise grain overlay for dropdown */}
+        <>
+          {/* Click outside to close overlay */}
           <div
-            className="absolute inset-0 opacity-3 pointer-events-none"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-              filter: 'contrast(1.2) brightness(1.1)'
-            }}
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: 'transparent' }}
+            onClick={() => setIsOpen(false)}
           />
 
+          <div
+            className="absolute top-full left-0 right-0 mt-1 z-50"
+            style={{
+              background: theme.colors.surface,
+              border: `1px solid ${theme.colors.border}`,
+              borderRadius: '12px',
+              boxShadow: `0 8px 32px ${theme.colors.shadow}, 0 4px 16px ${theme.colors.shadow}40`,
+              maxHeight: '280px',
+              overflowY: 'auto'
+            }}
+          >
+          
           <div className="relative z-10 p-1">
             <div className="px-2 py-1 text-xs font-medium" style={{ color: theme.colors.textMuted }}>
               {query ? 'Search Results' : 'Quick Access'}
@@ -380,6 +370,7 @@ export function HeliusSearchBar() {
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   )

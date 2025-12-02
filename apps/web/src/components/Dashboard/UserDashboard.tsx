@@ -28,7 +28,7 @@ export function UserDashboard() {
   const { connection } = useConnection()
   const theme = useThemeConfig()
   const { privacyMode } = usePrivacyMode()
-  const { balances, refreshBalances } = useSwap()
+  const { balances, refreshBalances } = useSwap(privacyMode, publicKey)
 
   const [walletBalance, setWalletBalance] = useState<number>(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -108,6 +108,21 @@ export function UserDashboard() {
             }}
           />
         </>
+      )}
+
+      {/* Background image overlay for dark theme */}
+      {theme?.name === 'dark' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url("/bg.jpg")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            filter: 'blur(25px) saturate(1.2) brightness(0.25)',
+            opacity: 0.4
+          }}
+        />
       )}
 
       <div className="relative z-10">

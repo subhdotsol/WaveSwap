@@ -146,15 +146,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
           `
         }}
       >
-        {/* Noise grain overlay */}
-        <div
-          className="absolute inset-0 opacity-4 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-            filter: 'contrast(1.3) brightness(1.1)'
-          }}
-        />
-
+        
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-lg p-2" style={{
@@ -254,15 +246,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
           backdropFilter: 'blur(16px) saturate(1.5)'
         }}
       >
-        {/* Noise grain overlay */}
-        <div
-          className="absolute inset-0 opacity-3 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-            filter: 'contrast(1.2) brightness(1.1)'
-          }}
-        />
-
+        
         <div className="relative z-10 flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -410,15 +394,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
               backdropFilter: 'blur(16px) saturate(1.5)'
             }}
           >
-            {/* Noise grain overlay */}
-            <div
-              className="absolute inset-0 opacity-3 pointer-events-none"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-                filter: 'contrast(1.2) brightness(1.1)'
-              }}
-            />
-
+            
             <div className="relative z-10">
               <div className="flex justify-center mb-4">
                 <ClockIcon className="h-16 w-16" style={{ color: theme.colors.textMuted }} />
@@ -458,15 +434,7 @@ export function HistoryTab({ privacyMode }: HistoryTabProps) {
                 backdropFilter: 'blur(16px) saturate(1.5)'
               }}
             >
-              {/* Noise grain overlay */}
-              <div
-                className="absolute inset-0 opacity-3 pointer-events-none"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-                  filter: 'contrast(1.2) brightness(1.1)'
-                }}
-              />
-
+              
               <div className="relative z-10">
                 <div className="flex items-center justify-between">
                   {/* Left side - Transaction details */}

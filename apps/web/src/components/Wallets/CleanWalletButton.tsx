@@ -259,15 +259,7 @@ export function CleanWalletButton() {
         }
       }}
     >
-      {/* Noise grain overlay */}
-      <div
-        className="absolute inset-0 opacity-3 pointer-events-none rounded-xl"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-          filter: 'contrast(1.3) brightness(1.1)'
-        }}
-      />
-      {/* Button Content */}
+            {/* Button Content */}
       <div className="relative z-10 flex items-center gap-3">
         {connecting ? (
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -472,15 +464,7 @@ export function CleanWalletButton() {
           </button>
         </div>
 
-        {/* Noise grain overlay for dropdown */}
-        <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none rounded-xl"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-            filter: 'contrast(1.3) brightness(1.1)'
-          }}
-        />
-      </div>
+              </div>
     )}
     </div>
   )
