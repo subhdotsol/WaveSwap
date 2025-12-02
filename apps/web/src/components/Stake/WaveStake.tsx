@@ -24,6 +24,7 @@ interface StakePool {
   isSecureBagAvailable: boolean
   isComingSoon?: boolean
   description: string
+  oroFinanceUrl?: string
   userStaked?: string
   userRewards?: string
   userSecureBag?: string
@@ -118,6 +119,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
       isSecureBagAvailable: false,
       isComingSoon: true,
       description: 'Gold, but better with oro.finance',
+      oroFinanceUrl: 'https://oro.finance',
       userStaked: privacyMode ? '****' : '0',
       userRewards: privacyMode ? '****' : '0',
       userSecureBag: privacyMode ? '****' : '0'
@@ -435,7 +437,34 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                     {currentPool.name}
                   </h3>
                   <p className="text-sm" style={{ color: theme.colors.textMuted }}>
-                    {currentPool.description}
+                    {currentPool.id === 'GOLD' && currentPool.oroFinanceUrl ? (
+                      <>
+                        Gold, but better with{' '}
+                        <a
+                          href={currentPool.oroFinanceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:no-underline transition-all duration-200"
+                          style={{
+                            color: theme.colors.primary,
+                            textDecorationColor: theme.colors.primary,
+                            opacity: 0.8
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = '1'
+                            e.currentTarget.style.color = theme.colors.primaryHover
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = '0.8'
+                            e.currentTarget.style.color = theme.colors.primary
+                          }}
+                        >
+                          oro.finance
+                        </a>
+                      </>
+                    ) : (
+                      currentPool.description
+                    )}
                   </p>
                 </div>
               </div>
