@@ -28,13 +28,9 @@ const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
 
       // Special handling for 0 values - allow them to be displayed
       if (num === 0) {
-        // If user is typing "0", "0.", "0.1", etc., show it
-        if (val.startsWith('0') && val !== '0') {
+        // Always show values starting with 0 (including "0" itself)
+        if (val.startsWith('0')) {
           return val
-        }
-        // For exact "0", show empty to allow placeholder
-        if (val === '0') {
-          return ''
         }
         return val
       }

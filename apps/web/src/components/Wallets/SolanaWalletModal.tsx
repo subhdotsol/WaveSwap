@@ -192,17 +192,33 @@ export function SolanaWalletModal({ isOpen, onClose }: SolanaWalletModalProps) {
         throw new Error('Wallet adapter not available')
       }
 
-      // Check if wallet is ready
-      if (!walletAdapter.ready) {
+      // For Phantom wallet, be more lenient with readiness check
+      // Phantom sometimes reports not ready even when it's available
+      if (!walletAdapter.ready && adapterName !== 'Phantom') {
         throw new Error(`${adapterName} wallet is not ready. Please make sure it's installed and unlocked.`)
       }
 
-      // Direct adapter connection
-      await walletAdapter.connect()
-      console.log('Direct adapter connection successful')
+      // Try connection method with better error handling
+      try {
+        // Direct adapter connection
+        await walletAdapter.connect()
+        console.log('Direct adapter connection successful')
+      } catch (connectError) {
+        console.log('Direct connection failed, trying context method:', connectError)
 
-      // Update the wallet adapter context
-      await select(adapterName as WalletName)
+        // Fallback to context-based connection for Phantom
+        await select(adapterName as WalletName)
+        await new Promise(resolve => setTimeout(resolve, 300))
+        await connect()
+        console.log('Context-based connection successful')
+      }
+
+      // Update the wallet adapter context (if not already updated)
+      try {
+        await select(adapterName as WalletName)
+      } catch (selectError) {
+        console.log('Wallet already selected or selection failed:', selectError)
+      }
 
       // Close modal after successful connection
       setTimeout(() => {
