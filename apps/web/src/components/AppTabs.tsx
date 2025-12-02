@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Tabs from './ui/Tabs'
 import { SwapComponent } from './SwapComponent'
-import { NetworkSelector } from './SwapComponent/NetworkSelector'
 import Settings from './Settings'
 import { HistoryTab } from './HistoryTab'
 import { WavePortal } from './Bridge/WavePortalNew'
@@ -264,10 +263,10 @@ export function AppTabs() {
 
               {/* Right side controls - Responsive layout */}
               <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
-                {/* Network Selector - Hide on small mobile */}
+                {/* Network Selector - Hide on small mobile
                 <div className="hidden sm:block">
                   <NetworkSelector />
-                </div>
+                </div> */}
 
                 {/* Privacy Mode Toggle - Compact on mobile */}
                 <div className="flex items-center">
