@@ -114,85 +114,20 @@ export function Settings() {
         <div
             className="absolute right-0 top-full mt-2 w-72 xs:w-80 sm:w-96 max-w-[calc(100vw-1rem)] xs:max-w-[calc(100vw-1.5rem)] sm:max-w-[calc(100vw-2rem)] rounded-2xl overflow-hidden"
             style={{
-              background: themeConfig.name === 'light'
-                ? `
-                  linear-gradient(135deg,
-                    ${themeConfig.colors.surface}f8 0%,
-                    ${themeConfig.colors.surface}f0 25%,
-                    ${themeConfig.colors.surface}f8 50%,
-                    ${themeConfig.colors.surface}f0 75%,
-                    ${themeConfig.colors.surface}f8 100%
-                  ),
-                  radial-gradient(circle at 25% 25%,
-                    ${themeConfig.colors.primary}12 0%,
-                    transparent 50%
-                  ),
-                  radial-gradient(circle at 75% 75%,
-                    ${themeConfig.colors.success}10 0%,
-                    transparent 50%
-                  )
-                `
-                : `
-                  linear-gradient(135deg,
-                    ${themeConfig.colors.surface}ee 0%,
-                    ${themeConfig.colors.surfaceHover}cc 25%,
-                    ${themeConfig.colors.surface}ee 50%,
-                    ${themeConfig.colors.surfaceHover}cc 75%,
-                    ${themeConfig.colors.surface}ee 100%
-                  ),
-                  radial-gradient(circle at 25% 25%,
-                    ${themeConfig.colors.primary}08 0%,
-                    transparent 50%
-                  ),
-                  radial-gradient(circle at 75% 75%,
-                    ${themeConfig.colors.success}06 0%,
-                    transparent 50%
-                  )
-                `,
-              border: themeConfig.name === 'light'
-                ? `1px solid ${themeConfig.colors.border}`
-                : `1px solid ${themeConfig.colors.primary}20`,
-              backdropFilter: 'blur(32px) saturate(1.8) contrast(1.05) brightness(1.02)',
-              WebkitBackdropFilter: 'blur(32px) saturate(1.8) contrast(1.05) brightness(1.02)', // Safari support
-              boxShadow: themeConfig.name === 'light'
-                ? `
-                  0 25px 60px ${themeConfig.colors.shadowLight}40,
-                  0 12px 32px ${themeConfig.colors.primary}20,
-                  0 6px 16px ${themeConfig.colors.shadow}30,
-                  inset 0 1px 0 rgba(255, 255, 255, 0.5),
-                  inset 0 -1px 0 ${themeConfig.colors.shadow}20,
-                  0 0 0 1px ${themeConfig.colors.primary}15,
-                  0 0 20px ${themeConfig.colors.primary}10
-                `
-                : `
-                  0 30px 80px ${themeConfig.colors.shadow}60,
-                  0 15px 40px ${themeConfig.colors.primary}25,
-                  0 8px 24px ${themeConfig.colors.shadow}40,
-                  inset 0 1px 0 rgba(255, 255, 255, 0.2),
-                  inset 0 -1px 0 ${themeConfig.colors.shadow}30,
-                  0 0 0 1px ${themeConfig.colors.primary}20,
-                  0 0 30px ${themeConfig.colors.primary}15
-                `,
-              zIndex: 50,
-              transform: 'translateZ(0)', // Enable hardware acceleration
-              willChange: 'backdrop-filter, transform', // Optimize animations
-              animation: 'slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s 1 normal none forwards'
+              backgroundColor: themeConfig.name === 'stealth' ? '#0a0a0a' : themeConfig.name === 'dark' ? '#0f0f0f' : '#ffffff',
+              border: `1px solid ${themeConfig.name === 'stealth' ? '#333333' : themeConfig.colors.border}`,
+              borderRadius: '16px',
+              boxShadow: themeConfig.name === 'stealth'
+                ? '0 5px 20px rgba(255, 255, 255, 0.05), 0 3px 10px rgba(255, 255, 255, 0.02)'
+                : `0 10px 40px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.15)`,
+              zIndex: 50
             }}
           >
-          {/* Noise grain overlay */}
-          <div
-            className="absolute inset-0 opacity-[0.03] pointer-events-none rounded-2xl"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3Cfilter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-              filter: 'contrast(1.3) brightness(1.1)'
-            }}
-          />
-
+  
           {/* Header */}
           <div className="relative z-10 p-3 xs:p-4" style={{
-            background: `linear-gradient(135deg, ${themeConfig.colors.primary}15 0%, ${themeConfig.colors.primary}08 50%, ${themeConfig.colors.primary}15 100%)`,
-            borderBottom: `1px solid ${themeConfig.colors.border}50`,
-            backdropFilter: 'blur(12px) saturate(1.5)'
+            backgroundColor: themeConfig.name === 'stealth' ? '#0f0f0f' : themeConfig.name === 'dark' ? '#1a1a1a' : '#f8f8f8',
+            borderBottom: `1px solid ${themeConfig.name === 'stealth' ? '#222222' : themeConfig.colors.border}`
           }}>
             <div className="flex items-center gap-3">
               <div className="rounded-lg p-2" style={{
@@ -216,7 +151,7 @@ export function Settings() {
           {/* Settings Content */}
           <div className="relative z-10 p-3 xs:p-4 space-y-4 xs:space-y-6 max-h-80 xs:max-h-96 overflow-y-auto">
             {/* Trading Preferences */}
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <div className="flex items-center gap-2 mb-3">
                 <AdjustmentsHorizontalIcon className="h-4 w-4" style={{ color: themeConfig.colors.primary }} />
                 <h3 className="text-xs font-medium uppercase tracking-wider" style={{
@@ -224,10 +159,10 @@ export function Settings() {
                   fontFamily: 'var(--font-helvetica)',
                   letterSpacing: '0.05em'
                 }}>Trading Preferences</h3>
-              </div>
+              </div> */}
 
               {/* Expert Mode */}
-              <div className="flex items-center justify-between p-3 rounded-xl" style={{
+              {/* <div className="flex items-center justify-between p-3 rounded-xl" style={{
                 background: `${themeConfig.colors.primary}08`,
                 border: `1px solid ${themeConfig.colors.primary}15`
               }}>
@@ -258,7 +193,7 @@ export function Settings() {
                   />
                 </Switch>
               </div>
-            </div>
+            </div> */}
 
             {/* Theme Selection */}
             <div className="space-y-4">
@@ -281,11 +216,16 @@ export function Settings() {
                   style={{
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: theme === 'light' ? `${themeConfig.colors.warning}50` : `${themeConfig.colors.border}50`,
-                    background: theme === 'light'
+                    borderColor: theme === 'light'
+                      ? `${themeConfig.colors.warning}50`
+                      : themeConfig.name === 'stealth'
+                        ? '#444444'
+                        : `${themeConfig.colors.border}50`,
+                    backgroundColor: theme === 'light'
                       ? `${themeConfig.colors.warning}10`
-                      : `${themeConfig.colors.surface}30`,
-                    backdropFilter: 'blur(8px) saturate(1.2)'
+                      : themeConfig.name === 'stealth'
+                        ? '#1a1a1a'
+                        : themeConfig.name === 'dark' ? '#2a2a2a' : '#f0f0f0'
                   }}
                   onMouseEnter={(e) => {
                     if (theme !== 'light') {
@@ -320,11 +260,16 @@ export function Settings() {
                   style={{
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: theme === 'dark' ? `${themeConfig.colors.primary}50` : `${themeConfig.colors.border}50`,
-                    background: theme === 'dark'
+                    borderColor: theme === 'dark'
+                      ? `${themeConfig.colors.primary}50`
+                      : themeConfig.name === 'stealth'
+                        ? '#444444'
+                        : `${themeConfig.colors.border}50`,
+                    backgroundColor: theme === 'dark'
                       ? `${themeConfig.colors.primary}10`
-                      : `${themeConfig.colors.surface}30`,
-                    backdropFilter: 'blur(8px) saturate(1.2)'
+                      : themeConfig.name === 'stealth'
+                        ? '#1a1a1a'
+                        : themeConfig.name === 'dark' ? '#2a2a2a' : '#f0f0f0'
                   }}
                   onMouseEnter={(e) => {
                     if (theme !== 'dark') {
@@ -359,11 +304,16 @@ export function Settings() {
                   style={{
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: theme === 'stealth' ? `${themeConfig.colors.primary}50` : `${themeConfig.colors.border}50`,
-                    background: theme === 'stealth'
+                    borderColor: theme === 'stealth'
+                      ? `${themeConfig.colors.primary}50`
+                      : themeConfig.name === 'stealth'
+                        ? '#444444'
+                        : `${themeConfig.colors.border}50`,
+                    backgroundColor: theme === 'stealth'
                       ? `${themeConfig.colors.primary}10`
-                      : `${themeConfig.colors.surface}30`,
-                    backdropFilter: 'blur(8px) saturate(1.2)'
+                      : themeConfig.name === 'stealth'
+                        ? '#1a1a1a'
+                        : themeConfig.name === 'dark' ? '#2a2a2a' : '#f0f0f0'
                   }}
                   onMouseEnter={(e) => {
                     if (theme !== 'stealth') {
@@ -406,11 +356,16 @@ export function Settings() {
                   style={{
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: theme === 'ghost' ? `${themeConfig.colors.primary}50` : `${themeConfig.colors.border}50`,
-                    background: theme === 'ghost'
+                    borderColor: theme === 'ghost'
+                      ? `${themeConfig.colors.primary}50`
+                      : themeConfig.name === 'stealth'
+                        ? '#444444'
+                        : `${themeConfig.colors.border}50`,
+                    backgroundColor: theme === 'ghost'
                       ? `${themeConfig.colors.primary}10`
-                      : `${themeConfig.colors.surface}30`,
-                    backdropFilter: 'blur(8px) saturate(1.2)'
+                      : themeConfig.name === 'stealth'
+                        ? '#1a1a1a'
+                        : themeConfig.name === 'dark' ? '#2a2a2a' : '#f0f0f0'
                   }}
                   onMouseEnter={(e) => {
                     if (theme !== 'ghost') {
@@ -456,7 +411,7 @@ export function Settings() {
                 }}>Trading Preferences</h3>
               </div>
 
-              {/* Slippage */}
+              {/* Slippage
               <div className="p-2 xs:p-3 rounded-xl" style={{
                 background: `${themeConfig.colors.primary}08`,
                 border: `1px solid ${themeConfig.colors.primary}15`
@@ -472,10 +427,9 @@ export function Settings() {
                     onChange={(e) => setSlippage(e.target.value)}
                     className="flex-1 px-3 py-2 rounded-lg text-sm"
                     style={{
-                      border: `1px solid ${themeConfig.colors.border}`,
-                      background: `${themeConfig.colors.surface}99`,
+                      border: `1px solid ${themeConfig.name === 'stealth' ? '#333333' : themeConfig.colors.border}`,
+                      backgroundColor: themeConfig.name === 'stealth' ? '#1a1a1a' : themeConfig.name === 'dark' ? '#2a2a2a' : '#f0f0f0',
                       color: themeConfig.colors.textPrimary,
-                      backdropFilter: 'blur(8px) saturate(1.2)',
                       fontFamily: 'var(--font-mono)'
                     }}
                     min="0.1"
@@ -485,7 +439,7 @@ export function Settings() {
                   <span className="text-sm" style={{ color: themeConfig.colors.textMuted }}>%</span>
                 </div>
                 <p className="text-xs mt-1" style={{ color: themeConfig.colors.textMuted }}>Your transaction will revert if price changes unfavorably by more than this amount</p>
-              </div>
+              </div> */}
 
               {/* Deadline */}
               <div className="p-2 xs:p-3 rounded-xl" style={{
@@ -503,10 +457,9 @@ export function Settings() {
                     onChange={(e) => setDeadline(e.target.value)}
                     className="flex-1 px-3 py-2 rounded-lg text-sm"
                     style={{
-                      border: `1px solid ${themeConfig.colors.border}`,
-                      background: `${themeConfig.colors.surface}99`,
+                      border: `1px solid ${themeConfig.name === 'stealth' ? '#333333' : themeConfig.colors.border}`,
+                      backgroundColor: themeConfig.name === 'stealth' ? '#1a1a1a' : themeConfig.name === 'dark' ? '#2a2a2a' : '#f0f0f0',
                       color: themeConfig.colors.textPrimary,
-                      backdropFilter: 'blur(8px) saturate(1.2)',
                       fontFamily: 'var(--font-mono)'
                     }}
                     min="1"

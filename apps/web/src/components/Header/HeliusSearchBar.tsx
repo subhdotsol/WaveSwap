@@ -211,20 +211,28 @@ export function HeliusSearchBar() {
               onFocus={() => setIsOpen(true)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = theme.colors.primary
-                e.currentTarget.style.background = `${theme.colors.surface}cc`
+                e.currentTarget.style.background =
+                  theme.name === 'stealth' ? '#1a1a1a' :
+                  theme.name === 'ghost' ? '#2a2a2a' :
+                  theme.name === 'dark' ? '#2a2a2a' : '#f8f8f8'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = theme.colors.border
-                e.currentTarget.style.background = `${theme.colors.surface}99`
+                e.currentTarget.style.background =
+                  theme.name === 'stealth' ? '#0f0f0f' :
+                  theme.name === 'ghost' ? '#1f1f1f' :
+                  theme.name === 'dark' ? '#1a1a1a' : '#f0f0f0'
               }}
               onKeyDown={handleKeyPress}
               placeholder="Scan the Orb..."
               className="w-full pl-3 pr-12 py-1 rounded-md text-xs"
               style={{
                 border: `1px solid ${theme.colors.border}`,
-                background: `${theme.colors.surface}99`,
+                background:
+                  theme.name === 'stealth' ? '#0f0f0f' :
+                  theme.name === 'ghost' ? '#1f1f1f' :
+                  theme.name === 'dark' ? '#1a1a1a' : '#f0f0f0',
                 color: theme.colors.textPrimary,
-                backdropFilter: 'blur(8px) saturate(1.2)',
                 fontFamily: 'var(--font-helvetica)',
                 outline: 'none',
                 transition: 'all 0.2s ease'
@@ -269,23 +277,33 @@ export function HeliusSearchBar() {
           {/* Click outside to close overlay */}
           <div
             className="fixed inset-0 z-40"
-            style={{ backgroundColor: 'transparent' }}
             onClick={() => setIsOpen(false)}
           />
 
           <div
-            className="absolute top-full left-0 right-0 mt-1 z-50"
+            className="absolute top-full left-0 right-0 mt-1 z-50 p-4"
             style={{
-              backgroundColor: theme.name === 'dark' ? '#1a1a1a' : '#ffffff',
-              border: `1px solid ${theme.colors.border}`,
-              borderRadius: '12px',
-              boxShadow: `0 8px 32px ${theme.colors.shadow}, 0 4px 16px ${theme.colors.shadow}40`,
-              maxHeight: '280px',
-              overflowY: 'auto'
+              backgroundColor: theme.name === 'stealth' ? '#0a0a0a !important' :
+                             theme.name === 'ghost' ? '#1a1a1a !important' :
+                             theme.name === 'dark' ? '#0f0f0f !important' : '#ffffff !important',
+              border: `1px solid ${
+                theme.name === 'stealth' ? '#444444' :
+                theme.name === 'ghost' ? '#333333' :
+                theme.name === 'dark' ? '#333333' : '#e5e5e5'
+              } !important`,
+              borderRadius: '12px !important',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2) !important',
+              maxHeight: '280px !important',
+              overflowY: 'auto !important',
+              backdropFilter: 'none !important',
+              WebkitBackdropFilter: 'none !important',
+              opacity: '1 !important',
+              filter: 'none !important',
+              backgroundClip: 'padding-box !important',
+              WebkitBackgroundClip: 'padding-box !important'
             }}
           >
-          
-          <div className="relative z-10 p-1">
+  
             <div className="px-2 py-1 text-xs font-medium" style={{ color: theme.colors.textMuted }}>
               {query ? 'Search Results' : 'Quick Access'}
             </div>
@@ -369,7 +387,6 @@ export function HeliusSearchBar() {
               </div>
             </div>
           </div>
-        </div>
         </>
       )}
     </div>

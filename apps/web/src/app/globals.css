@@ -1,6 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Tomorrow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
+/* Helius Search Dropdown Blur Effect */
+.search-dropdown-blur {
+  backdrop-filter: blur(16px) saturate(1.8) contrast(1.1) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.8) contrast(1.1) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  -webkit-background-clip: padding-box !important;
+  background-clip: padding-box !important;
+}
+
+/* Enhanced blur for better effect */
+.search-dropdown-enhanced {
+  backdrop-filter: blur(24px) saturate(2) contrast(1.2) brightness(1.1) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(2) contrast(1.2) brightness(1.1) !important;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.9) 100%) !important;
+  -webkit-background-clip: padding-box !important;
+  background-clip: padding-box !important;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.3),
+    0 6px 20px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
 /* Smooth scrolling behavior */
 html {
   scroll-behavior: smooth;
