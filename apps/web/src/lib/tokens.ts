@@ -460,12 +460,36 @@ export async function getTokenBalance(
 
     let balance: string
 
-    // Handle SOL balance
+    // Handle SOL balance - also check for wrapped SOL (WSOL)
     if (mint === 'So11111111111111111111111111111111111111112') {
       console.log(`[getTokenBalance] Fetching SOL balance from RPC: ${connection.rpcEndpoint}`)
-      const lamports = await connection.getBalance(walletAddress)
-      balance = lamports.toString()
-      console.log(`[getTokenBalance] SOL balance fetched: ${balance} lamports`)
+      try {
+        const lamports = await connection.getBalance(walletAddress)
+        balance = lamports.toString()
+        console.log(`[getTokenBalance] SOL balance fetched: ${balance} lamports (${parseFloat(lamports.toString()) / 1e9} SOL)`)
+
+        // If SOL balance is 0, also check for wrapped SOL
+        if (balance === '0') {
+          console.log(`[getTokenBalance] SOL balance is 0, checking for wrapped SOL`)
+          try {
+            const wsolMint = new PublicKey('So11111111111111111111111111111111111111112')
+            const tokenAccount = await getAssociatedTokenAddress(wsolMint, walletAddress)
+            console.log(`[getTokenBalance] WSOL token account address: ${tokenAccount.toString()}`)
+
+            const account = await getAccount(connection, tokenAccount)
+            const wsolBalance = account.amount.toString()
+            console.log(`[getTokenBalance] WSOL balance found: ${wsolBalance}`)
+            if (wsolBalance !== '0') {
+              balance = wsolBalance
+            }
+          } catch (wsolError) {
+            console.log(`[getTokenBalance] No WSOL account found: ${wsolError}`)
+          }
+        }
+      } catch (solError) {
+        console.error(`[getTokenBalance] Error fetching SOL balance:`, solError)
+        balance = '0'
+      }
     }
     // Handle confidential tokens (they have different mint formats)
     else if (mint.startsWith('c') || !isBase58(mint)) {

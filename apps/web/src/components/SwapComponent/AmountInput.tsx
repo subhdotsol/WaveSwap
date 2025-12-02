@@ -15,15 +15,31 @@ interface AmountInputProps {
 const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
   ({ value, onChange, placeholder = "", disabled = false, readOnly = false, className = "" }, ref) => {
     const theme = useThemeConfig()
-    // Format the value for display
+    // Format the value for display - allow entering 0 at the beginning
     const formatDisplayValue = (val: string) => {
-      if (!val || val === '0' || val === '0.00' || val === '0.000000' || val === '$0.00') return ''
+      if (!val) return ''
 
-      // Parse the number and ensure proper formatting
+      // Only clear display for empty values, allow 0 and values starting with 0
+      if (val === '$0.00') return ''
+
+      // Parse the number to check if it's valid, but don't filter out 0 values
       const num = parseFloat(val)
-      if (isNaN(num) || num === 0) return ''
+      if (isNaN(num)) return val // Return raw value for invalid input (user is still typing)
 
-      // Split into integer and decimal parts
+      // Special handling for 0 values - allow them to be displayed
+      if (num === 0) {
+        // If user is typing "0", "0.", "0.1", etc., show it
+        if (val.startsWith('0') && val !== '0') {
+          return val
+        }
+        // For exact "0", show empty to allow placeholder
+        if (val === '0') {
+          return ''
+        }
+        return val
+      }
+
+      // For non-zero values, split into integer and decimal parts
       const parts = val.split('.')
       const integerPart = parts[0] || '0'
       const decimalPart = parts[1] ? `.${parts[1]}` : ''

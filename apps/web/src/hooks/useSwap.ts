@@ -1263,8 +1263,8 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       return
     }
 
-    // Don't clear cache on every refresh - only clear stale entries
-    // clearBalanceCache() // Commented out for better performance
+    // Clear SOL balance cache to ensure fresh data
+    clearBalanceCache()
 
     try {
       // Get user's tokens from wallet
@@ -1292,8 +1292,14 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         setAvailableTokens(enrichedTokens)
       }
 
-      // Batch fetch balances for currently selected tokens only (faster)
+      // Batch fetch balances for currently selected tokens + SOL (to ensure SOL balance is always available)
       const tokensToCheck = [inputToken, outputToken].filter((token): token is Token => token !== null)
+
+      // Always include SOL in balance checking if not already included
+      const solToken = COMMON_TOKENS.find(token => token.address === 'So11111111111111111111111111111111111111112')
+      if (solToken && !tokensToCheck.some(token => token.address === solToken.address)) {
+        tokensToCheck.push(solToken)
+      }
 
       if (tokensToCheck.length > 0) {
         const newBalances = await fetchMultipleBalances(tokensToCheck)
