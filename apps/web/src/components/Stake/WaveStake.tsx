@@ -41,14 +41,16 @@ const getJupiterIconUrl = (symbol: string): string | null => {
   const jupIconMap: { [key: string]: string } = {
     'WAVE': 'https://img-cdn.jup.ag/tokens/WAVE.svg',
     'WEALTH': 'https://img-cdn.jup.ag/tokens/WEALTH.svg',
-    'SOL': 'https://img-cdn.jup.ag/tokens/SOL.svg'
+    'SOL': 'https://img-cdn.jup.ag/tokens/SOL.svg',
+    'ZEC': 'https://img-cdn.jup.ag/tokens/ZEC.svg',
+    'USDC': 'https://img-cdn.jup.ag/tokens/USDC.svg'
   }
   return jupIconMap[symbol] || null
 }
 
 export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
   const theme = useThemeConfig()
-  const [selectedPool, setSelectedPool] = useState<string>('WAVE')
+  const [selectedPool, setSelectedPool] = useState<string>('ZEC')
   const [stakeAmount, setStakeAmount] = useState<string>('')
   const [activeModal, setActiveModal] = useState<'stake' | 'secureBag' | null>(null)
   const [activeAction, setActiveAction] = useState<'deposit' | 'withdraw' | 'claim'>('deposit')
@@ -74,6 +76,23 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
 
   // Pool data with professional information
   const stakePools: StakePool[] = [
+    {
+      id: 'ZEC',
+      name: 'ZEC',
+      symbol: 'ZEC',
+      mintAddress: 'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS',
+      apr: 18,
+      bonus30days: 4,
+      totalStaked: '890K',
+      tvl: '$15.2M',
+      lockPeriod: 0,
+      isSecureBagAvailable: true,
+      isComingSoon: true,
+      description: 'Privacy-focused cryptocurrency with competitive yields and extra WEALTH rewards',
+      userStaked: privacyMode ? '****' : '0',
+      userRewards: privacyMode ? '****' : '0',
+      userSecureBag: privacyMode ? '****' : '0'
+    },
     {
       id: 'WAVE',
       name: 'WAVE',
@@ -611,7 +630,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                 <button
                   onClick={() => {
                     if (currentPool.isComingSoon) {
-                      setComingSoonAction(`${currentPool.name} Secure The Soon`)
+                      setComingSoonAction(`${currentPool.name} Staking`)
                       setShowComingSoonModal(true)
                     } else {
                       setActiveModal('secureBag')
@@ -636,8 +655,7 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
                     cursor: 'pointer'
                   }}
                 >
-                  Secure The Bag
-                  <LockClosedIcon className="w-4 h-4 mr-2 inline" />
+                  Secure The Bag &#128274;
                 </button>
               )}
             </div>
@@ -1106,7 +1124,7 @@ function SecureBagModal({
               }
             }}
           >
-            Secure The Bag
+            Secure The Bag &#128274;
           </button>
         </div>
       </div>
@@ -1191,7 +1209,8 @@ function InfoModal({ onClose, theme }: { onClose: () => void, theme: any }) {
               </h4>
               <p className="text-sm leading-relaxed" style={{ color: theme.colors.textSecondary }}>
                 Wave Dark Pool is our advanced staking system that offers competitive yields with enhanced privacy features.
-                Stake your WAVE and WEALTH tokens to earn rewards while maintaining control over your assets.
+                Stake your WAVE, WEALTH, and ZEC tokens to earn rewards while maintaining control over your assets.
+                ZEC stakers also receive extra WEALTH token rewards!
               </p>
             </div>
 
@@ -1235,6 +1254,7 @@ function InfoModal({ onClose, theme }: { onClose: () => void, theme: any }) {
               <ul className="space-y-2">
                 {[
                   'Competitive APRs up to 25%',
+                  '18% + 4% ZEC staking with WEALTH rewards',
                   '30-day bonus rewards with Secure Bag',
                   'Instant withdrawals for normal staking',
                   'Real-time reward tracking',
