@@ -13,8 +13,8 @@ export interface StarkGateToken {
 export interface StarkGateQuoteRequest {
   tokenAddress: string
   amount: string
-  fromChain: 'l1' | 'l2' // L1 (Ethereum) or L2 (StarkNet)
-  toChain: 'l1' | 'l2'
+  fromChain: 'l1' | 'l2' | 'solana' // L1 (Ethereum), L2 (StarkNet), or Solana
+  toChain: 'l1' | 'l2' | 'solana'
   recipient: string
 }
 
@@ -33,8 +33,8 @@ export interface StarkGateTransaction {
   status: 'pending' | 'completed' | 'failed'
   amount: string
   fee: string
-  fromChain: 'l1' | 'l2'
-  toChain: 'l1' | 'l2'
+  fromChain: 'l1' | 'l2' | 'solana'
+  toChain: 'l1' | 'l2' | 'solana'
   timestamp: number
   txHash?: string
   message?: string
@@ -70,6 +70,22 @@ class StarkGateService {
       l1Address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT on Ethereum
       decimals: 6,
       bridgeFee: 0.5 // 0.5 USDT fee
+    },
+    'sol': {
+      symbol: 'SOL',
+      name: 'Solana',
+      address: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7', // Using ETH address as placeholder for wrapped SOL on StarkNet
+      l1Address: 'So11111111111111111111111111111111111111112', // SOL on Solana
+      decimals: 18, // StarkNet uses 18 decimals
+      bridgeFee: 0.01 // 0.01 SOL fee
+    },
+    'pump': {
+      symbol: 'PUMP',
+      name: 'Pump',
+      address: '0x070a13f83f3e0c72931af6e8695242ce9feac5d1e8a59b1a4432348c495e12e9', // Example PUMP token on StarkNet
+      l1Address: 'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn', // PUMP on Solana
+      decimals: 18, // StarkNet uses 18 decimals
+      bridgeFee: 100 // 100 PUMP fee (adjust based on token value)
     }
   }
 
@@ -114,7 +130,7 @@ class StarkGateService {
   }
 
   // Execute bridge transaction
-  async executeBridge(quote: StarkGateQuote, fromChain: 'l1' | 'l2', toChain: 'l1' | 'l2'): Promise<StarkGateTransaction> {
+  async executeBridge(quote: StarkGateQuote, fromChain: 'l1' | 'l2' | 'solana', toChain: 'l1' | 'l2' | 'solana'): Promise<StarkGateTransaction> {
     try {
       const transaction: StarkGateTransaction = {
         hash: this.generateTransactionHash(),
@@ -130,6 +146,8 @@ class StarkGateService {
       // In production, this would:
       // 1. For L2 -> L1: Call StarkNet bridge contract to initiate withdrawal
       // 2. For L1 -> L2: Call Ethereum bridge contract to deposit and mint on StarkNet
+      // 3. For Solana -> L2: Use wormhole or similar cross-chain bridge to StarkNet
+      // 4. For L2 -> Solana: Use wormhole or similar cross-chain bridge from StarkNet
 
       return transaction
     } catch (error) {

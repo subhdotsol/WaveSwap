@@ -7,6 +7,35 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Connection, PublicKey } from '@solana/web3.js'
 import { DefiClient, DefiClientConfig } from 'encifher-swap-sdk'
 
+// Hardcoded token metadata for common tokens since Jupiter API is not accessible
+const COMMON_TOKEN_METADATA: Record<string, { symbol: string; decimals: number; name: string }> = {
+  'So11111111111111111111111111111111111111112': {
+    symbol: 'SOL',
+    decimals: 9,
+    name: 'Solana'
+  },
+  '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump': {
+    symbol: 'WAVE',
+    decimals: 6,
+    name: 'Wave'
+  },
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': {
+    symbol: 'USDC',
+    decimals: 6,
+    name: 'USD Coin'
+  },
+  'A7bdiYdS5GjqGFtxf17ppRHtDKPkkRqbKtR27dxvQXaS': {
+    symbol: 'ZEC',
+    decimals: 8,
+    name: 'Zcash'
+  },
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': {
+    symbol: 'USDT',
+    decimals: 6,
+    name: 'Tether USD'
+  }
+}
+
 export async function POST(
   request: NextRequest
 ) {
@@ -69,7 +98,18 @@ export async function POST(
       const userTokenMints = await defiClient.getUserTokenMints(userPubkey)
       console.log('[Authenticated Balance API] User token mints found:', userTokenMints)
 
-      if (!userTokenMints || userTokenMints.length === 0) {
+      // Extract mint addresses from user's tokens (using correct property 'mint')
+      let userTokenAddresses: string[] = []
+      if (userTokenMints && userTokenMints.length > 0) {
+        userTokenAddresses = userTokenMints.map((mintObj: any) => mintObj.mint)
+      }
+
+      // IMPORTANT: ONLY check tokens that the user actually has in their Encifher account
+      // Do NOT include common tokens that the user doesn't own
+      const allTokenMints = userTokenAddresses
+      console.log('[Authenticated Balance API] Only checking user tokens:', allTokenMints)
+
+      if (allTokenMints.length === 0) {
         const responseData = {
           success: true,
           userPublicKey: body.userPublicKey,
@@ -92,10 +132,8 @@ export async function POST(
         })
       }
 
-      // Extract mint addresses from user's actual tokens
-      const tokenMints = userTokenMints.map((token: any) =>
-        token.tokenMintAddress || token.mintAddress || token.mint
-      )
+      // Use all token mints for balance check
+      const tokenMints = allTokenMints
 
       const userBalances = await defiClient.getBalance(
         userPubkey,
@@ -118,6 +156,12 @@ export async function POST(
 
       // Dynamic token metadata fetching using Jupiter API
       async function getTokenMetadata(tokenAddress: string): Promise<{ symbol: string; decimals: number; name: string }> {
+        // First try hardcoded metadata for common tokens
+        if (COMMON_TOKEN_METADATA[tokenAddress]) {
+          console.log(`[Authenticated Balance API] Using hardcoded metadata for ${tokenAddress}: ${COMMON_TOKEN_METADATA[tokenAddress].symbol}`)
+          return COMMON_TOKEN_METADATA[tokenAddress]
+        }
+
         try {
           const response = await fetch(`https://token.jup.ag/v6/strict?filter=true&token=${tokenAddress}`)
 

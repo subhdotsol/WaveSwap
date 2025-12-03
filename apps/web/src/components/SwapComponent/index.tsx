@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { Connection } from '@solana/web3.js'
-import { ArrowsUpDownIcon, ExclamationTriangleIcon, ArrowDownTrayIcon, WalletIcon, LockClosedIcon, InformationCircleIcon } from '@heroicons/react/24/outline'
+import { ArrowsUpDownIcon, ExclamationTriangleIcon, ArrowDownTrayIcon, WalletIcon, LockClosedIcon, InformationCircleIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { TokenSelector } from './TokenSelector'
 import { AmountInput } from './AmountInput'
 import { SwapButton } from './SwapButton'
@@ -167,7 +167,7 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
     try {
       console.log('[SwapComponent] Fetching confidential balances from API for user:', publicKey.toString())
 
-      const response = await fetch(`/api/v1/confidential/balances?userPublicKey=${publicKey.toString()}`)
+      const response = await fetch(`/api/v1/confidential/balances?userPublicKey=${publicKey.toString()}&t=${Date.now()}&v=2.0`)
 
       if (response.ok) {
         const data = await response.json()
@@ -950,34 +950,32 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
         return apiBalance.tokenAddress && apiBalance.tokenAddress.length > 0
       })
       .map((apiBalance: any) => {
-        // Try to find token in both confidential (c-prefixed) and original formats
-        const confidentialAddress = `c${apiBalance.tokenAddress}`
-        let token = availableTokens.find(t => t.address === confidentialAddress || t.address === apiBalance.tokenAddress)
-
-        // If no token found, create a fallback token for unknown tokens
-        if (!token) {
-          token = {
-            address: apiBalance.tokenAddress,
-            chainId: 101,
-            decimals: apiBalance.decimals || 9,
-            name: apiBalance.name || `Token ${apiBalance.tokenAddress.slice(0, 8)}...`,
-            symbol: apiBalance.symbol || `TOKEN`,
-            logoURI: apiBalance.logoURI || '/icons/default-token.svg',
-            tags: ['unknown'],
-            isConfidentialSupported: true,
-            isNative: false,
-            addressable: true
-          }
+        // Create token directly from API data without relying on availableTokens
+        // This avoids the matching issue where availableTokens doesn't have confidential tokens
+        const token = {
+          address: apiBalance.tokenAddress,
+          chainId: 101,
+          decimals: apiBalance.decimals || 9,
+          name: apiBalance.tokenName || apiBalance.name || `Confidential Token ${apiBalance.tokenAddress.slice(0, 8)}...`,
+          symbol: apiBalance.tokenSymbol?.replace(/^c+/, '') || `TOKEN_${apiBalance.tokenAddress.slice(0, 6)}`,
+          logoURI: '/icons/default-token.svg',
+          tags: ['confidential'],
+          isConfidentialSupported: true,
+          isNative: apiBalance.tokenAddress === 'So11111111111111111111111111111111111111112',
+          addressable: true
         }
 
-        // Create confidential token symbol (single 'c' prefix, not double)
-        const cleanTokenSymbol = token.symbol.replace(/^c+/, '') // Remove any existing c prefixes
-        const confidentialSymbol = `c${cleanTokenSymbol}`
+        // Remove double "Confidential" prefix if it exists
+        if (token.name?.startsWith('Confidential Confidential ')) {
+          token.name = token.name.replace('Confidential Confidential ', 'Confidential ')
+        }
+
+        const confidentialSymbol = `c${token.symbol}`
 
         return {
           tokenAddress: apiBalance.tokenAddress,
-          symbol: apiBalance.symbol || confidentialSymbol,
-          name: apiBalance.name || `Confidential ${token.name || cleanTokenSymbol}`,
+          symbol: confidentialSymbol,
+          name: apiBalance.tokenName || `Confidential ${token.name}`,
           decimals: apiBalance.decimals || token.decimals || 9,
           amount: apiBalance.amount,
           usdValue: apiBalance.usdValue || 0, // Will be calculated later if needed
@@ -985,7 +983,9 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
           logoURI: apiBalance.logoURI || token.logoURI,
           isEstimatedBalance: false, // This is actual API data
           lastUpdated: apiBalance.lastUpdated,
-          requiresAuth: apiBalance.requiresAuth || false // Pass through authentication requirement
+          requiresAuth: apiBalance.requiresAuth || false, // Pass through authentication requirement
+          source: apiBalance.source || 'confidential_encifher',
+          note: apiBalance.note || 'Confidential balance retrieved from Encifher'
         }
       })
       .filter((balance): balance is NonNullable<typeof balance> => balance !== null) // Remove null entries with type guard
@@ -1451,10 +1451,53 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                       </p>
                     )}
                     {!(apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth) && (
-                      <p className="text-xs mt-2" style={{ color: theme.colors.textMuted }}>
-                        Complete a private swap to automatically track your confidential tokens,
-                        or manually add tokens you already have in your Encifher account.
-                      </p>
+                      <div className="space-y-3">
+                        <p className="text-xs mt-2" style={{ color: theme.colors.textMuted }}>
+                          Complete a private swap to automatically track your confidential tokens,
+                          or manually add tokens you already have in your Encifher account.
+                        </p>
+
+                        <div className="p-3 rounded-lg text-left" style={{ background: `${theme.colors.info}05`, borderColor: `${theme.colors.info}15`, borderWidth: '1px' }}>
+                          <div className="flex items-start gap-2">
+                            <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: theme.colors.info }}>
+                              <span className="text-white text-xs font-bold">i</span>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium" style={{ color: theme.colors.info }}>
+                                After Your Swap Completes
+                              </p>
+                              <ol className="text-xs space-y-1" style={{ color: theme.colors.textMuted }}>
+                                <li>1. Tokens will appear here automatically</li>
+                                <li>2. Switch to <strong>Withdraw</strong> tab to access them</li>
+                                <li>3. Withdraw to get regular tokens back</li>
+                              </ol>
+
+                              <div className="p-2 rounded mt-2" style={{ background: `${theme.colors.warning}05`, borderColor: `${theme.colors.warning}15`, borderWidth: '1px' }}>
+                                <p className="text-xs font-medium mb-1" style={{ color: theme.colors.warning }}>
+                                  Having Issues?
+                                </p>
+                                <p className="text-xs mb-2" style={{ color: theme.colors.textMuted }}>
+                                  If withdrawals fail, use the official interface:
+                                </p>
+                                <a
+                                  href="https://app.encifher.io/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all hover:scale-[1.02]"
+                                  style={{
+                                    background: `${theme.colors.warning}10`,
+                                    color: theme.colors.warning,
+                                    border: `1px solid ${theme.colors.warning}20`
+                                  }}
+                                >
+                                  <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+                                  Encifher.io
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
                     {apiConfidentialBalances.length === 1 && apiConfidentialBalances[0]?.requiresAuth && publicKey && (
                       <button
@@ -1686,14 +1729,66 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
                     <div className="mt-6 p-4 rounded-xl" style={{ background: `${theme.colors.info}05`, borderColor: `${theme.colors.info}20` }}>
                       <div className="flex items-start gap-3">
                         <ArrowDownTrayIcon className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: theme.colors.info }} />
-                        <div>
-                          <p className="text-sm font-medium mb-1" style={{ color: theme.colors.info }}>
-                            Withdrawal Information
-                          </p>
-                          <p className="text-xs" style={{ color: theme.colors.textMuted }}>
-                            Your confidential tokens are privacy-protected and can only be accessed by you.
-                            Withdrawal converts them back to regular tokens instantly.
-                          </p>
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-medium mb-1" style={{ color: theme.colors.info }}>
+                              Withdrawal Information
+                            </p>
+                            <p className="text-xs" style={{ color: theme.colors.textMuted }}>
+                              Your confidential tokens are privacy-protected and can only be accessed by you.
+                              Withdrawal converts them back to regular tokens instantly.
+                            </p>
+                          </div>
+
+                          <div className="p-3 rounded-lg" style={{ background: `${theme.colors.success}05`, borderColor: `${theme.colors.success}15`, borderWidth: '1px' }}>
+                            <div className="flex items-start gap-2">
+                              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: theme.colors.success }}>
+                                <span className="text-white text-xs font-bold">✓</span>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium mb-1" style={{ color: theme.colors.success }}>
+                                  After Completing a Swap
+                                </p>
+                                <ol className="text-xs space-y-1" style={{ color: theme.colors.textMuted }}>
+                                  <li>1. Switch to the <strong>Withdraw</strong> tab above</li>
+                                  <li>2. Your confidential tokens will appear here automatically</li>
+                                  <li>3. Enter the amount you want to withdraw (use MAX for all)</li>
+                                  <li>4. Click "Withdraw to Regular Token" to receive your funds</li>
+                                </ol>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="p-3 rounded-lg" style={{ background: `${theme.colors.warning}05`, borderColor: `${theme.colors.warning}15`, borderWidth: '1px' }}>
+                            <div className="flex items-start gap-2">
+                              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: theme.colors.warning }}>
+                                <span className="text-white text-xs font-bold">!</span>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium mb-1" style={{ color: theme.colors.warning }}>
+                                  If Withdrawal Fails
+                                </p>
+                                <p className="text-xs mb-2" style={{ color: theme.colors.textMuted }}>
+                                  If you encounter any issues with withdrawals, your funds are still safe.
+                                  Use the official Encifher interface to manually withdraw:
+                                </p>
+                                <a
+                                  href="https://app.encifher.io/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all hover:scale-[1.02]"
+                                  style={{
+                                    background: `${theme.colors.warning}10`,
+                                    color: theme.colors.warning,
+                                    border: `1px solid ${theme.colors.warning}20`
+                                  }}
+                                >
+                                  <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+                                  Open Encifher.io
+                                </a>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

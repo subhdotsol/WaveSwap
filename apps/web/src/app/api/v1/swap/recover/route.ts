@@ -107,17 +107,71 @@ export async function POST(
         recoveryAction = 'withdrawal_success'
       } else {
         recoveryMessage = 'Deposit was confirmed successfully. Checking swap execution status...'
-        // Note: In a real implementation, you would check with Encifher SDK
-        // if the swap was executed or if funds can be recovered
-        try {
-          // This would be a hypothetical SDK method to check/recover funds
-          // const swapStatus = await defiClient.checkSwapStatus(body.depositSignature)
-          console.log('[Transaction Recovery API] Swap status checking not yet implemented in SDK')
 
-          recoveryAction = 'recovery_needed'
-          recoveryMessage = 'Deposit confirmed but swap execution status unclear. Manual recovery may be needed. Contact support with your deposit signature.'
+        // CRITICAL: For failed private swaps, check Encifher balances and attempt recovery
+        try {
+          console.log('[Transaction Recovery API] 🔍 CHECKING ENCIFHER ACCOUNT FOR CONFIDENTIAL BALANCES...')
+
+          // Get user's token mints to check what confidential tokens they have
+          const userTokenMints = await defiClient.getUserTokenMints(userPubkey)
+          console.log('[Transaction Recovery API] User token mints found:', userTokenMints)
+
+          if (userTokenMints && userTokenMints.length > 0) {
+            // Check for specific tokens (WAVE, USDC, etc.)
+            const waveToken = userTokenMints.find((mint: any) =>
+              mint.mint === '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump'
+            )
+            const usdcToken = userTokenMints.find((mint: any) =>
+              mint.mint === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+            )
+
+            if (waveToken || usdcToken) {
+              console.log('[Transaction Recovery API] ✅ FOUND CONFIDENTIAL TOKENS:', {
+                wave: waveToken ? 'YES' : 'NO',
+                usdc: usdcToken ? 'YES' : 'NO'
+              })
+
+              recoveryAction = 'confidential_tokens_found'
+              recoveryMessage = `✅ RECOVERY POSSIBLE: Your deposit succeeded! Found confidential tokens in your Encifher account. Your ${waveToken ? 'WAVE' : ''}${waveToken && usdcToken ? ' + ' : ''}${usdcToken ? 'USDC' : ''} tokens are available for withdrawal. Use the Withdraw tab to recover your funds immediately.`
+
+              // Update confidential balance tracking so user can see tokens in Withdraw tab
+              try {
+                const balanceResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/v1/confidential/balances`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    userPublicKey: body.userPublicKey,
+                    operation: 'sync_encifher_balance',
+                    source: 'recovery_success'
+                  })
+                })
+
+                if (balanceResponse.ok) {
+                  console.log('[Transaction Recovery API] ✅ Successfully updated confidential balance tracking')
+                } else {
+                  console.warn('[Transaction Recovery API] ⚠️ Failed to update confidential balance tracking')
+                }
+              } catch (balanceError: any) {
+                console.warn('[Transaction Recovery API] ⚠️ Could not update balance tracking:', balanceError.message)
+              }
+
+            } else {
+              console.log('[Transaction Recovery API] No WAVE/USDC confidential tokens found')
+              recoveryAction = 'no_confidential_tokens'
+              recoveryMessage = 'Deposit confirmed but no confidential tokens found. The swap may have failed and funds could be returned to your wallet. Check your wallet balance.'
+            }
+          } else {
+            console.log('[Transaction Recovery API] No confidential tokens found in Encifher account')
+            recoveryAction = 'no_confidential_tokens'
+            recoveryMessage = 'Deposit confirmed but no confidential tokens found. The swap may have failed and funds could be returned to your wallet. Check your wallet balance.'
+          }
+
         } catch (sdkError: any) {
-          console.error('[Transaction Recovery API] SDK recovery check failed:', sdkError.message)
+          console.error('[Transaction Recovery API] Encifher SDK recovery check failed:', sdkError.message)
+          recoveryAction = 'sdk_check_failed'
+          recoveryMessage = 'Deposit confirmed but unable to check Encifher balance automatically. Contact support with your deposit signature for manual recovery.'
         }
       }
     } else {
@@ -206,6 +260,13 @@ function getNextSteps(recoveryAction: string, transactionType: string = 'deposit
         'Wait a few more minutes for swap processing',
         'Check your confidential balances in the Withdraw tab',
         'If tokens don\'t appear, contact support with the deposit signature'
+      ]
+    case 'confidential_tokens_found':
+      return [
+        '🎉 GOOD NEWS: Go to the Withdraw tab immediately',
+        'Your confidential tokens are available for withdrawal',
+        'You can withdraw your WAVE/USDC tokens back to your wallet',
+        'If you don\'t see tokens in Withdraw tab, refresh the page and check again'
       ]
     case 'recovery_needed':
       return [

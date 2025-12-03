@@ -44,7 +44,7 @@ function TabContent({ tabId, privacyMode }: TabContentProps) {
                   className="text-xl sm:text-2xl font-bold"
                   style={{ color: theme.colors.textPrimary }}
                 >
-                  Swap Encrypted
+                  Encrypted Swap
                 </h2>
                 <div className="flex items-center gap-1 mt-1">
                   <span
@@ -214,7 +214,7 @@ function TabContent({ tabId, privacyMode }: TabContentProps) {
                   className="text-xl sm:text-2xl font-bold"
                   style={{ color: theme.colors.textPrimary }}
                 >
-                  Bridge Tokens
+                  Bridge
                 </h2>
                 <div className="flex items-center gap-1 mt-1">
                   <span

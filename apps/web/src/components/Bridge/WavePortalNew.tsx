@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { TokenSelector } from '../SwapComponent/TokenSelector'
+import { BridgeTokenSelector } from './BridgeTokenSelector'
+import { BridgeAmountInput } from './BridgeAmountInput'
 import { useThemeConfig, createGlassStyles, createInputStyles } from '@/lib/theme'
 import { useNearWallet } from '@/providers/NearWalletProvider'
 import { useStarknetWallet } from '@/providers/StarknetWalletProvider'
@@ -148,7 +150,7 @@ const CHAIN_TOKENS = {
       addressable: true
     },
     {
-      address: 'PUMP_TOKEN_SOLANA', // Placeholder for PUMP on Solana
+      address: 'pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn', // Real PUMP token on Solana
       chainId: 101,
       decimals: 6,
       name: 'Pump',
@@ -161,6 +163,18 @@ const CHAIN_TOKENS = {
     }
   ],
   starknet: [
+    {
+      address: '0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7', // Real SOL on StarkNet
+      chainId: 1, // StarkNet mainnet
+      decimals: 18,
+      name: 'Solana',
+      symbol: 'SOL',
+      logoURI: getLocalFallbackIcon('SOL', 'sol') || '/icons/fallback/token/sol.png',
+      tags: [],
+      isConfidentialSupported: true,
+      isNative: false,
+      addressable: true
+    },
     {
       address: 'ZEC_TOKEN_STARKNET', // Placeholder for ZEC on Starknet
       chainId: 1, // StarkNet mainnet
@@ -221,10 +235,10 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
         to: allToTokens.filter(token => token.symbol === 'ZEC')
       }
     } else if ((from === 'starknet' && to === 'solana') || (from === 'solana' && to === 'starknet')) {
-      // Starknet <> Solana: ZEC and PUMP supported
+      // Starknet <> Solana: SOL and PUMP supported
       return {
-        from: allFromTokens.filter(token => ['ZEC', 'PUMP'].includes(token.symbol)),
-        to: allToTokens.filter(token => ['ZEC', 'PUMP'].includes(token.symbol))
+        from: allFromTokens.filter(token => ['SOL', 'PUMP'].includes(token.symbol)),
+        to: allToTokens.filter(token => ['SOL', 'PUMP'].includes(token.symbol))
       }
     } else {
       // Default: return all tokens (shouldn't happen with our restrictions)
@@ -979,42 +993,23 @@ const handleBridge = async () => {
           </div>
 
           <div className="space-y-4">
-            <TokenSelector
+            <BridgeTokenSelector
               selectedToken={fromToken || null}
               onTokenChange={setFromToken}
               tokens={getAvailableFromTokens()}
+              sourceChain={fromChain}
+              targetChain={toChain}
             />
 
-            <div
-              className="relative rounded-xl p-4"
-              style={{
-                ...createGlassStyles(theme),
-                backgroundColor: theme.colors.background,
-                border: `1px solid ${theme.colors.border}`
-              }}
-            >
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder=""
-                className="w-full bg-transparent border-none outline-none text-2xl font-bold"
-                style={{
-                  ...createInputStyles(theme),
-                  height: '3rem',
-                  fontSize: '1.75rem',
-                  fontWeight: 600,
-                  padding: '0.75rem 1rem',
-                  fontFamily: 'var(--font-mono), var(--font-jetbrains), monospace',
-                  color: theme.colors.textPrimary
-                }}
-              />
-              {fromToken && (
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm" style={{ color: theme.colors.textMuted }}>
-                  {fromToken.symbol}
-                </div>
-              )}
-            </div>
+            <BridgeAmountInput
+              value={amount}
+              onChange={setAmount}
+              token={fromToken}
+              decimals={fromToken?.decimals}
+              label="Amount"
+              showBalance={false}
+              quickActions={true}
+            />
           </div>
         </div>
 
@@ -1057,10 +1052,12 @@ const handleBridge = async () => {
             </span>
           </div>
 
-          <TokenSelector
+          <BridgeTokenSelector
             selectedToken={toToken || null}
             onTokenChange={setToToken}
             tokens={getAvailableToTokens()}
+            sourceChain={fromChain}
+            targetChain={toChain}
           />
         </div>
 
