@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![WaveSwap Logo](https://github.com/waveswap/waveswap/assets/main/logo.svg)
+![WaveSwap Logo](https://github.com/WaveTek-co.png)
 
 **Privacy-Preserving DEX Aggregator for Solana**
 
@@ -67,23 +67,6 @@ cd waveswap
 3. **Select tokens** (e.g., SOL → USDC)
 4. **Enter amount** and **confirm swap**
 5. **Done!** Your encrypted tokens arrive in seconds
-
-## 📁 Project Structure
-
-```
-WaveSwap/
-├── apps/                          # Applications
-│   ├── web/                       # Next.js frontend
-│   ├── backend/                   # Fastify API server
-│   └── docs/                      # Docusaurus documentation
-├── packages/                      # Shared packages
-│   ├── ui/                        # React UI components
-│   ├── sdk/                       # TypeScript SDK
-│   └── programs/                  # Anchor Solana programs
-├── scripts/                       # Development scripts
-├── docker-compose.yml             # Development environment
-└── bun-workspace.toml           # Bun workspace config
-```
 
 ## 🛠️ Development
 
@@ -159,18 +142,18 @@ anchor deploy --provider.cluster devnet
 
 ### Privacy Technology Stack
 
-1. **Arcium C-SPL** - Confidential SPL tokens with encrypted balances
-2. **MagicBlock** - Ephemeral rollups for 10ms execution
-3. **Arcium MXE** - Multi-Party Computation for encrypted swaps
-4. **Jupiter V6** - Best-in-class liquidity routing
+1. **Encifer** - Swap into Encifer's confidential tokens and withdraw them easy
+2. **Near Intents** - Powering WavePortal to bridge ZEC to Solana confidentially
+3. **Arcium** - Using Arcium's confidential SPL tokens and Dark Pools for Wave Staking
+4. **Jupiter** - Best-in-class liquidity routing
 
 ### System Flow
 
 1. **Token Wrapping** - SPL → Confidential SPL (encrypted amounts)
-2. **Encrypted Computation** - Swap happens in MPC environment
+2. **Encrypted Computation** - Swap happens in private environment
 3. **Settlement** - Final transaction with encrypted outputs
 4. **Optional Unwrap** - Convert back to regular SPL when needed
-
+<!-- 
 ## 📚 Documentation
 
 - **[Getting Started](https://docs.waveswap.io/docs/quickstart)** - Your first private swap
@@ -257,8 +240,8 @@ Content-Type: application/json
   "inputAmount": "10000000",
   "privacyMode": true
 }
-```
-
+``` -->
+<!-- 
 ## 🔐 Security
 
 - ✅ **Smart Contract Audits** - CertiK, Trail of Bits, and Certora formal verification
@@ -267,7 +250,7 @@ Content-Type: application/json
 - ✅ **Bug Bounty Program** - Rewards for responsible disclosure
 - ✅ **Penetration Testing** - Regular security assessments
 
-See our [Security Policy](SECURITY.md) for detailed information.
+See our [Security Policy](SECURITY.md) for detailed information. -->
 
 ## 🤝 Contributing
 
@@ -288,47 +271,25 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Husky** git hooks for pre-commit checks
 - **100% test coverage** for critical paths
 
-## 📊 Roadmap
-
-### Phase 1: MVP (Current - Devnet)
-- [x] Private SPL swaps with Arcium C-SPL
-- [x] Jupiter V6 integration
-- [x] MagicBlock ephemeral rollups
-- [x] Web and mobile interfaces
-- [ ] Security audits (in progress)
-
-### Phase 2: Testnet (Q4 2025)
-- [ ] Public testnet launch
-- [ ] Advanced privacy features (timed mixers)
-- [ ] Private limit orders
-- [ ] Cross-chain bridges (Zcash)
-- [ ] Institutional APIs
-
-### Phase 3: Mainnet (Q1 2026)
-- [ ] Mainnet launch
-- [ ] Governance token
-- [ ] MEV protection optimization
-- [ ] Advanced routing algorithms
-- [ ] Enterprise features
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **[Arcium](https://arcium.io/)** - Confidential token technology
-- **[MagicBlock](https://magicblock.io/)** - Ephemeral rollups
+- **[Encifer](https://app.encifher.io/)** - Confidential tokens wrapping and unwrapping
+- **[Near Intents](https://near-intents.org/)** - Bridge that enables our confidential Zcash to Solana transations
 - **[Jupiter](https://jup.ag/)** - DEX aggregation
-- **[Solana Foundation](https://solana.org/)** - Platform support
+- **[Starkgate](https://starkgate.starknet.io/)** - Bridge by Starknet, used for bridging between Solana and Starknet
 
 ## 📞 Contact
 
-- **Website**: [waveswap.io](https://waveswap.io)
-- **Documentation**: [docs.waveswap.io](https://docs.waveswap.io)
-- **Discord**: [discord.gg/waveswap](https://discord.gg/waveswap)
-- **Twitter**: [@waveswap](https://twitter.com/waveswap)
-- **Email**: [hello@waveswap.io](mailto:hello@waveswap.io)
+- **WaveTek**: [wavetek.io](https://wavetek.io)
+- **WaveSwap**: [waveswap.live](https://waveswap.live)
+- **Secure The Bag**: [securethebag.fun](https://securethebag.fun)
+- **Documentation**: [docs.wavetek.io](https://docs.wavetek.io)
+- **Twitter**: [@securethebag](https://twitter.com/securethebag)
+- **Email**: [vivek@wavetek.io](mailto:vivek@wavetek.io)
 
 ---
 
