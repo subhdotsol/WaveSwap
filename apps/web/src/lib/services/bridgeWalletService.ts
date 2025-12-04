@@ -96,6 +96,9 @@ export class BridgeWalletService {
         quote,
         transaction: null, // Zcash bridge handles deposits off-chain
         status: 'PROCESSING',
+        currentStep: 1,
+        totalSteps: 4,
+        steps: ['Initializing', 'Processing deposit', 'Validating transaction', 'Completing bridge'],
         createdAt: new Date(),
         updatedAt: new Date(),
         provider: 'direct'
@@ -152,6 +155,9 @@ export class BridgeWalletService {
         quote,
         transaction: null, // Near Intents handles transactions internally
         status: 'PROCESSING',
+        currentStep: 1,
+        totalSteps: 4,
+        steps: ['Initializing', 'Creating intent', 'Submitting to network', 'Completing bridge'],
         createdAt: new Date(),
         updatedAt: new Date(),
         provider: 'nearIntents'
@@ -207,6 +213,9 @@ export class BridgeWalletService {
         quote,
         transaction: null,
         status: 'PROCESSING',
+        currentStep: 1,
+        totalSteps: 4,
+        steps: ['Initializing', 'Signing transaction', 'Submitting to network', 'Completing bridge'],
         createdAt: new Date(),
         updatedAt: new Date(),
         provider: 'starkgate'
@@ -255,6 +264,9 @@ export class BridgeWalletService {
         quote,
         transaction: null,
         status: 'PROCESSING',
+        currentStep: 1,
+        totalSteps: 4,
+        steps: ['Initializing', 'Creating intent', 'Submitting to network', 'Completing bridge'],
         createdAt: new Date(),
         updatedAt: new Date(),
         provider: 'defuse'
@@ -298,6 +310,9 @@ export class BridgeWalletService {
         quote,
         transaction: null,
         status: 'PROCESSING',
+        currentStep: 1,
+        totalSteps: 4,
+        steps: ['Initializing', 'Processing transaction', 'Validating transfer', 'Completing bridge'],
         createdAt: new Date(),
         updatedAt: new Date(),
         provider: 'direct'

@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { XMarkIcon, QrCodeIcon, ShieldCheckIcon, ClockIcon } from '@heroicons/react/24/outline'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
 import QRCode from 'qrcode'
 
@@ -110,7 +109,9 @@ export function ImprovedZcashDeposit({
             className="p-2 rounded-lg transition-all hover:bg-white/10"
             style={{ color: theme.colors.textMuted }}
           >
-            <XMarkIcon className="w-5 h-5" />
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -122,7 +123,9 @@ export function ImprovedZcashDeposit({
               border: `1px solid ${theme.colors.primary}20`
             }}>
               <div className="flex items-center gap-2">
-                <ShieldCheckIcon className="w-5 h-5" style={{ color: theme.colors.primary }} />
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: theme.colors.primary }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
                 <span className="text-sm font-medium" style={{ color: theme.colors.primary }}>
                   Secure Bridge Process
                 </span>
@@ -195,7 +198,9 @@ export function ImprovedZcashDeposit({
                     />
                   ) : (
                     <div className="text-center">
-                      <QrCodeIcon className="w-24 h-24 mx-auto mb-2 text-gray-800" />
+                      <svg className="w-24 h-24 mx-auto mb-2 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
                       <p className="text-xs text-gray-600">Generating QR Code...</p>
                     </div>
                   )}
@@ -219,7 +224,9 @@ export function ImprovedZcashDeposit({
                 background: `conic-gradient(from 0deg, ${theme.colors.primary} 0deg, ${theme.colors.primary}cc 360deg)`
               }}
             >
-              <ShieldCheckIcon className="w-8 h-8 text-white" />
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-2" style={{ color: theme.colors.textPrimary }}>
@@ -230,7 +237,9 @@ export function ImprovedZcashDeposit({
               </p>
             </div>
             <div className="flex items-center justify-center gap-2 text-sm" style={{ color: theme.colors.textMuted }}>
-              <ClockIcon className="w-4 h-4" />
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
               <span>Estimated time: {estimatedTime}</span>
             </div>
           </div>

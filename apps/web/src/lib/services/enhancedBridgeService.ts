@@ -83,6 +83,7 @@ export interface EnhancedBridgeQuote {
 }
 
 export interface BridgeExecution {
+  id?: string
   quote: EnhancedBridgeQuote
   status: 'INITIALIZING' | 'VALIDATING' | 'DEPOSITING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
   currentStep: number
@@ -92,6 +93,10 @@ export interface BridgeExecution {
   depositTransaction?: string
   completionTransaction?: string
   estimatedCompletion?: string
+  createdAt?: Date
+  updatedAt?: Date
+  transaction?: any
+  provider?: string
 }
 
 export interface BridgeOptions {
