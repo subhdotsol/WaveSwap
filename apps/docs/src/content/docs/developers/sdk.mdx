@@ -1,0 +1,78 @@
+---
+title: SDK Guide
+description: WaveTek TypeScript SDK documentation
+---
+
+# WaveTek SDK Guide
+
+> 🚧 **Coming Soon** - Our TypeScript SDK for integrating WaveTek's privacy-preserving DeFi functionality is currently in development.
+
+The WaveTek TypeScript SDK will provide a simple and powerful way to integrate WaveTek's privacy-preserving DeFi functionality into your applications.
+
+## Planned Features
+
+### Easy Integration
+
+```typescript
+import { WaveSwap } from '@waveswap/sdk'
+
+// Initialize WaveSwap
+const waveswap = new WaveSwap({
+  wallet,
+  network: 'mainnet',
+  privacyMode: true
+})
+
+// Execute private swap
+const result = await waveswap.swap({
+  inputToken: 'SOL',
+  outputToken: 'USDC',
+  inputAmount: '10000000'
+})
+```
+
+### Key Features We're Building
+
+- **Privacy-First Design**: Built with privacy as the default
+- **TypeScript Support**: Full type safety and IntelliSense
+- **Multiple Wallets**: Support for popular Solana wallets
+- **Error Handling**: Comprehensive error management
+- **Event Streaming**: Real-time transaction updates
+- **Testnet Support**: Development and testing capabilities
+
+### Installation (Planned)
+
+```bash
+npm install @waveswap/sdk
+# or
+bun add @waveswap/sdk
+# or
+yarn add @waveswap/sdk
+```
+
+## Development Status
+
+- **Alpha Development**: In Progress
+- **Beta Testing**: Coming Soon
+- **Public Release**: TBA
+
+## What to Expect
+
+- **Simple API**: Intuitive methods for common operations
+- **Privacy Controls**: Easy-to-use privacy features
+- **Type Safety**: Full TypeScript definitions
+- **Documentation**: Comprehensive guides and examples
+- **Community Support**: Active development and feedback
+
+## Stay Updated
+
+Join our community for SDK updates and early access:
+
+- 🌐 **Main Site**: [securethebag.fun](https://securethebag.fun)
+- 📱 **WaveTek App**: [wavetek.io](https://wavetek.io)
+- 💬 **Telegram**: [t.me/securethebagfun](https://t.me/securethebagfun)
+- 📧 **Contact**: [t.me/vivekpal0x](https://t.me/vivekpal0x)
+
+## Interested in Early Access?
+
+Contact us for early SDK access and collaboration opportunities.

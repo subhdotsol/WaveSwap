@@ -1,0 +1,296 @@
+/* WaveSwap Theme for Starlight Documentation */
+
+/* Root variables for WaveSwap theme */
+:root {
+  /* WaveSwap brand colors */
+  --wave-primary: #264af5;
+  --wave-primary-hover: #1c3fd1;
+  --wave-secondary: #10b981;
+  --wave-accent: #21bcff;
+  --wave-aqua: #13D6C3;
+
+  /* Background colors */
+  --wave-bg-main: #181A20;
+  --wave-bg-panel: #1A1D26;
+  --wave-bg-card: #222236;
+
+  /* Text colors */
+  --wave-text-primary: #EBECF0;
+  --wave-text-secondary: #B1B6C8;
+  --wave-text-muted: #6B7280;
+
+  /* Override Starlight defaults */
+  --sl-color-bg: var(--wave-bg-main);
+  --sl-color-bg-nav: var(--wave-bg-panel);
+  --sl-color-bg-sidebar: var(--wave-bg-panel);
+  --sl-color-bg-inset: var(--wave-bg-card);
+
+  --sl-color-text: var(--wave-text-primary);
+  --sl-color-text-secondary: var(--wave-text-secondary);
+  --sl-color-text-accent: var(--wave-accent);
+
+  --sl-color-accent: var(--wave-primary);
+  --sl-color-accent-low-contrast: var(--wave-primary-hover);
+
+  --sl-color-white: var(--wave-text-primary);
+  --sl-color-gray: var(--wave-text-secondary);
+  --sl-color-black: var(--wave-bg-main);
+
+  /* Border colors */
+  --sl-color-border: #333;
+  --sl-color-hairline: #444;
+
+  /* Code colors */
+  --sl-color-code-bg: var(--wave-bg-card);
+  --sl-color-code-text: var(--wave-text-primary);
+
+  /* Sidebar theme */
+  --starlight-sidebar-width: 20rem;
+  --starlight-sidebar-scrollbar-width: 0.5rem;
+  --starlight-sidebar-scrollbar-thumb: var(--wave-accent);
+  --starlight-sidebar-scrollbar-track: transparent;
+}
+
+/* Light theme overrides */
+[data-theme='light'] {
+  --wave-bg-main: #ffffff;
+  --wave-bg-panel: #f8fafc;
+  --wave-bg-card: #ffffff;
+  --wave-text-primary: #1e293b;
+  --wave-text-secondary: #475569;
+  --wave-text-muted: #64748b;
+
+  --sl-color-bg: var(--wave-bg-main);
+  --sl-color-bg-nav: var(--wave-bg-panel);
+  --sl-color-bg-sidebar: var(--wave-bg-panel);
+  --sl-color-bg-inset: var(--wave-bg-card);
+
+  --sl-color-text: var(--wave-text-primary);
+  --sl-color-text-secondary: var(--wave-text-secondary);
+  --sl-color-text-accent: var(--wave-accent);
+
+  --sl-color-border: #e2e8f0;
+  --sl-color-hairline: #f1f5f9;
+
+  --sl-color-code-bg: #f8fafc;
+}
+
+/* Custom WaveSwap styling */
+.starlight-page {
+  background: var(--wave-bg-main);
+  color: var(--wave-text-primary);
+  font-family: 'Tomorrow', system-ui, sans-serif;
+}
+
+/* Logo styling */
+.starlight-logo img {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(33, 188, 255, 0.2);
+}
+
+/* Sidebar styling */
+.starlight-sidebar {
+  background: var(--wave-bg-panel);
+  border-right: 1px solid var(--sl-color-border);
+}
+
+.starlight-sidebar a {
+  color: var(--wave-text-secondary);
+  transition: color 0.2s ease;
+}
+
+.starlight-sidebar a:hover {
+  color: var(--wave-accent);
+}
+
+/* Navigation header */
+.starlight-header {
+  background: var(--wave-bg-panel);
+  border-bottom: 1px solid var(--sl-color-border);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Content area */
+.starlight-content {
+  padding: 2rem;
+  max-width: none;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--wave-text-primary);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, var(--wave-accent), var(--wave-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Links */
+a {
+  color: var(--wave-accent);
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+a:hover {
+  color: var(--wave-primary);
+  text-decoration: underline;
+}
+
+/* Code blocks */
+.starlight-aside {
+  background: var(--wave-bg-card);
+  border: 1px solid var(--sl-color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+th, td {
+  border: 1px solid var(--sl-color-border);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+th {
+  background: var(--wave-bg-card);
+  font-weight: 600;
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid var(--wave-accent);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: var(--wave-text-secondary);
+  font-style: italic;
+}
+
+/* Search box */
+.starlight-search {
+  background: var(--wave-bg-card);
+  border: 1px solid var(--sl-color-border);
+  color: var(--wave-text-primary);
+}
+
+.starlight-search::placeholder {
+  color: var(--wave-text-muted);
+}
+
+/* Hero section styling */
+.starlight-hero {
+  background: linear-gradient(135deg, var(--wave-bg-panel), var(--wave-bg-card));
+  border-radius: 16px;
+  padding: 3rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(33, 188, 255, 0.2);
+}
+
+.starlight-hero h1 {
+  margin-bottom: 1rem;
+}
+
+.starlight-hero .tagline {
+  font-size: 1.25rem;
+  color: var(--wave-text-secondary);
+  margin-bottom: 2rem;
+}
+
+/* Card grid styling */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.card {
+  background: var(--wave-bg-card);
+  border: 1px solid var(--sl-color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(33, 188, 255, 0.15);
+}
+
+.card h3 {
+  color: var(--wave-accent);
+  margin-bottom: 0.5rem;
+}
+
+/* Button styling */
+.starlight-button {
+  background: var(--wave-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.starlight-button:hover {
+  background: var(--wave-primary-hover);
+  transform: translateY(-1px);
+}
+
+.starlight-button.secondary {
+  background: transparent;
+  border: 1px solid var(--wave-accent);
+  color: var(--wave-accent);
+}
+
+.starlight-button.secondary:hover {
+  background: var(--wave-accent);
+  color: white;
+}
+
+/* Footer */
+.starlight-footer {
+  background: var(--wave-bg-panel);
+  border-top: 1px solid var(--sl-color-border);
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: var(--wave-bg-card);
+  border: 1px solid var(--sl-color-border);
+  color: var(--wave-text-primary);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .starlight-content {
+    padding: 1rem;
+  }
+
+  .starlight-hero {
+    padding: 2rem 1rem;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
