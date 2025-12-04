@@ -277,6 +277,7 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
   const [bridgingStep, setBridgingStep] = useState(1)
   const [bridgingMessage, setBridgingMessage] = useState('Initializing bridge...')
   const [zecDepositAddress] = useState('zs1z7xjlrf4glvdpjl85kq7r6k3f3ydlrn4f9mz8qsxfq7rn8pgl3t2z7qk5f6h')
+  const [completedTransaction, setCompletedTransaction] = useState<any>(null)
 
   // Check if a bridge route is valid
   const isValidBridgeRoute = (from: string, to: string): boolean => {
@@ -729,6 +730,14 @@ const handleBridge = async () => {
 
       // Set bridge execution and show completion
       setBridgeExecution(bridgeExecution)
+      const txId = `tx_${Date.now()}`
+
+      setCompletedTransaction({
+        ...bridgeExecution,
+        transactionId: txId,
+        explorerUrl: `https://solana.fm/address/${txId}`,
+        type: 'Bridge Transaction'
+      })
       setShowBridgingProgress(false)
       setShowCompletionModal(true)
       setAmount('')
@@ -796,6 +805,15 @@ const handleBridge = async () => {
         depositTransaction: `tx_${Date.now()}`,
         completionTransaction: `zec_${Date.now()}`,
         estimatedCompletion: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+      })
+      setCompletedTransaction({
+        ...bridgeExecution,
+        id: `zecash_${Date.now()}`,
+        fromAmount: amount,
+        toAmount: amount,
+        transactionId: `zec_${Date.now()}`,
+        explorerUrl: 'https://solana.fm/',
+        type: 'Zcash Bridge'
       })
       setShowCompletionModal(true)
       setShowZcashFlow(false)
@@ -1658,7 +1676,7 @@ const handleBridge = async () => {
 
       
       {/* Completion Modal */}
-      {showCompletionModal && bridgeExecution && (
+      {showCompletionModal && completedTransaction && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="max-w-md w-full rounded-2xl p-6" style={{
             ...createGlassStyles(theme),
@@ -1675,50 +1693,95 @@ const handleBridge = async () => {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-2" style={{ color: theme.colors.textPrimary }}>
-                Bridge {bridgeExecution.status === 'COMPLETED' ? 'Completed!' : 'Initiated!'}
+                Bridge Completed! 🎉
               </h3>
               <p className="text-sm" style={{ color: theme.colors.textSecondary }}>
-                Your bridge transaction has been {bridgeExecution.status === 'COMPLETED' ? 'completed' : 'initiated'}
+                Your {completedTransaction.type || 'bridge transaction'} has been completed successfully
               </p>
             </div>
 
             <div className="space-y-4 mb-6">
               <div className="text-center">
-                <div className="font-medium" style={{ color: theme.colors.textPrimary }}>
-                  {formatTokenAmount(bridgeExecution.quote.fromAmount, bridgeExecution.quote.fromToken.decimals)} {bridgeExecution.quote.fromToken.symbol}
+                <div className="font-medium text-lg" style={{ color: theme.colors.textPrimary }}>
+                  {formatTokenAmount(completedTransaction.quote?.fromAmount || completedTransaction.fromAmount,
+                    completedTransaction.quote?.fromToken?.decimals || 8)} {completedTransaction.quote?.fromToken?.symbol || 'ZEC'}
                 </div>
                 <div className="text-sm" style={{ color: theme.colors.textMuted }}>
-                  → {formatTokenAmount(bridgeExecution.quote.toAmount, bridgeExecution.quote.toToken.decimals)} {bridgeExecution.quote.toToken.symbol}
+                  → {formatTokenAmount(completedTransaction.quote?.toAmount || completedTransaction.toAmount,
+                    completedTransaction.quote?.toToken?.decimals || 8)} {completedTransaction.quote?.toToken?.symbol || 'SOL'}
                 </div>
               </div>
 
-              <div className="text-xs space-y-2">
-                <div className="flex justify-between">
-                  <span style={{ color: theme.colors.textSecondary }}>Transaction ID:</span>
-                  <span style={{ color: theme.colors.textPrimary, fontFamily: 'var(--font-jetbrains)' }}>
-                    {bridgeExecution.depositTransaction?.slice(0, 10)}...
-                  </span>
-                </div>
-                {bridgeExecution.quote.destinationAddress && (
-                  <div className="flex justify-between">
-                    <span style={{ color: theme.colors.textSecondary }}>Destination:</span>
-                    <span style={{ color: theme.colors.textPrimary, fontFamily: 'var(--font-jetbrains)' }}>
-                      {bridgeExecution.quote.destinationAddress.slice(0, 10)}...
-                    </span>
+              {/* Transaction Details */}
+              <div className="p-4 rounded-lg space-y-3" style={{
+                backgroundColor: `${theme.colors.primary}08`,
+                border: `1px solid ${theme.colors.primary}20`
+              }}>
+                <h4 className="text-sm font-medium" style={{ color: theme.colors.textPrimary }}>
+                  Transaction Details
+                </h4>
+
+                <div className="text-xs space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span style={{ color: theme.colors.textSecondary }}>Transaction ID:</span>
+                    <div className="flex items-center gap-2">
+                      <span style={{ color: theme.colors.textPrimary, fontFamily: 'var(--font-jetbrains)' }}>
+                        {completedTransaction.transactionId?.slice(0, 8)}...{completedTransaction.transactionId?.slice(-8)}
+                      </span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(completedTransaction.transactionId || '')}
+                        className="p-1 hover:opacity-70"
+                        title="Copy transaction ID"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                )}
-                <div className="flex justify-between">
-                  <span style={{ color: theme.colors.textSecondary }}>Est. Completion:</span>
-                  <span style={{ color: theme.colors.textPrimary }}>
-                    {bridgeExecution.estimatedCompletion ?
-                      new Date(bridgeExecution.estimatedCompletion).toLocaleTimeString() :
-                      '2-5 minutes'
-                    }
-                  </span>
                 </div>
               </div>
 
-              {bridgeExecution.quote.destinationChain === 'zec' && (
+              {/* Explorer Links */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium" style={{ color: theme.colors.textPrimary }}>
+                  View Transaction
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => window.open(`https://solana.fm/address/${completedTransaction.transactionId}`, '_blank')}
+                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+                    style={{
+                      ...createGlassStyles(theme),
+                      backgroundColor: theme.colors.surface,
+                      color: theme.colors.textPrimary,
+                      border: `1px solid ${theme.colors.border}`
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Solana FM
+                  </button>
+                  <button
+                    onClick={() => window.open(`https://solscan.io/tx/${completedTransaction.transactionId}`, '_blank')}
+                    className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all"
+                    style={{
+                      ...createGlassStyles(theme),
+                      backgroundColor: theme.colors.surface,
+                      color: theme.colors.textPrimary,
+                      border: `1px solid ${theme.colors.border}`
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                    </svg>
+                    Solscan
+                  </button>
+                </div>
+              </div>
+
+              {completedTransaction.quote?.destinationChain === 'zec' && (
                 <div className="p-3 rounded-lg" style={{
                   backgroundColor: `${theme.colors.warning}10`,
                   border: `1px solid ${theme.colors.warning}20`
@@ -1730,20 +1793,40 @@ const handleBridge = async () => {
               )}
             </div>
 
-            <button
-              onClick={() => {
-                setShowCompletionModal(false)
-                setBridgeQuote(null)
-                setBridgeExecution(null)
-              }}
-              className="w-full py-3 px-4 rounded-xl font-medium transition-all"
-              style={{
-                background: 'var(--wave-azul)',
-                color: '#FFFFFF'
-              }}
-            >
-              Done
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCompletionModal(false)
+                  setBridgeQuote(null)
+                  setBridgeExecution(null)
+                  setCompletedTransaction(null)
+                }}
+                className="flex-1 py-3 px-4 rounded-xl font-medium transition-all"
+                style={{
+                  ...createGlassStyles(theme),
+                  backgroundColor: theme.colors.surface,
+                  color: theme.colors.textPrimary,
+                  border: `1px solid ${theme.colors.border}`
+                }}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowCompletionModal(false)
+                  setBridgeQuote(null)
+                  setBridgeExecution(null)
+                  setCompletedTransaction(null)
+                }}
+                className="flex-1 py-3 px-4 rounded-xl font-medium transition-all"
+                style={{
+                  background: 'var(--wave-azul)',
+                  color: '#FFFFFF'
+                }}
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
