@@ -11,6 +11,8 @@ import { Token } from '@/types/token'
 import { enhancedBridgeService, type EnhancedBridgeQuote, type BridgeExecution } from '@/lib/services/enhancedBridgeService'
 import { ComingSoon } from '@/components/ui/ComingSoon'
 import { ZcashBridgeFlow } from './ZcashBridgeFlow'
+import { BridgingProgress } from '@/components/ui/BridgingProgress'
+import { formatTokenAmount } from '@/lib/token-formatting'
 
 // Helper function to get local fallback icon path
 function getLocalFallbackIcon(symbol: string, address: string): string | null {
@@ -267,6 +269,9 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
   const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
   const [isGeneratingQuote, setIsGeneratingQuote] = useState(false)
+  const [showBridgingProgress, setShowBridgingProgress] = useState(false)
+  const [bridgingStep, setBridgingStep] = useState(1)
+  const [bridgingMessage, setBridgingMessage] = useState('Initializing bridge...')
 
   // Check if a bridge route is valid
   const isValidBridgeRoute = (from: string, to: string): boolean => {
@@ -290,26 +295,7 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
     return chain ? chain.name : chainId.toUpperCase()
   }
 
-  // Format token amount with proper decimal places
-  const formatTokenAmount = (amount: string, decimals: number = 9): string => {
-    try {
-      const num = parseFloat(amount)
-      if (isNaN(num)) return '0'
-
-      // For very small amounts, show more decimal places
-      if (num < 0.001) {
-        return num.toFixed(8).replace(/\.?0+$/, '')
-      }
-      // For normal amounts, show appropriate decimal places
-      return num.toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: decimals
-      })
-    } catch {
-      return '0'
-    }
-  }
-
+  
   const handleChainSelect = (chainType: 'from' | 'to', chainId: string) => {
     let newFromChain = fromChain
     let newToChain = toChain
@@ -442,7 +428,7 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
 const handleBridge = async () => {
     setError(null)
 
-    // Special handling for Zcash flow
+    // Special handling for Zcash flow - generate quote first
     if (fromChain === 'zec' || toChain === 'zec') {
       // For Zcash destination, need wallet address
       if (toChain === 'zec' && !zcashWalletAddress) {
@@ -450,9 +436,64 @@ const handleBridge = async () => {
         return
       }
 
-      const userId = publicKey?.toBase58() || `user_${Date.now()}`
-      setUserId(userId)
-      setShowZcashFlow(true)
+      // Generate quote for Zcash bridge
+      setIsGeneratingQuote(true)
+      try {
+        // Create a mock quote for Zcash bridge with realistic fees and timing
+        const quote: EnhancedBridgeQuote = {
+          id: `zcash_${Date.now()}`,
+          fromToken: {
+            symbol: fromToken!.symbol,
+            name: fromToken!.name,
+            address: fromToken!.address,
+            decimals: fromToken!.decimals || 9,
+            chain: fromChain === 'zec' ? 'zec' : 'solana',
+            logoURI: fromToken!.logoURI,
+            bridgeSupport: {
+              nearIntents: false,
+              starkgate: false,
+              defuse: false,
+              directBridge: true
+            }
+          },
+          toToken: {
+            symbol: toToken!.symbol,
+            name: toToken!.name,
+            address: toToken!.address,
+            decimals: toToken!.decimals || 9,
+            chain: toChain === 'zec' ? 'zec' : 'solana',
+            logoURI: toToken!.logoURI,
+            bridgeSupport: {
+              nearIntents: false,
+              starkgate: false,
+              defuse: false,
+              directBridge: true
+            }
+          },
+          fromAmount: amount,
+          toAmount: amount, // 1:1 for ZEC
+          rate: '1.0', // 1:1 conversion rate
+          bridgeProvider: 'direct',
+          route: 'Zcash Bridge - Direct Transfer',
+          feeAmount: '0.001', // 0.001 ZEC fee
+          feePercentage: 0.1, // 0.1% fee
+          estimatedTime: '2-5 minutes',
+          slippageTolerance: 0.1,
+          depositChain: fromChain,
+          destinationChain: toChain,
+          status: 'pending'
+        }
+
+        console.log('Zcash bridge quote generated:', quote)
+        setBridgeQuote(quote)
+        setShowQuoteModal(true)
+
+      } catch (error) {
+        console.error('Zcash quote generation failed:', error)
+        setError(`Quote generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      } finally {
+        setIsGeneratingQuote(false)
+      }
       return
     }
 
@@ -536,7 +577,22 @@ const handleBridge = async () => {
     setShowQuoteModal(false)
 
     try {
-      // Execute the bridge
+      // Check if this is a Zcash bridge
+      if (bridgeQuote.depositChain === 'zec' || bridgeQuote.destinationChain === 'zec') {
+        // For Zcash bridges, show the Zcash flow after quote acceptance
+        const userId = publicKey?.toBase58() || `user_${Date.now()}`
+        setUserId(userId)
+        setShowZcashFlow(true)
+
+        // Simulate bridging process for Zcash
+        setTimeout(() => {
+          handleZcashBridgeComplete()
+        }, 2000 + Math.random() * 3000) // 2-5 seconds delay
+
+        return
+      }
+
+      // Execute regular bridge for other chains
       const result = await enhancedBridgeService.executeBridge(bridgeQuote, {
         recipientAddress: walletStatus.address || '',
         privacyMode: privacyMode

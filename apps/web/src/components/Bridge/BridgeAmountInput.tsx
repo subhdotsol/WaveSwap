@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useThemeConfig } from '@/lib/theme'
 import { Token } from '@/types/token'
+import { formatBalance } from '@/lib/token-formatting'
 
 interface BridgeAmountInputProps {
   value: string
@@ -40,25 +41,6 @@ export function BridgeAmountInput({
   quickActions = true
 }: BridgeAmountInputProps) {
   const theme = useThemeConfig()
-
-  // Format balance for display
-  const formatBalance = useCallback((balance: string, decimals: number): string => {
-    try {
-      const bal = parseFloat(balance) || 0
-      const formatted = bal / Math.pow(10, decimals)
-
-      if (formatted === 0) return '0'
-      if (formatted < 0.000001) return '<0.000001'
-      if (formatted < 0.001) return formatted.toFixed(6)
-      if (formatted < 0.01) return formatted.toFixed(4)
-      if (formatted < 1) return formatted.toFixed(2)
-      if (formatted >= 1000) return formatted.toLocaleString(undefined, { maximumFractionDigits: 2 })
-
-      return formatted.toFixed(2)
-    } catch {
-      return '0'
-    }
-  }, [])
 
   // Get max amount for input
   const getMaxAmount = useCallback((): string => {

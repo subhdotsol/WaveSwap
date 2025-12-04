@@ -3,6 +3,8 @@
  * Manages user deposits and withdrawal addresses for Zcash bridging
  */
 
+import { formatTokenAmount } from '@/lib/token-formatting'
+
 export interface ZcashPool {
   id: string
   userId: string
@@ -208,7 +210,7 @@ export const formatZecAddress = (address: string): string => {
 }
 
 export const formatAmount = (amount: number, decimals: number = 8): string => {
-  return (amount / Math.pow(10, decimals)).toFixed(decimals).replace(/\.?0+$/, '')
+  return formatTokenAmount(amount / Math.pow(10, decimals), decimals)
 }
 
 export const getStatusColor = (status: ZcashTransaction['status']): string => {

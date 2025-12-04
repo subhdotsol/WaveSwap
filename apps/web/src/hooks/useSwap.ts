@@ -17,6 +17,7 @@ import { Token, SwapQuote, SwapStatus, SwapProgress, SwapMode, getAvailableToken
 import { COMMON_TOKENS, CONFIDENTIAL_TOKENS } from '@/types/token'
 import { getUserTokens, getDefaultTokens, getTokenBalance, enrichTokenIcons, clearBalanceCache } from '@/lib/tokens'
 import { parseError, WaveSwapError } from '@/lib/errors'
+import { formatTokenAmount } from '@/lib/token-formatting'
 import nacl from 'tweetnacl'
 
 // Helper function to get local fallback icon path
@@ -805,7 +806,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
         // Calculate output amount for display - Jupiter returns amounts in smallest units
         const outputDecimals = outputToken.decimals || 9
         const outputAmountHuman = parseFloat(jupiterQuote.outAmount) / Math.pow(10, outputDecimals)
-        setOutputAmount(outputAmountHuman.toFixed(6))
+        setOutputAmount(formatTokenAmount(outputAmountHuman, outputDecimals))
         return
       }
 
@@ -824,7 +825,7 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       // Calculate output amount with fallback decimals - Jupiter returns amounts in smallest units
       const outputDecimals = outputToken.decimals || 9
       const output = parseFloat(newQuote.outputAmount) / Math.pow(10, outputDecimals)
-      setOutputAmount(output.toFixed(outputDecimals).replace(/\.?0+$/, ''))
+      setOutputAmount(formatTokenAmount(output, outputDecimals))
 
     } catch (error) {
       console.error('Error getting quote:', error)
@@ -1488,6 +1489,14 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
     return () => clearTimeout(timer)
   }, [inputAmount, inputToken, outputToken, publicKey, getQuote])
 
+  // Refresh balances when wallet connects or publicKey changes
+  useEffect(() => {
+    if (publicKey && connection) {
+      console.log('[useSwap] Wallet connected, refreshing balances for:', publicKey.toString())
+      refreshBalances()
+    }
+  }, [publicKey, connection, refreshBalances])
+
   // Withdraw confidential tokens back to regular tokens
   const withdrawConfidentialTokens = useCallback(async (
     tokenAddress: string,
@@ -1976,7 +1985,7 @@ export const SwapUtils = {
    */
   calculateExpectedOutput: (quote: SwapQuote, decimals: number): string => {
     const output = parseFloat(quote.outputAmount) / Math.pow(10, decimals)
-    return output.toFixed(Math.max(0, 6 - decimals)).replace(/\.?0+$/, '')
+    return formatTokenAmount(output, decimals)
   },
 
   /**
@@ -1986,6 +1995,6 @@ export const SwapUtils = {
     const output = parseFloat(quote.outputAmount) / Math.pow(10, decimals)
     const slippageFactor = (10000 - 50) / 10000 // 50 bps default slippage
     const minimumOutput = output * slippageFactor
-    return minimumOutput.toFixed(Math.max(0, 6 - decimals)).replace(/\.?0+$/, '')
+    return formatTokenAmount(minimumOutput, decimals)
   }
 }

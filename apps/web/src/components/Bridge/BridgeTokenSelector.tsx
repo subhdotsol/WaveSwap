@@ -11,6 +11,7 @@ import {
 import { Token } from '@/types/token'
 import { TokenIcon } from '@/components/TokenIcon'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
+import { formatBalance } from '@/lib/token-formatting'
 
 // Helper function to get local fallback icon path
 function getLocalFallbackIcon(symbol: string, address: string): string | null {
@@ -97,24 +98,6 @@ export function BridgeTokenSelector({
     })
     return user
   }, [tokens, balances])
-
-  // Format balance display
-  const formatBalance = useCallback((balance: string, decimals: number): string => {
-    try {
-      const bal = parseFloat(balance) || 0
-      const formatted = bal / Math.pow(10, decimals)
-
-      if (formatted === 0) return '0'
-      if (formatted < 0.001) return '<0.001'
-      if (formatted < 0.01) return formatted.toFixed(4)
-      if (formatted < 1) return formatted.toFixed(2)
-      if (formatted >= 1000) return formatted.toLocaleString(undefined, { maximumFractionDigits: 2 })
-
-      return formatted.toFixed(2)
-    } catch {
-      return '0'
-    }
-  }, [])
 
   const handleTokenSelect = useCallback((token: Token) => {
     onTokenChange(token)

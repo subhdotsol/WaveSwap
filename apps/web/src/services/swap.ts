@@ -16,6 +16,7 @@
 import { Connection, PublicKey, Transaction, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { JupiterAPI, JupiterQuoteParams, JupiterSwapParams } from '@/lib/jupiter'
+import { formatTokenAmount } from '@/lib/token-formatting'
 import {
   DefiClient,
   DefiClientConfig,
@@ -671,7 +672,7 @@ export const SwapUtils = {
    */
   calculateExpectedOutput(quote: SwapQuote, decimals: number): string {
     const output = parseFloat(quote.outputAmount) / Math.pow(10, decimals)
-    return output.toFixed(Math.max(0, 6 - decimals)).replace(/\.?0+$/, '')
+    return formatTokenAmount(output, decimals)
   },
 
   /**
@@ -681,7 +682,7 @@ export const SwapUtils = {
     const output = parseFloat(quote.outputAmount) / Math.pow(10, decimals)
     const slippageFactor = (10000 - 50) / 10000 // 50 bps default slippage
     const minimumOutput = output * slippageFactor
-    return minimumOutput.toFixed(Math.max(0, 6 - decimals)).replace(/\.?0+$/, '')
+    return formatTokenAmount(minimumOutput, decimals)
   },
 
   /**

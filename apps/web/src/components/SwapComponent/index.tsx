@@ -12,6 +12,7 @@ import { useSwap } from '@/hooks/useSwap'
 import { Token, SwapStatus } from '@/types/token'
 import { useThemeConfig, createGlassStyles } from '@/lib/theme'
 import { EncifherClient, EncifherUtils } from '@/lib/encifher'
+import { formatTokenAmount } from '@/lib/token-formatting'
 
 interface SwapComponentProps {
   privacyMode: boolean
@@ -664,23 +665,15 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
   const inputBalance = safeInputToken?.address ? (balances.get(safeInputToken.address) || '0') : '0'
   const outputBalance = safeOutputToken?.address ? (balances.get(safeOutputToken.address) || '0') : '0'
 
-  const inputBalanceFormatted = safeInputToken ? (() => {
-    const amount = parseFloat(inputBalance) / Math.pow(10, safeInputToken.decimals || 9)
-    if (amount === 0) return '0'
-    if (amount < 0.001) return '<0.001'
-    if (amount < 1) return amount.toFixed(4)
-    if (amount < 1000) return amount.toFixed(2)
-    return amount.toLocaleString(undefined, { maximumFractionDigits: 2 })
-  })() : '0'
+  const inputBalanceFormatted = safeInputToken ? formatTokenAmount(
+    parseFloat(inputBalance) / Math.pow(10, safeInputToken.decimals || 9),
+    safeInputToken.decimals || 9
+  ) : '0'
 
-  const outputBalanceFormatted = safeOutputToken ? (() => {
-    const amount = parseFloat(outputBalance) / Math.pow(10, safeOutputToken.decimals || 9)
-    if (amount === 0) return '0'
-    if (amount < 0.001) return '<0.001'
-    if (amount < 1) return amount.toFixed(4)
-    if (amount < 1000) return amount.toFixed(2)
-    return amount.toLocaleString(undefined, { maximumFractionDigits: 2 })
-  })() : '0'
+  const outputBalanceFormatted = safeOutputToken ? formatTokenAmount(
+    parseFloat(outputBalance) / Math.pow(10, safeOutputToken.decimals || 9),
+    safeOutputToken.decimals || 9
+  ) : '0'
 
   const hasInsufficientBalance = safeInputToken && inputAmount && publicKey ? (() => {
     const inputAmountNum = parseFloat(inputAmount)
