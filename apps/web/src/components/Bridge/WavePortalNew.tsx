@@ -760,7 +760,8 @@ const handleBridge = async () => {
       setBridgingMessage('Validating bridge transaction...')
 
       // Skip wallet validation for Zcash deposits and StarkNet since we handle it above
-      if (fromChain !== 'zec' && sourceChain !== 'starknet') {
+      // Also skip for Solana->Zcash since we handle wallet connection differently
+      if (fromChain !== 'zec' && sourceChain !== 'starknet' && !(fromChain === 'solana' && bridgeQuote.destinationChain === 'zec')) {
         const validation = await bridgeWalletService.validateBridgeRequest(bridgeRequest, multiChainWallet)
         if (!validation.valid) {
           throw new Error(validation.error || 'Bridge validation failed')

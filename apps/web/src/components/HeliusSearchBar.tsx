@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Search, ExternalLink, X, Sparkles, Wallet, Activity, DollarSign, Code } from 'lucide-react'
+import { Search, X, Sparkles, Wallet, Activity, DollarSign, Code } from 'lucide-react'
 import { useThemeConfig, createGlassStyles, createInputStyles } from '@/lib/theme'
 
 interface SearchSuggestion {
@@ -279,31 +279,15 @@ export function HeliusSearchBar() {
         <div
           className="absolute top-full left-0 right-0 mt-1 z-50"
           style={{
-            ...createGlassStyles(theme),
-            background: `${theme.colors.surface}cc`,
+            background: theme.colors.surface,
             border: `1px solid ${theme.colors.border}`,
-            backdropFilter: 'blur(16px) saturate(1.5)',
             borderRadius: '8px',
-            boxShadow: `0 4px 12px ${theme.colors.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.1)`,
+            boxShadow: `0 4px 12px ${theme.colors.shadow}`,
             maxHeight: '240px',
             overflowY: 'auto'
           }}
         >
-          {/* Background image overlay for dropdown */}
-          {theme.name === 'dark' && (
-            <div
-              className="absolute inset-0 opacity-30 pointer-events-none"
-              style={{
-                backgroundImage: `url("/bg.jpg")`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                filter: 'blur(15px) saturate(1.2) brightness(0.3)'
-              }}
-            />
-          )}
-
-          <div className="relative z-10 p-1">
+          <div className="p-1">
             <div className="px-2 py-1 text-xs font-medium" style={{ color: theme.colors.textMuted }}>
               {query ? 'Search Results' : 'Quick Access'}
             </div>
@@ -355,10 +339,9 @@ export function HeliusSearchBar() {
                     </div>
                   </div>
 
-                  {React.createElement(ExternalLink, {
-                      className: "w-2.5 h-2.5 flex-shrink-0",
-                      style: { color: theme.colors.textMuted }
-                    })}
+                  <svg className="w-2.5 h-2.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: theme.colors.textMuted }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
                 </button>
               )
             })}
