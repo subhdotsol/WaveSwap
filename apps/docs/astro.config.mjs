@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import mermaid from 'astro-mermaid';
-import { ion } from './index.js';
+import { ion } from './index.ts';
 
 // https://astro.build/config
 export default defineConfig({
