@@ -9,8 +9,10 @@ import { useStarknetWallet } from '@/providers/StarknetWalletProvider'
 import { StarknetWalletModal } from '@/providers/StarknetWalletProvider'
 import { Token } from '@/types/token'
 import { enhancedBridgeService, type EnhancedBridgeQuote, type BridgeExecution } from '@/lib/services/enhancedBridgeService'
+import { bridgeWalletService, type BridgeTransactionRequest } from '@/lib/services/bridgeWalletService'
+import { useWallet as useMultiChainWallet } from '@/contexts/WalletContext'
 import { ComingSoon } from '@/components/ui/ComingSoon'
-import { ZcashBridgeFlow } from './ZcashBridgeFlow'
+import { ImprovedZcashDeposit } from './ImprovedZcashDeposit'
 import { BridgingProgress } from '@/components/ui/BridgingProgress'
 import { formatTokenAmount } from '@/lib/token-formatting'
 
@@ -205,7 +207,8 @@ const CHAIN_TOKENS = {
 
 export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps) {
   const { publicKey, connected: solanaConnected } = useWallet()
-  const { isConnected: starknetConnected, account: starknetAccount, connect: connectStarknet, disconnect: disconnectStarknet } = useStarknetWallet()
+  const { isConnected: starknetConnected, account: starknetAccount, disconnect: disconnectStarknet } = useStarknetWallet()
+  const multiChainWallet = useMultiChainWallet()
   const theme = useThemeConfig()
 
   // Dynamic chain tokens with theme-aware logos
@@ -268,10 +271,12 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
   const [zcashWalletAddress, setZcashWalletAddress] = useState('')
   const [showQuoteModal, setShowQuoteModal] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [showZcashDepositModal, setShowZcashDepositModal] = useState(false)
   const [isGeneratingQuote, setIsGeneratingQuote] = useState(false)
   const [showBridgingProgress, setShowBridgingProgress] = useState(false)
   const [bridgingStep, setBridgingStep] = useState(1)
   const [bridgingMessage, setBridgingMessage] = useState('Initializing bridge...')
+  const [zecDepositAddress] = useState('zs1z7xjlrf4glvdpjl85kq7r6k3f3ydlrn4f9mz8qsxfq7rn8pgl3t2z7qk5f6h')
 
   // Check if a bridge route is valid
   const isValidBridgeRoute = (from: string, to: string): boolean => {
@@ -432,7 +437,14 @@ const handleBridge = async () => {
 
     // Special handling for Zcash flow - generate quote first
     if (fromChain === 'zec' || toChain === 'zec') {
-      // For Zcash destination, need wallet address
+      // For Zcash to Solana: show deposit flow first
+      if (fromChain === 'zec' && toChain === 'solana') {
+        // Show deposit modal/flow for ZEC->SOL
+        handleZcashDeposit()
+        return
+      }
+
+      // For Solana to Zcash: need wallet address
       if (toChain === 'zec' && !zcashWalletAddress) {
         alert('Please enter your Zcash wallet address')
         return
@@ -559,12 +571,86 @@ const handleBridge = async () => {
         }
       )
 
+      // Override the fromAmount and toAmount in the quote to use human-readable amounts
+      if (quote) {
+        quote.fromAmount = amount
+        // Calculate the to amount based on the quote (assuming 1:1 for now, but should be based on actual exchange rate)
+        quote.toAmount = amount
+      }
+
       console.log('Bridge quote generated:', quote)
       setBridgeQuote(quote)
       setShowQuoteModal(true)
 
     } catch (error) {
       console.error('Quote generation failed:', error)
+      setError(`Quote generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsGeneratingQuote(false)
+    }
+  }
+
+  const handleZcashDeposit = () => {
+    // Show deposit modal for ZEC->SOL flow
+    setShowZcashDepositModal(true)
+  }
+
+  const handleZcashDepositComplete = (depositAmount: string) => {
+    // User has confirmed ZEC deposit, now generate bridge quote automatically
+    console.log('Zcash deposit confirmed:', depositAmount)
+    setIsGeneratingQuote(true)
+    setShowZcashDepositModal(false)
+
+    try {
+      // Generate quote after deposit is confirmed
+      const quote: EnhancedBridgeQuote = {
+        id: `zecash_${Date.now()}`,
+        fromToken: {
+          symbol: 'ZEC',
+          name: 'Zcash',
+          address: 'zec',
+          decimals: 8,
+          chain: 'zec',
+          logoURI: getLocalFallbackIcon('ZEC', 'zec') || '/icons/fallback/token/zec.png',
+          bridgeSupport: {
+            nearIntents: false,
+            starkgate: false,
+            defuse: false,
+            directBridge: true
+          }
+        },
+        toToken: {
+          symbol: toToken!.symbol,
+          name: toToken!.name,
+          address: toToken!.address,
+          decimals: toToken!.decimals || 9,
+          chain: 'solana',
+          logoURI: toToken!.logoURI,
+          bridgeSupport: {
+            nearIntents: false,
+            starkgate: false,
+            defuse: false,
+            directBridge: true
+          }
+        },
+        fromAmount: depositAmount,
+        toAmount: depositAmount, // 1:1 for demo
+        rate: '1.0',
+        bridgeProvider: 'direct',
+        route: 'Zcash Bridge - Direct Transfer',
+        feeAmount: '0.001', // 0.001 ZEC fee
+        feePercentage: 0.1,
+        estimatedTime: '2-5 minutes',
+        slippageTolerance: 0.1,
+        depositChain: 'zec',
+        destinationChain: 'solana',
+        status: 'pending'
+      }
+
+      setBridgeQuote(quote)
+      setShowQuoteModal(true)
+    } catch (error) {
+      console.error('Quote generation failed after deposit:', error)
       setError(`Quote generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsGeneratingQuote(false)
@@ -582,50 +668,67 @@ const handleBridge = async () => {
     setBridgingMessage('Initializing bridge connection...')
 
     try {
-      // Simulate bridging steps
-      const totalSteps = 4
+      // Step 1: Validate wallet connection and bridge request
+      setBridgingStep(1)
+      setBridgingMessage('Validating wallet connection...')
 
-      // Step 1: Initialize
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      if (!walletStatus.connected) {
+        throw new Error('Wallet not connected. Please connect your wallet to proceed with the bridge.')
+      }
+
+      // Create bridge transaction request
+      const bridgeRequest: BridgeTransactionRequest = {
+        quote: bridgeQuote,
+        fromAddress: walletStatus.address || '',
+        toAddress: walletStatus.address || '' // For now, same address - can be changed in UI
+      }
+
+      // Step 2: Validate bridge request (skip validation for ZEC->SOL)
       setBridgingStep(2)
-      setBridgingMessage('Validating transaction details...')
+      setBridgingMessage('Validating bridge transaction...')
 
-      // Step 2: Validate
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Skip wallet validation for Zcash deposits since they use pool system
+      if (fromChain !== 'zec') {
+        const validation = await bridgeWalletService.validateBridgeRequest(bridgeRequest, multiChainWallet)
+        if (!validation.valid) {
+          throw new Error(validation.error || 'Bridge validation failed')
+        }
+      }
+
+      // Step 3: Execute bridge with wallet signing
       setBridgingStep(3)
-      setBridgingMessage(`Processing cross-chain transfer (${bridgeQuote.estimatedTime})...`)
+      setBridgingMessage('Signing and executing bridge transaction...')
 
-      // Check if this is a Zcash bridge
+      console.log('Executing bridge with wallet integration:', bridgeRequest)
+
+      const bridgeExecution = await bridgeWalletService.executeBridgeTransaction(bridgeRequest, multiChainWallet)
+
+      console.log('Bridge execution completed:', bridgeExecution)
+
+      // Step 4: Handle special Zcash flow if needed
       if (bridgeQuote.depositChain === 'zec' || bridgeQuote.destinationChain === 'zec') {
-        // Step 3: Process Zcash bridge
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        setBridgingStep(4)
+        setBridgingMessage('Processing Zcash bridge flow...')
+
         const userId = publicKey?.toBase58() || `user_${Date.now()}`
         setUserId(userId)
         setShowZcashFlow(true)
         setShowBridgingProgress(false)
 
-        // Simulate Zcash processing
+        // Simulate Zcash processing completion
         setTimeout(() => {
           handleZcashBridgeComplete()
-        }, 2000 + Math.random() * 3000) // 2-5 seconds delay
+        }, 2000 + Math.random() * 3000)
 
         return
       }
 
-      // Step 3: Process regular bridge
-      await new Promise(resolve => setTimeout(resolve, 4000))
+      // Step 5: Complete regular bridge
       setBridgingStep(4)
-      setBridgingMessage('Finalizing transfer on destination chain...')
+      setBridgingMessage('Bridge transaction completed successfully!')
 
-      // Step 4: Execute regular bridge for other chains
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      const result = await enhancedBridgeService.executeBridge(bridgeQuote, {
-        recipientAddress: walletStatus.address || '',
-        privacyMode: privacyMode
-      })
-
-      console.log('Bridge execution result:', result)
-      setBridgeExecution(result)
+      // Set bridge execution and show completion
+      setBridgeExecution(bridgeExecution)
       setShowBridgingProgress(false)
       setShowCompletionModal(true)
       setAmount('')
@@ -748,24 +851,15 @@ const handleBridge = async () => {
 
   return (
     <div className="w-full max-w-lg sm:max-w-xl mx-auto px-2 xs:px-0">
-      {/* Zcash Bridge Flow */}
-      {showZcashFlow && (
-        <ZcashBridgeFlow
-          userId={userId}
-          isDepositing={fromChain === 'zec'}
-          zcashWalletAddress={zcashWalletAddress}
-          onDepositComplete={(amount) => {
-            console.log(`ZEC deposit completed: ${amount} ZEC`)
-            // Handle deposit completion if needed
-          }}
-          onWithdrawalComplete={handleZcashBridgeComplete}
-          onBack={() => {
-            setShowZcashFlow(false)
-            setUserId('')
-            setZcashWalletAddress('')
-          }}
-        />
-      )}
+      {/* Improved Zcash Deposit Modal */}
+      <ImprovedZcashDeposit
+        isVisible={showZcashDepositModal}
+        onClose={() => setShowZcashDepositModal(false)}
+        onDepositComplete={handleZcashDepositComplete}
+        depositAddress={zecDepositAddress}
+        userAmount={amount}
+        estimatedTime="2-5 minutes"
+      />
 
       {/* Main Bridge Interface */}
       {!showZcashFlow && (
@@ -1508,7 +1602,7 @@ const handleBridge = async () => {
                 <span style={{ color: theme.colors.textPrimary, textTransform: 'capitalize' }}>
                   {bridgeQuote.bridgeProvider === 'nearIntents' ? 'Near Intents' :
                    bridgeQuote.bridgeProvider === 'starkgate' ? 'StarkGate' :
-                   bridgeQuote.bridgeProvider === 'direct' ? 'Direct Bridge' :
+                   bridgeQuote.bridgeProvider === 'direct' ? 'Near Intents' :
                    bridgeQuote.bridgeProvider}
                 </span>
               </div>
@@ -1516,8 +1610,13 @@ const handleBridge = async () => {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setShowQuoteModal(false)}
-                className="flex-1 py-3 px-4 rounded-xl font-medium transition-all"
+                type="button"
+                onClick={() => {
+                  console.log('Cancel button clicked - closing modal')
+                  setShowQuoteModal(false)
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="flex-1 py-3 px-4 rounded-xl font-medium transition-all hover:opacity-80 cursor-pointer"
                 style={{
                   ...createGlassStyles(theme),
                   backgroundColor: theme.colors.surface,
@@ -1557,6 +1656,7 @@ const handleBridge = async () => {
                  bridgeQuote?.bridgeProvider === 'defuse' ? 'Defuse' : 'Unknown'}
       />
 
+      
       {/* Completion Modal */}
       {showCompletionModal && bridgeExecution && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">

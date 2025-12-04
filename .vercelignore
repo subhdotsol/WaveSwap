@@ -20,8 +20,7 @@ target
 coverage
 .nyc_output
 
-# Documentation
-apps/docs
+# Documentation (exclude README but keep the app)
 README.md
 CONFIDENTIAL_TOKENS.md
 
@@ -45,4 +44,3 @@ bun-workspace.toml
 # Package directories that aren't the web app
 apps/backend/*
 packages/*
-apps/docs/*

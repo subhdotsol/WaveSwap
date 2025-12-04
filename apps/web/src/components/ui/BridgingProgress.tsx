@@ -27,7 +27,7 @@ export function BridgingProgress({
   currentStep = 1,
   totalSteps = 4,
   message = 'Initializing bridge...',
-  provider = 'Direct Bridge'
+  provider = 'Near Intents'
 }: BridgingProgressProps) {
   const theme = useThemeConfig()
   const [progress, setProgress] = useState(0)

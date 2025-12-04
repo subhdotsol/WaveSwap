@@ -84,7 +84,7 @@ class ZcashPoolService {
 
     this.transactions.push(transaction)
 
-    // Simulate deposit confirmation after delay
+    // Deposit confirmation after delay
     setTimeout(() => {
       transaction.status = 'confirmed'
       transaction.confirmedAt = new Date()

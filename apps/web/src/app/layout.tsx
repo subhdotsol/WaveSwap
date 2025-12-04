@@ -11,6 +11,7 @@ import { TermsProvider } from '@/contexts/TermsContext'
 import { NearWalletProvider } from '@/providers/NearWalletProvider'
 import { StarknetWalletProvider } from '@/providers/StarknetWalletProvider'
 import { WalletModalProvider } from '@/contexts/WalletModalContext'
+import { WalletProvider } from '@/contexts/WalletContext'
 import { GlobalWalletModal } from '@/components/Wallets/GlobalWalletModal'
 import Footer from '@/components/Footer'
 import { TermsGuard } from '@/components/TermsGuard'
@@ -77,11 +78,12 @@ export default function RootLayout({
           <PrivacyProvider>
             <TermsProvider>
               <WalletModalProvider>
-                <NoSSRProvider>
-                  <NearWalletProvider>
-                    <StarknetWalletProvider>
-                      <SolanaWalletProvider>
-                        <WaveSwapProvider>
+                <WalletProvider>
+                  <NoSSRProvider>
+                    <NearWalletProvider>
+                      <StarknetWalletProvider>
+                        <SolanaWalletProvider>
+                          <WaveSwapProvider>
                           <div className="relative min-h-screen text-foreground w-full flex flex-col">
                             <div className="theme-background fixed inset-0"></div>
                             <div className="relative z-[1] flex-1">
@@ -100,7 +102,8 @@ export default function RootLayout({
                     </StarknetWalletProvider>
                   </NearWalletProvider>
                 </NoSSRProvider>
-              </WalletModalProvider>
+              </WalletProvider>
+            </WalletModalProvider>
             </TermsProvider>
           </PrivacyProvider>
         </ThemeProvider>

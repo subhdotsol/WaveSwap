@@ -1,0 +1,6 @@
+{
+  "installCommand": "bun install",
+  "buildCommand": "cd apps/docs && bun run build",
+  "outputDirectory": "apps/docs/dist",
+  "framework": "astro"
+}
