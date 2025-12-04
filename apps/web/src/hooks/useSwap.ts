@@ -195,8 +195,10 @@ async function subtractConfidentialBalance(tokenAddress: string, amount: number,
 }
 
 export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): SwapState & SwapActions {
+  console.log('[useSwap] Hook MOUNTED! privacyMode:', privacyMode, 'publicKey:', publicKey?.toString())
   const { connection } = useConnection()
   const { signTransaction, signAllTransactions } = useWallet()
+  console.log('[useSwap] After wallet hooks - connection:', !!connection, 'signTransaction:', !!signTransaction)
   const theme = useThemeConfig()
 
   const debugPrivacyMode = privacyMode // Use actual privacy mode without debug override
@@ -462,12 +464,16 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
   // Load user's tokens when wallet connects or privacy mode changes
   useEffect(() => {
+    console.log('[useSwap] Main wallet effect triggered - publicKey:', publicKey?.toString(), 'connection:', !!connection, 'privacyMode:', privacyMode)
     if (publicKey && connection) {
+      console.log('[useSwap] Wallet connected, calling loadUserTokens()...')
       loadUserTokens()
     } else {
+      console.log('[useSwap] No wallet connection, loading default tokens...')
       // No wallet, just show defaults
       const loadDefaultTokens = async () => {
         const defaultTokens = await getAvailableTokens(privacyMode)
+        console.log('[useSwap] Loaded', defaultTokens.length, 'default tokens')
         setAvailableTokens(defaultTokens)
       }
       loadDefaultTokens()
@@ -476,10 +482,16 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
   // Load user's wallet tokens
   const loadUserTokens = async () => {
-    if (!publicKey || !connection) return
+    console.log('[useSwap] loadUserTokens called - publicKey:', publicKey?.toString(), 'connection:', !!connection)
+    if (!publicKey || !connection) {
+      console.log('[useSwap] loadUserTokens returning early - no publicKey or connection')
+      return
+    }
 
     try {
+      console.log('[useSwap] Starting to load user tokens...')
       const userTokens = await getUserTokens(connection, publicKey)
+      console.log('[useSwap] getUserTokens returned', userTokens.length, 'tokens')
 
       // Merge with available tokens based on privacy mode
       const tokenMap = new Map<string, Token>()
@@ -578,20 +590,30 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
       const enrichedTokens = await enrichTokenIcons(allTokens)
       setAvailableTokens(enrichedTokens)
 
-      console.log('Loaded tokens:', enrichedTokens.map(t => t.symbol))
+      console.log('[useSwap] Loaded', enrichedTokens.length, 'tokens:', enrichedTokens.map(t => t.symbol))
+      console.log('[useSwap] About to call refreshBalances() after loading tokens...')
+      // Refresh balances after tokens are loaded
+      refreshBalances()
     } catch (error) {
       console.error('Error loading user tokens:', error)
       // Fall back to available tokens for current mode
       const fallbackTokens = await getAvailableTokens(privacyMode)
       setAvailableTokens(fallbackTokens)
+      console.log('[useSwap] In error fallback, about to call refreshBalances()...')
+      // Still try to refresh balances even with fallback tokens
+      refreshBalances()
     }
   }
 
   // Debounced balance refresh to avoid excessive API calls
   useEffect(() => {
+    console.log('[useSwap] Debounced effect triggered - publicKey:', !!publicKey, 'inputToken:', inputToken?.symbol, 'outputToken:', outputToken?.symbol)
     const timeoutId = setTimeout(() => {
       if (publicKey && (inputToken || outputToken)) {
+        console.log('[useSwap] Debounced timeout calling refreshBalances()...')
         refreshBalances()
+      } else {
+        console.log('[useSwap] Debounced timeout skipped - no publicKey or tokens')
       }
     }, 500) // 500ms debounce
 
@@ -600,10 +622,13 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
 
   // Initial balance fetch on wallet connection
   useEffect(() => {
+    console.log('[useSwap] Initial balance effect triggered - publicKey:', !!publicKey, 'inputToken:', !!inputToken, 'outputToken:', !!outputToken, 'availableTokens.length:', availableTokens.length)
     if (publicKey && !inputToken && !outputToken && availableTokens.length > 0) {
+      console.log('[useSwap] Initial balance fetch starting for top tokens...')
       // Fetch balances for top tokens by default
       const topTokens = availableTokens.slice(0, 6) // Fetch for 6 most common tokens
       fetchMultipleBalances(topTokens).then(newBalances => {
+        console.log('[useSwap] Initial balance fetch completed for', newBalances.size, 'tokens')
         setBalances(prev => {
           const merged = new Map(prev)
           newBalances.forEach((balance, address) => {
@@ -1337,11 +1362,14 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
   }, [publicKey, connection])
 
   const refreshBalances = useCallback(async () => {
+    console.log('[refreshBalances] Called with publicKey:', publicKey?.toString())
     if (!publicKey || !connection) {
+      console.log('[refreshBalances] No publicKey or connection, clearing balances')
       setBalances(new Map())
       return
     }
 
+    console.log('[refreshBalances] Starting balance refresh for:', publicKey.toString())
     // Clear SOL balance cache to ensure fresh data
     clearBalanceCache()
 
@@ -1398,10 +1426,25 @@ export function useSwap(privacyMode: boolean, publicKey: PublicKey | null): Swap
           const confidentialBalances = await fetchConfidentialBalances(publicKey.toString())
 
           // Merge confidential balances with regular balances (confidential take precedence)
+          // But don't overwrite real balances with AUTH_REQUIRED status
           setBalances(prev => {
             const merged = new Map(prev)
             confidentialBalances.forEach((balance, address) => {
-              merged.set(address, balance)
+              // Only overwrite if:
+              // 1. The confidential balance is a real number, OR
+              // 2. The current balance is not a real number (like '0' or missing)
+              const currentBalance = prev.get(address)
+              const isConfidentialRealBalance = balance !== 'AUTH_REQUIRED' && balance !== 'DEPOSITED'
+              const isCurrentRealBalance = currentBalance && currentBalance !== 'AUTH_REQUIRED' && currentBalance !== 'DEPOSITED' && currentBalance !== '0'
+
+              // Debug logging for SOL specifically
+              if (address === 'So11111111111111111111111111111111111111112') {
+                console.log(`[Balance Merge] SOL: current=${currentBalance}, confidential=${balance}, isConfidentialReal=${isConfidentialRealBalance}, isCurrentReal=${isCurrentRealBalance}`)
+              }
+
+              if (isConfidentialRealBalance || !isCurrentRealBalance) {
+                merged.set(address, balance)
+              }
             })
             return merged
           })

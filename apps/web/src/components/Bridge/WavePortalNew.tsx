@@ -1,17 +1,16 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { TokenSelector } from '../SwapComponent/TokenSelector'
 import { BridgeTokenSelector } from './BridgeTokenSelector'
 import { BridgeAmountInput } from './BridgeAmountInput'
-import { useThemeConfig, createGlassStyles, createInputStyles } from '@/lib/theme'
-import { useNearWallet } from '@/providers/NearWalletProvider'
+import { useThemeConfig, createGlassStyles } from '@/lib/theme'
 import { useStarknetWallet } from '@/providers/StarknetWalletProvider'
 import { StarknetWalletModal } from '@/providers/StarknetWalletProvider'
 import { Token } from '@/types/token'
-import { enhancedBridgeService } from '@/lib/services/enhancedBridgeService'
+import { enhancedBridgeService, type EnhancedBridgeQuote, type BridgeExecution } from '@/lib/services/enhancedBridgeService'
 import { ComingSoon } from '@/components/ui/ComingSoon'
+import { ZcashBridgeFlow } from './ZcashBridgeFlow'
 
 // Helper function to get local fallback icon path
 function getLocalFallbackIcon(symbol: string, address: string): string | null {
@@ -204,7 +203,6 @@ const CHAIN_TOKENS = {
 
 export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps) {
   const { publicKey, connected: solanaConnected } = useWallet()
-  const { isConnected: nearConnected, accountId, connect: connectNear, disconnect: disconnectNear } = useNearWallet()
   const { isConnected: starknetConnected, account: starknetAccount, connect: connectStarknet, disconnect: disconnectStarknet } = useStarknetWallet()
   const theme = useThemeConfig()
 
@@ -258,6 +256,17 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
   const [isBridging, setIsBridging] = useState(false)
   const [showStarknetWalletModal, setShowStarknetWalletModal] = useState(false)
   const [isReversed, setIsReversed] = useState(false)
+  const [showZcashFlow, setShowZcashFlow] = useState(false)
+  const [userId, setUserId] = useState<string>('')
+  const [error, setError] = useState<string | null>(null)
+
+  // New bridge states
+  const [bridgeQuote, setBridgeQuote] = useState<EnhancedBridgeQuote | null>(null)
+  const [bridgeExecution, setBridgeExecution] = useState<BridgeExecution | null>(null)
+  const [zcashWalletAddress, setZcashWalletAddress] = useState('')
+  const [showQuoteModal, setShowQuoteModal] = useState(false)
+  const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [isGeneratingQuote, setIsGeneratingQuote] = useState(false)
 
   // Check if a bridge route is valid
   const isValidBridgeRoute = (from: string, to: string): boolean => {
@@ -279,6 +288,26 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
   const getChainName = (chainId: string) => {
     const chain = SUPPORTED_CHAINS.find(c => c.id === chainId)
     return chain ? chain.name : chainId.toUpperCase()
+  }
+
+  // Format token amount with proper decimal places
+  const formatTokenAmount = (amount: string, decimals: number = 9): string => {
+    try {
+      const num = parseFloat(amount)
+      if (isNaN(num)) return '0'
+
+      // For very small amounts, show more decimal places
+      if (num < 0.001) {
+        return num.toFixed(8).replace(/\.?0+$/, '')
+      }
+      // For normal amounts, show appropriate decimal places
+      return num.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals
+      })
+    } catch {
+      return '0'
+    }
   }
 
   const handleChainSelect = (chainType: 'from' | 'to', chainId: string) => {
@@ -339,6 +368,7 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
   }, [fromChain, toChain])
 
   const getWalletConnectionStatus = () => {
+    // Only require wallet connection for source chains (not Zcash)
     const sourceChain = fromChain
 
     switch (sourceChain) {
@@ -346,25 +376,29 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
         return {
           connected: solanaConnected,
           address: publicKey?.toString(),
-          label: 'Solana Wallet'
-        }
-      case 'zec':
-        return {
-          connected: nearConnected,
-          address: accountId,
-          label: 'NEAR Wallet (for Zcash)'
+          label: 'Solana Wallet',
+          required: true
         }
       case 'starknet':
         return {
           connected: starknetConnected,
           address: starknetAccount?.address,
-          label: 'StarkNet Wallet'
+          label: 'StarkNet Wallet',
+          required: true
+        }
+      case 'zec':
+        return {
+          connected: true, // Zcash doesn't need wallet connection
+          address: 'Zcash Pool System',
+          label: 'Zcash Pool',
+          required: false
         }
       default:
         return {
           connected: false,
           address: null,
-          label: 'Wallet'
+          label: 'Wallet',
+          required: true
         }
     }
   }
@@ -376,7 +410,7 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
       // Disconnect wallet
       switch (fromChain) {
         case 'zec':
-          await disconnectNear()
+          // Zcash doesn't need disconnection (mock pool system)
           break
         case 'starknet':
           await disconnectStarknet()
@@ -395,13 +429,8 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
         alert('Please use the Solana wallet connect button in the header')
         break
       case 'zec':
-        // NEAR wallet for Zcash
-        try {
-          await connectNear()
-        } catch (error) {
-          console.error('NEAR wallet connection failed:', error)
-          alert('Failed to connect NEAR wallet. Please try again.')
-        }
+        // Zcash doesn't need wallet connection (mock pool system)
+        alert('Zcash uses a pool system - no wallet connection required!')
         break
       case 'starknet':
         // Show StarkNet wallet modal
@@ -411,8 +440,23 @@ export function WavePortal({ privacyMode, comingSoon = false }: WavePortalProps)
   }
 
 const handleBridge = async () => {
+    setError(null)
+
+    // Special handling for Zcash flow
+    if (fromChain === 'zec' || toChain === 'zec') {
+      // For Zcash destination, need wallet address
+      if (toChain === 'zec' && !zcashWalletAddress) {
+        alert('Please enter your Zcash wallet address')
+        return
+      }
+
+      const userId = publicKey?.toBase58() || `user_${Date.now()}`
+      setUserId(userId)
+      setShowZcashFlow(true)
+      return
+    }
+
     const walletStatus = getWalletConnectionStatus()
-    const bridgeProvider = getBridgeProvider(fromChain, toChain)
 
     if (!walletStatus.connected) {
       alert(`Please connect your ${walletStatus.label}`)
@@ -429,12 +473,12 @@ const handleBridge = async () => {
       return
     }
 
-    setIsBridging(true)
-
+    // Generate quote first
+    setIsGeneratingQuote(true)
     try {
       const amountInSmallestUnits = parseFloat(amount) * Math.pow(10, fromToken.decimals)
+      const bridgeProvider = getBridgeProvider(fromChain, toChain)
 
-      // Generate quote first
       const quote = await enhancedBridgeService.generateQuote(
         {
           symbol: fromToken.symbol,
@@ -473,22 +517,108 @@ const handleBridge = async () => {
       )
 
       console.log('Bridge quote generated:', quote)
+      setBridgeQuote(quote)
+      setShowQuoteModal(true)
 
+    } catch (error) {
+      console.error('Quote generation failed:', error)
+      setError(`Quote generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsGeneratingQuote(false)
+    }
+  }
+
+  const handleExecuteBridge = async () => {
+    if (!bridgeQuote) return
+
+    const walletStatus = getWalletConnectionStatus()
+    setIsBridging(true)
+    setShowQuoteModal(false)
+
+    try {
       // Execute the bridge
-      const result = await enhancedBridgeService.executeBridge(quote, {
+      const result = await enhancedBridgeService.executeBridge(bridgeQuote, {
         recipientAddress: walletStatus.address || '',
         privacyMode: privacyMode
       })
 
       console.log('Bridge execution result:', result)
-      alert(`Bridge initiated successfully! ${amount} ${fromToken.symbol} → ${toChain}`)
+      setBridgeExecution(result)
+      setShowCompletionModal(true)
       setAmount('')
 
     } catch (error) {
-      console.error('Bridge failed:', error)
-      alert(`Bridge failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Bridge execution failed:', error)
+      setError(`Bridge execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsBridging(false)
+    }
+  }
+
+  const handleZcashBridgeComplete = () => {
+    if (toChain === 'zec') {
+      // Show completion modal for Zcash withdrawal
+      setBridgeExecution({
+        quote: {
+          id: `zcash_${Date.now()}`,
+          fromToken: {
+            symbol: fromToken!.symbol,
+            name: fromToken!.name,
+            address: fromToken!.address,
+            decimals: fromToken!.decimals,
+            chain: fromChain,
+            logoURI: fromToken!.logoURI,
+            bridgeSupport: {
+              nearIntents: false,
+              starkgate: false,
+              defuse: false,
+              directBridge: true
+            }
+          },
+          toToken: {
+            symbol: toToken!.symbol,
+            name: toToken!.name,
+            address: toToken!.address,
+            decimals: toToken!.decimals,
+            chain: 'zec',
+            logoURI: toToken!.logoURI,
+            bridgeSupport: {
+              nearIntents: false,
+              starkgate: false,
+              defuse: false,
+              directBridge: true
+            }
+          },
+          fromAmount: amount,
+          toAmount: amount,
+          rate: '1:1',
+          bridgeProvider: 'direct',
+          estimatedTime: '2-5 minutes',
+          feeAmount: '0.0001 ZEC',
+          feePercentage: 0.1,
+          slippageTolerance: 0,
+          depositChain: fromChain,
+          destinationChain: 'zec',
+          destinationAddress: zcashWalletAddress,
+          status: 'completed'
+        } as EnhancedBridgeQuote,
+        status: 'COMPLETED',
+        currentStep: 3,
+        totalSteps: 3,
+        steps: ['Validating transaction', 'Processing bridge', 'Completing transfer'],
+        depositTransaction: `tx_${Date.now()}`,
+        completionTransaction: `zec_${Date.now()}`,
+        estimatedCompletion: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+      })
+      setShowCompletionModal(true)
+      setShowZcashFlow(false)
+      setAmount('')
+      setZcashWalletAddress('')
+    } else {
+      // Zcash deposit completed
+      setShowZcashFlow(false)
+      setAmount('')
+      alert('Zcash deposit completed! You can now bridge your ZEC to other chains.')
     }
   }
 
@@ -534,8 +664,30 @@ const handleBridge = async () => {
 
   return (
     <div className="w-full max-w-lg sm:max-w-xl mx-auto px-2 xs:px-0">
-      {/* Enhanced Chain Selector */}
-      <div className="mb-4 sm:mb-6">
+      {/* Zcash Bridge Flow */}
+      {showZcashFlow && (
+        <ZcashBridgeFlow
+          userId={userId}
+          isDepositing={fromChain === 'zec'}
+          zcashWalletAddress={zcashWalletAddress}
+          onDepositComplete={(amount) => {
+            console.log(`ZEC deposit completed: ${amount} ZEC`)
+            // Handle deposit completion if needed
+          }}
+          onWithdrawalComplete={handleZcashBridgeComplete}
+          onBack={() => {
+            setShowZcashFlow(false)
+            setUserId('')
+            setZcashWalletAddress('')
+          }}
+        />
+      )}
+
+      {/* Main Bridge Interface */}
+      {!showZcashFlow && (
+        <>
+        {/* Enhanced Chain Selector */}
+        <div className="mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
           {/* From Chain */}
           <div className="flex-1">
@@ -1010,6 +1162,56 @@ const handleBridge = async () => {
               showBalance={false}
               quickActions={true}
             />
+
+            {/* Zcash Wallet Address Input for destination */}
+            {toChain === 'zec' && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.textSecondary }}>
+                  Zcash Wallet Address
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={zcashWalletAddress}
+                    onChange={(e) => setZcashWalletAddress(e.target.value)}
+                    placeholder="Enter your Zcash wallet address (starts with 'zs1...' or 't1...')"
+                    className="w-full px-4 py-3 rounded-xl border-2 transition-all"
+                    style={{
+                      ...createGlassStyles(theme),
+                      backgroundColor: theme.colors.surface,
+                      borderColor: zcashWalletAddress
+                        ? theme.colors.primary + '50'
+                        : theme.colors.border,
+                      color: theme.colors.textPrimary,
+                      fontFamily: 'var(--font-jetbrains)',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = theme.colors.primary
+                      e.target.style.boxShadow = `0 0 0 3px ${theme.colors.primary}20`
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = zcashWalletAddress
+                        ? theme.colors.primary + '50'
+                        : theme.colors.border
+                      e.target.style.boxShadow = 'none'
+                    }}
+                  />
+                  {zcashWalletAddress && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: theme.colors.success }}
+                      />
+                    </div>
+                  )}
+                </div>
+                {zcashWalletAddress && (
+                  <p className="mt-2 text-xs" style={{ color: theme.colors.textMuted }}>
+                    Make sure this is your correct Zcash wallet address. Transactions cannot be reversed.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1079,7 +1281,7 @@ const handleBridge = async () => {
 
           <button
             onClick={!walletStatus.connected ? handleWalletConnect : handleBridge}
-            disabled={isBridging}
+            disabled={isBridging || isGeneratingQuote}
             className="w-full relative font-medium py-4 px-6 rounded-2xl transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden"
             style={{
               ...createGlassStyles(theme),
@@ -1093,11 +1295,11 @@ const handleBridge = async () => {
               }`
             }}
           >
-            {isBridging ? (
+            {isBridging || isGeneratingQuote ? (
               <div className="flex items-center justify-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
                 <span style={{ color: theme.colors.textPrimary }}>
-                  Bridging...
+                  {isGeneratingQuote ? 'Getting Quote...' : 'Bridging...'}
                 </span>
               </div>
             ) : !walletStatus.connected ? (
@@ -1113,10 +1315,14 @@ const handleBridge = async () => {
               <span style={{ color: theme.colors.textMuted }}>
                 Enter Amount
               </span>
+            ) : toChain === 'zec' && !zcashWalletAddress ? (
+              <span style={{ color: theme.colors.textMuted }}>
+                Enter Zcash Wallet Address
+              </span>
             ) : (
               <div className="text-left">
                 <span style={{ color: theme.colors.textPrimary }}>
-                  Send to {getChainName(toChain)}
+                  Get Quote for {getChainName(toChain)}
                 </span>
                 {walletStatus.address && (
                   <span className="text-xs block mt-1 font-mono opacity-80" style={{ color: theme.colors.textMuted }}>
@@ -1126,16 +1332,232 @@ const handleBridge = async () => {
               </div>
             )}
           </button>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mt-4 p-3 rounded-lg text-sm" style={{
+              backgroundColor: `${theme.colors.error}10`,
+              border: `1px solid ${theme.colors.error}20`,
+              color: theme.colors.error
+            }}>
+              {error}
+            </div>
+          )}
         </div>
       </div>
 
-  
+      {/* Quote Modal */}
+      {bridgeQuote && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="max-w-md w-full rounded-2xl p-6" style={{
+            ...createGlassStyles(theme),
+            backgroundColor: theme.colors.surface,
+            border: `1px solid ${theme.colors.border}`
+          }}>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{
+                backgroundColor: `${theme.colors.primary}15`,
+                color: theme.colors.primary
+              }}>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2" style={{ color: theme.colors.textPrimary }}>
+                Bridge Quote
+              </h3>
+              <p className="text-sm" style={{ color: theme.colors.textSecondary }}>
+                Review your bridge details
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between items-center">
+                <span style={{ color: theme.colors.textSecondary }}>You Send</span>
+                <div className="text-right">
+                  <div className="font-medium" style={{ color: theme.colors.textPrimary }}>
+                    {formatTokenAmount(bridgeQuote.fromAmount, bridgeQuote.fromToken.decimals)} {bridgeQuote.fromToken.symbol}
+                  </div>
+                  <div className="text-xs" style={{ color: theme.colors.textMuted }}>
+                    From {getChainName(bridgeQuote.fromToken.chain)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span style={{ color: theme.colors.textSecondary }}>You Receive</span>
+                <div className="text-right">
+                  <div className="font-medium" style={{ color: theme.colors.primary }}>
+                    {formatTokenAmount(bridgeQuote.toAmount, bridgeQuote.toToken.decimals)} {bridgeQuote.toToken.symbol}
+                  </div>
+                  <div className="text-xs" style={{ color: theme.colors.textMuted }}>
+                    To {getChainName(bridgeQuote.toToken.chain)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span style={{ color: theme.colors.textSecondary }}>Rate</span>
+                <span style={{ color: theme.colors.textPrimary }}>
+                  {bridgeQuote.rate}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span style={{ color: theme.colors.textSecondary }}>Bridge Fee</span>
+                <span style={{ color: theme.colors.textPrimary }}>
+                  {bridgeQuote.feeAmount || '0.001'} {bridgeQuote.fromToken.symbol}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span style={{ color: theme.colors.textSecondary }}>Est. Time</span>
+                <span style={{ color: theme.colors.textPrimary }}>
+                  {bridgeQuote.estimatedTime || '2-5 minutes'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span style={{ color: theme.colors.textSecondary }}>Provider</span>
+                <span style={{ color: theme.colors.textPrimary, textTransform: 'capitalize' }}>
+                  {bridgeQuote.bridgeProvider === 'near-intents' ? 'Near Intents' :
+                   bridgeQuote.bridgeProvider === 'starkgate' ? 'StarkGate' :
+                   bridgeQuote.bridgeProvider === 'direct' ? 'Direct Bridge' :
+                   bridgeQuote.bridgeProvider}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowQuoteModal(false)}
+                className="flex-1 py-3 px-4 rounded-xl font-medium transition-all"
+                style={{
+                  ...createGlassStyles(theme),
+                  backgroundColor: theme.colors.surface,
+                  color: theme.colors.textPrimary,
+                  border: `1px solid ${theme.colors.border}`
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExecuteBridge}
+                disabled={isBridging}
+                className="flex-1 py-3 px-4 rounded-xl font-medium transition-all"
+                style={{
+                  background: 'var(--wave-azul)',
+                  color: '#FFFFFF',
+                  opacity: isBridging ? 0.7 : 1
+                }}
+              >
+                {isBridging ? 'Processing...' : 'Confirm Bridge'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completion Modal */}
+      {showCompletionModal && bridgeExecution && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="max-w-md w-full rounded-2xl p-6" style={{
+            ...createGlassStyles(theme),
+            backgroundColor: theme.colors.surface,
+            border: `1px solid ${theme.colors.border}`
+          }}>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{
+                backgroundColor: `${theme.colors.success}15`,
+                color: theme.colors.success
+              }}>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2" style={{ color: theme.colors.textPrimary }}>
+                Bridge {bridgeExecution.status === 'COMPLETED' ? 'Completed!' : 'Initiated!'}
+              </h3>
+              <p className="text-sm" style={{ color: theme.colors.textSecondary }}>
+                Your bridge transaction has been {bridgeExecution.status === 'COMPLETED' ? 'completed' : 'initiated'}
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="text-center">
+                <div className="font-medium" style={{ color: theme.colors.textPrimary }}>
+                  {formatTokenAmount(bridgeExecution.quote.fromAmount, bridgeExecution.quote.fromToken.decimals)} {bridgeExecution.quote.fromToken.symbol}
+                </div>
+                <div className="text-sm" style={{ color: theme.colors.textMuted }}>
+                  → {formatTokenAmount(bridgeExecution.quote.toAmount, bridgeExecution.quote.toToken.decimals)} {bridgeExecution.quote.toToken.symbol}
+                </div>
+              </div>
+
+              <div className="text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span style={{ color: theme.colors.textSecondary }}>Transaction ID:</span>
+                  <span style={{ color: theme.colors.textPrimary, fontFamily: 'var(--font-jetbrains)' }}>
+                    {bridgeExecution.depositTransaction?.slice(0, 10)}...
+                  </span>
+                </div>
+                {bridgeExecution.quote.destinationAddress && (
+                  <div className="flex justify-between">
+                    <span style={{ color: theme.colors.textSecondary }}>Destination:</span>
+                    <span style={{ color: theme.colors.textPrimary, fontFamily: 'var(--font-jetbrains)' }}>
+                      {bridgeExecution.quote.destinationAddress.slice(0, 10)}...
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span style={{ color: theme.colors.textSecondary }}>Est. Completion:</span>
+                  <span style={{ color: theme.colors.textPrimary }}>
+                    {bridgeExecution.estimatedCompletion ?
+                      new Date(bridgeExecution.estimatedCompletion).toLocaleTimeString() :
+                      '2-5 minutes'
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {bridgeExecution.quote.destinationChain === 'zec' && (
+                <div className="p-3 rounded-lg" style={{
+                  backgroundColor: `${theme.colors.warning}10`,
+                  border: `1px solid ${theme.colors.warning}20`
+                }}>
+                  <p className="text-sm" style={{ color: theme.colors.warning }}>
+                    🏛️ Check your Zcash wallet for the incoming transaction. This typically takes 2-5 minutes to confirm on the Zcash network.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => {
+                setShowCompletionModal(false)
+                setBridgeQuote(null)
+                setBridgeExecution(null)
+              }}
+              className="w-full py-3 px-4 rounded-xl font-medium transition-all"
+              style={{
+                background: 'var(--wave-azul)',
+                color: '#FFFFFF'
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* StarkNet Wallet Modal */}
       <StarknetWalletModal
         isOpen={showStarknetWalletModal}
         onClose={() => setShowStarknetWalletModal(false)}
         onSuccess={() => setShowStarknetWalletModal(false)}
       />
+      </div>
     </div>
   )
 }
+
+export default WavePortal
