@@ -2,6 +2,10 @@
 
 import React, { createContext, useContext, ReactNode, useState, useCallback, useMemo, useEffect } from 'react'
 import { Connection, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { UnifiedWalletProvider } from '@jup-ag/wallet-adapter'
+import dynamic from 'next/dynamic'
+import * as LedgerSolana from '@ledgerhq/hw-app-solana'
+import * as LedgerTransport from '@ledgerhq/hw-transport-webusb'
 
 // Wallet interface declarations
 declare global {
@@ -18,6 +22,13 @@ declare global {
       signTransaction(transaction: Transaction): Promise<Transaction>
       signAllTransactions(transactions: Transaction[]): Promise<Transaction[]>
     }
+    jupiter?: {
+      connect(): Promise<{ publicKey: PublicKey }>
+      disconnect(): Promise<void>
+      signTransaction(transaction: Transaction): Promise<Transaction>
+      signAllTransactions(transactions: Transaction[]): Promise<Transaction[]>
+    }
+    ethereum?: any // For WalletConnect compatibility
   }
 }
 
@@ -32,12 +43,10 @@ import {
   lightTheme,
   AddressType
 } from '@phantom/react-sdk'
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack'
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare'
-import { getSolflare } from '@solflare-wallet/sdk'
-import { SignClient, type SignClientTypes } from '@walletconnect/sign-client'
-import { Web3Wallet } from '@walletconnect/web3wallet'
+import getSolflare from '@solflare-wallet/sdk'
+import { SignClient } from '@walletconnect/sign-client'
 import { config } from '@/lib/config'
 import { useThemeConfig } from '@/lib/theme'
 
@@ -409,22 +418,39 @@ function MultiWalletContextInner({ children }: { children: ReactNode }) {
 
         case 'jupiter': {
           try {
-            // Jupiter is primarily a DEX aggregator, not a wallet extension
-            // Redirect to Jupiter's web interface
+            // Connect to Jupiter wallet extension using proper API
             if (typeof window !== 'undefined') {
-              console.log('Opening Jupiter DEX interface...')
-              window.open('https://station.jup.ag/', '_blank')
-              throw new Error('Opening Jupiter DEX in new tab. Use your connected wallet (Phantom, Solflare, etc.) to trade on Jupiter.')
+              // Try to detect Jupiter wallet extension
+              const jupiter = (window as any).jupiter
+
+              if (!jupiter) {
+                throw new Error('Jupiter wallet is not installed. Please install it from Chrome Web Store.')
+              }
+
+              console.log('Connecting to Jupiter wallet...')
+              const response = await jupiter.connect()
+              console.log('Jupiter wallet connected:', response)
+
+              // Get public key
+              const publicKey = response.publicKey || response
+              if (!publicKey) {
+                throw new Error('No public key returned from Jupiter wallet')
+              }
+
+              // Update connection state
+              setCurrentWalletType('jupiter')
+              setExternalConnected(true)
+              setExternalPublicKey(new PublicKey(publicKey.toString()))
+
+              console.log(`Successfully connected to Jupiter wallet: ${publicKey.toString()}`)
             } else {
-              throw new Error('Jupiter is a DEX aggregator. Visit station.jup.ag to access Jupiter swapping features.')
+              throw new Error('Window object not available.')
             }
-          } catch (error) {
-            console.error('Jupiter DEX redirect error:', error)
-            if (error instanceof Error) {
-              throw new Error(`Jupiter access failed: ${error.message}`)
-            }
-            throw new Error('Failed to open Jupiter DEX interface')
+          } catch (error: any) {
+            console.error('Jupiter wallet connection failed:', error)
+            throw new Error(`Jupiter wallet connection failed: ${error.message || 'Unknown error'}`)
           }
+          break
         }
 
         case 'backpack': {
