@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useWallet } from '@/hooks/useWalletAdapter'
-import { useThemeConfig, createGlassStyles } from '@/lib/theme'
+import { useThemeConfig } from '@/lib/theme'
 import { useGlobalModal } from '@/contexts/GlobalModalContext'
 import { X } from 'lucide-react'
 import { ThemeWaveLogo } from '@/components/ui/ThemeWaveLogo'
@@ -241,9 +241,9 @@ export function GlobalWalletModal() {
 
         {/* Main Wallet Options */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} className="relative z-10">
-          {/* Phantom Wallet */}
+          {/* Phantom Injected Wallet */}
           <button
-            onClick={() => handleConnect('phantom')}
+            onClick={() => handleConnect('phantom-injected')}
             disabled={connecting}
             className="transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden"
             style={{
@@ -335,9 +335,9 @@ export function GlobalWalletModal() {
               />
             </div>
             <div style={{ textAlign: 'left', flex: 1 }}>
-              <div style={{ fontWeight: 600, marginBottom: '2px', fontSize: '15px' }}>Continue with Phantom</div>
+              <div style={{ fontWeight: 600, marginBottom: '2px', fontSize: '15px' }}>Phantom Wallet</div>
               <div style={{ fontSize: '13px', color: theme.colors.textMuted, fontWeight: 400, lineHeight: 1.3 }}>
-                Connect your Phantom wallet
+                Browser extension - Most popular Solana wallet
               </div>
             </div>
             {connecting && (
@@ -627,7 +627,137 @@ export function GlobalWalletModal() {
               gridTemplateColumns: 'repeat(4, 1fr)',
               gap: '12px'
             }}>
-              {/* First Row - 4 wallets */}
+              {/* First Row - 3 wallets */}
+              <button
+                onClick={() => handleConnect('backpack')}
+                disabled={connecting}
+                className="transition-all duration-300 ease-out hover:scale-[1.05] active:scale-[0.95] relative"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '16px 12px',
+                  borderRadius: '12px',
+                  border: `2px solid ${theme.colors.primary}40`,
+                  background: `
+                    linear-gradient(135deg,
+                      ${theme.colors.primary}15 0%,
+                      ${theme.colors.surface}ee 50%,
+                      ${theme.colors.primary}10 100%
+                    )
+                  `,
+                  cursor: connecting ? 'not-allowed' : 'pointer',
+                  backdropFilter: 'blur(12px) saturate(1.5)',
+                  transition: 'all 0.3s ease',
+                  minWidth: '0',
+                  position: 'relative',
+                  boxShadow: `
+                    0 8px 24px rgba(171, 159, 242, 0.3),
+                    0 4px 12px ${theme.colors.primary}20,
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                  `,
+                }}
+                onMouseEnter={(e) => {
+                  if (!connecting) {
+                    e.currentTarget.style.background = `
+                      linear-gradient(135deg,
+                        ${theme.colors.primary}25 0%,
+                        ${theme.colors.primary}15 50%,
+                        ${theme.colors.primary}20 100%
+                      )
+                    `
+                    e.currentTarget.style.borderColor = `${theme.colors.primary}50`
+                    e.currentTarget.style.transform = 'scale(1.05)'
+                    e.currentTarget.style.boxShadow = `
+                      0 12px 32px rgba(171, 159, 242, 0.4),
+                      0 6px 16px ${theme.colors.primary}30,
+                      inset 0 1px 0 rgba(255, 255, 255, 0.3)
+                    `
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!connecting) {
+                    e.currentTarget.style.background = `
+                      linear-gradient(135deg,
+                        ${theme.colors.primary}15 0%,
+                        ${theme.colors.surface}ee 50%,
+                        ${theme.colors.primary}10 100%
+                      )
+                    `
+                    e.currentTarget.style.borderColor = `${theme.colors.primary}40`
+                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.boxShadow = `
+                      0 8px 24px rgba(171, 159, 242, 0.3),
+                      0 4px 12px ${theme.colors.primary}20,
+                      inset 0 1px 0 rgba(255, 255, 255, 0.2)
+                    `
+                  }
+                }}
+              >
+                {/* Popular Badge */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-6px',
+                    background: 'linear-gradient(135deg, #9945FF, #AB9FF2)',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    fontFamily: 'var(--font-helvetica)',
+                    boxShadow: '0 2px 8px rgba(153, 69, 255, 0.4)',
+                    zIndex: 10
+                  }}
+                >
+                  Popular
+                </div>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #AB9FF2, #9945FF)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: `
+                      0 4px 12px rgba(171, 159, 242, 0.4),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.3)
+                    `,
+                    filter: 'drop-shadow(0 0 8px rgba(171, 159, 242, 0.3))'
+                  }}
+                >
+                  <img
+                    src="/assets/Phantom/Phantom-Icon-Purple.svg"
+                    alt="Phantom"
+                    style={{ width: '20px', height: '20px' }}
+                  />
+                </div>
+                <span style={{
+                  fontSize: '11px',
+                  color: theme.colors.textPrimary,
+                  fontFamily: 'var(--font-helvetica)',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  lineHeight: '1.2'
+                }}>
+                  Phantom
+                  <br />
+                  <span style={{
+                    fontSize: '9px',
+                    color: theme.colors.textMuted,
+                    fontWeight: 400,
+                    opacity: 0.8
+                  }}>
+                    (Injected)
+                  </span>
+                </span>
+              </button>
+
               {/* Backpack Wallet */}
               <button
                 onClick={() => handleConnect('backpack')}
@@ -884,6 +1014,7 @@ export function GlobalWalletModal() {
                 </span>
               </button>
 
+              
               {/* Second Row - Additional wallet */}
               {/* Ledger Wallet */}
               <button

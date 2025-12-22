@@ -134,7 +134,42 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
 
       // Step 2: Sign the message with user's wallet
       const messageBytes = new TextEncoder().encode(msgPayload.msgHash)
-      const signatureArray = await signMessage(messageBytes)
+      const signatureResult = await signMessage(messageBytes)
+
+      console.log('[SwapComponent] Signature result type:', typeof signatureResult)
+      console.log('[SwapComponent] Signature result:', signatureResult)
+
+      let signatureArray: Uint8Array
+
+      // Handle different wallet adapter signature formats
+      if (signatureResult instanceof Uint8Array) {
+        signatureArray = signatureResult
+      } else if (Array.isArray(signatureResult)) {
+        signatureArray = new Uint8Array(signatureResult)
+      } else if (typeof signatureResult === 'string') {
+        // If it's already a base64 string or hex string, convert it
+        try {
+          // Try base64 first
+          const decoded = Buffer.from(signatureResult, 'base64')
+          signatureArray = new Uint8Array(decoded)
+        } catch {
+          // Try hex
+          const hexString = (signatureResult as string).replace('0x', '')
+          const decoded = Buffer.from(hexString, 'hex')
+          signatureArray = new Uint8Array(decoded)
+        }
+      } else if (signatureResult && typeof signatureResult === 'object') {
+        // Some adapters return an object with signature property
+        const signatureObj = signatureResult as any
+        if (signatureObj.signature) {
+          signatureArray = new Uint8Array(signatureObj.signature)
+        } else {
+          throw new Error(`Unknown signature format: ${JSON.stringify(signatureResult)}`)
+        }
+      } else {
+        throw new Error(`Unsupported signature type: ${typeof signatureResult}`)
+      }
+
       const signature = Buffer.from(signatureArray).toString('base64')
 
       console.log('[SwapComponent] User signed message successfully')
@@ -361,6 +396,16 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
             const amountAsString = String(amount || '0')
             const parsedAmount = parseFloat(amountAsString)
             const hasBalance = amountAsString && amountAsString !== '0' && parsedAmount > 0
+
+            console.log(`[SwapComponent] Token ${index} (${tokenAddress}) filter check:`, {
+              balanceObject: balance,
+              rawAmount: amount,
+              parsedAmount,
+              hasBalance,
+              amountType: typeof amount,
+              tokenAddressInBalance: tokenAddress in (balance || {}),
+              finalDecision: hasBalance ? 'KEEP' : 'FILTER OUT'
+            })
 
             if (!hasBalance) {
               console.log(`[SwapComponent] Filtering out token ${tokenAddress} - zero balance`)
@@ -673,7 +718,14 @@ export function SwapComponent({ privacyMode }: SwapComponentProps) {
       .filter((apiBalance: any) => {
         // Only include tokens that can actually be withdrawn (positive balance and doesn't require authentication)
         // Authentication-required tokens will be handled in the empty state UI, not in the withdrawal list
-        return apiBalance.amount > 0 && apiBalance.requiresAuth !== true
+        const amount = parseFloat(apiBalance.amount) || 0
+        console.log(`[SwapComponent] Filtering balance for display: ${apiBalance.tokenSymbol || apiBalance.tokenAddress}`, {
+          amount: apiBalance.amount,
+          parsedAmount: amount,
+          requiresAuth: apiBalance.requiresAuth,
+          willShow: amount > 0 && apiBalance.requiresAuth !== true
+        })
+        return amount > 0 && apiBalance.requiresAuth !== true
       })
       .map((apiBalance: any) => {
         const token = availableTokens.find(t => t.address === apiBalance.tokenAddress)
