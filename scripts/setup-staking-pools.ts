@@ -5,12 +5,11 @@
  * 1. Initialize the global state
  * 2. Create pools for WAVE, WEALTH, and SOL
  *
- * Run with: npx tsx scripts/setup-staking-pools.ts
+ * Run with: bun scripts/setup-staking-pools.ts
  */
 
-import { Connection, Keypair, PublicKey } from '@solana/web3.js'
-import { AnchorProvider, Wallet, Program, Idl } from '@coral-xyz/anchor'
-import WAVE_STAKE_IDL from '../apps/web/src/idl/wave_stake.json'
+import { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js'
+import { createHash } from 'crypto'
 
 // Program ID
 const PROGRAM_ID = new PublicKey('5fJF7FV29wZG6Azg1GLesEQVnGFdWHkFiauBaLCkqFZJ')
@@ -22,32 +21,57 @@ const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com'
 const POOLS = [
   {
     poolId: 'wave',
-    stakeMint: new PublicKey('4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump'), // WAVE token
-    lstMint: new PublicKey('So11111111111111111111111111111111111111112'), // Using SOL as LST for now
-    rewardMint: new PublicKey('4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump'), // WAVE as reward
-    rewardPerSecond: 1000000, // 1 WAVE per second (scaled by 1e6)
-    lockDuration: 2592000, // 30 days in seconds
-    lockBonusPercentage: 5000, // 50% bonus (scaled by 100)
+    stakeMint: new PublicKey('4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump'),
+    lstMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    rewardMint: new PublicKey('4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump'),
+    rewardPerSecond: 1000000,
+    lockDuration: 2592000,
+    lockBonusPercentage: 5000,
   },
   {
     poolId: 'wealth',
-    stakeMint: new PublicKey('BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump'), // WEALTH token
-    lstMint: new PublicKey('So11111111111111111111111111111111111111112'), // Using SOL as LST for now
-    rewardMint: new PublicKey('BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump'), // WEALTH as reward
-    rewardPerSecond: 1000000, // 1 WEALTH per second
-    lockDuration: 2592000, // 30 days
-    lockBonusPercentage: 5000, // 50% bonus
+    stakeMint: new PublicKey('BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump'),
+    lstMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    rewardMint: new PublicKey('BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump'),
+    rewardPerSecond: 1000000,
+    lockDuration: 2592000,
+    lockBonusPercentage: 5000,
   },
   {
     poolId: 'sol',
-    stakeMint: new PublicKey('So11111111111111111111111111111111111111112'), // SOL
-    lstMint: new PublicKey('So11111111111111111111111111111111111111112'), // SOL
-    rewardMint: new PublicKey('So11111111111111111111111111111111111111112'), // SOL as reward
-    rewardPerSecond: 1000000, // 1 lamport per second (0.000001 SOL)
-    lockDuration: 2592000, // 30 days
-    lockBonusPercentage: 5000, // 50% bonus
+    stakeMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    lstMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    rewardMint: new PublicKey('So11111111111111111111111111111111111111112'),
+    rewardPerSecond: 1000000,
+    lockDuration: 2592000,
+    lockBonusPercentage: 5000,
   },
 ]
+
+// Helper to create instruction discriminator (8 bytes)
+function createDiscriminator(name: string): Buffer {
+  const preimage = `global:${name}`
+  return createHash('sha256').update(preimage).digest().slice(0, 8)
+}
+
+// Helper to encode public key
+function encodePublicKey(pubkey: PublicKey): Buffer {
+  return Buffer.from(pubkey.toBytes())
+}
+
+// Helper to encode u64
+function encodeU64(value: number): Buffer {
+  const buffer = Buffer.alloc(8)
+  buffer.writeBigUInt64LE(BigInt(value))
+  return buffer
+}
+
+// Helper to encode u16
+function encodeU16(value: number): Buffer {
+  const buffer = Buffer.alloc(2)
+  buffer.writeUInt16LE(value)
+  return buffer
+}
 
 async function setupPools() {
   console.log('🚀 Starting WaveStake Pool Setup on Devnet\n')
@@ -56,42 +80,22 @@ async function setupPools() {
   const connection = new Connection(RPC_URL, 'confirmed')
   console.log(`✅ Connected to ${RPC_URL}`)
 
-  // Load authority keypair from file or environment
-  let authority: Keypair
-
-  // Check for authority keypair file
+  // Load authority keypair
   const fs = require('fs')
-  const keypairPath = process.env.AUTHORITY_KEYPAIR_PATH || './authority-keypair.json'
+  const path = require('path')
+  const keypairPath = process.env.AUTHORITY_KEYPAIR_PATH || path.join(__dirname, '../packages/programs/wave_stake/.keys/authority-keypair.json')
 
+  let authority: Keypair
   if (fs.existsSync(keypairPath)) {
     const keypairData = JSON.parse(fs.readFileSync(keypairPath, 'utf-8'))
     authority = Keypair.fromSecretKey(Uint8Array.from(keypairData))
-    console.log(`✅ Loaded authority keypair from ${keypairPath}`)
+    console.log(`✅ Loaded authority keypair`)
   } else {
     console.log('❌ Authority keypair not found!')
-    console.log(`\nPlease create an authority keypair at: ${keypairPath}`)
-    console.log('You can generate one with: solana-keygen new --outfile ${keypairPath}\n')
     process.exit(1)
   }
 
   console.log(`Authority: ${authority.publicKey.toString()}\n`)
-
-  // Create provider
-  const provider = new AnchorProvider(
-    connection,
-    new Wallet(authority),
-    { commitment: 'confirmed' }
-  )
-
-  // Create program instance
-  const program = new Program<Idl>(
-    WAVE_STAKE_IDL as Idl,
-    PROGRAM_ID,
-    provider
-  )
-
-  console.log('Program ID:', PROGRAM_ID.toString())
-  console.log('')
 
   // PDAs
   const [globalState] = PublicKey.findProgramAddressSync(
@@ -104,20 +108,34 @@ async function setupPools() {
     console.log('📝 Step 1: Initializing Global State...')
 
     try {
-      const tx = await program.methods
-        .initialize(authority.publicKey)
-        .accounts({
-          globalState,
-          payer: authority.publicKey,
-        })
-        .rpc()
+      const ix = new TransactionInstruction({
+        keys: [
+          { pubkey: globalState, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: Buffer.concat([
+          createDiscriminator('initialize'),
+          encodePublicKey(authority.publicKey),
+        ]),
+      })
+
+      const tx = new Transaction().add(ix)
+      const { blockhash } = await connection.getLatestBlockhash()
+      tx.recentBlockhash = blockhash
+      tx.feePayer = authority.publicKey
+
+      const signature = await connection.sendTransaction(tx, [authority])
+      await connection.confirmTransaction(signature, 'confirmed')
 
       console.log(`✅ Global state initialized!`)
-      console.log(`   Transaction: ${tx}\n`)
+      console.log(`   Signature: ${signature}\n`)
     } catch (error: any) {
-      if (error.toString().includes('already in use')) {
+      if (error.toString().includes('already in use') || error.toString().includes('AccountAlreadyInitialized')) {
         console.log('⚠️  Global state already initialized\n')
       } else {
+        console.error('Error initializing global state:', error.message)
         throw error
       }
     }
@@ -127,38 +145,51 @@ async function setupPools() {
       console.log(`📝 Creating pool: ${pool.poolId.toUpperCase()}`)
 
       // Derive pool PDA
-      const poolIdBytes = Array.from(Buffer.alloc(32))
-      Buffer.from(pool.poolId).copy(Buffer.from(poolIdBytes))
+      const poolIdBytes = Buffer.alloc(32)
+      Buffer.from(pool.poolId).copy(poolIdBytes)
 
       const [poolPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('pool'), Buffer.from(poolIdBytes)],
+        [Buffer.from('pool'), poolIdBytes],
         PROGRAM_ID
       )
 
       try {
-        const tx = await program.methods
-          .createPool(
-            poolIdBytes,
-            pool.stakeMint,
-            pool.lstMint,
-            pool.rewardMint,
-            pool.rewardPerSecond,
-            pool.lockDuration,
-            pool.lockBonusPercentage
-          )
-          .accounts({
-            globalState,
-            pool: poolPda,
-            payer: authority.publicKey,
-            authority: authority.publicKey,
-          })
-          .rpc()
+        const data = Buffer.concat([
+          createDiscriminator('create_pool'),
+          poolIdBytes,
+          encodePublicKey(pool.stakeMint),
+          encodePublicKey(pool.lstMint),
+          encodePublicKey(pool.rewardMint),
+          encodeU64(pool.rewardPerSecond),
+          encodeU64(pool.lockDuration),
+          encodeU16(pool.lockBonusPercentage),
+        ])
+
+        const ix = new TransactionInstruction({
+          keys: [
+            { pubkey: globalState, isSigner: false, isWritable: true },
+            { pubkey: poolPda, isSigner: false, isWritable: true },
+            { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+            { pubkey: authority.publicKey, isSigner: true, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          ],
+          programId: PROGRAM_ID,
+          data,
+        })
+
+        const tx = new Transaction().add(ix)
+        const { blockhash } = await connection.getLatestBlockhash()
+        tx.recentBlockhash = blockhash
+        tx.feePayer = authority.publicKey
+
+        const signature = await connection.sendTransaction(tx, [authority])
+        await connection.confirmTransaction(signature, 'confirmed')
 
         console.log(`✅ Pool ${pool.poolId.toUpperCase()} created!`)
         console.log(`   Pool Address: ${poolPda.toString()}`)
-        console.log(`   Transaction: ${tx}\n`)
+        console.log(`   Signature: ${signature}\n`)
       } catch (error: any) {
-        if (error.toString().includes('already in use')) {
+        if (error.toString().includes('already in use') || error.toString().includes('AccountAlreadyInitialized')) {
           console.log(`⚠️  Pool ${pool.poolId.toUpperCase()} already exists\n`)
         } else {
           console.error(`❌ Error creating pool ${pool.poolId}:`, error.message)
@@ -172,11 +203,11 @@ async function setupPools() {
     console.log('─'.repeat(50))
 
     for (const pool of POOLS) {
-      const poolIdBytes = Array.from(Buffer.alloc(32))
-      Buffer.from(pool.poolId).copy(Buffer.from(poolIdBytes))
+      const poolIdBytes = Buffer.alloc(32)
+      Buffer.from(pool.poolId).copy(poolIdBytes)
 
       const [poolPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from('pool'), Buffer.from(poolIdBytes)],
+        [Buffer.from('pool'), poolIdBytes],
         PROGRAM_ID
       )
 

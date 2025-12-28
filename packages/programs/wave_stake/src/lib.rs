@@ -16,6 +16,24 @@ pub mod wave_stake {
         Ok(())
     }
 
+    /// Create user account (must be called before first stake)
+    pub fn create_user_account(ctx: Context<CreateUserAccount>) -> Result<()> {
+        let user = &mut ctx.accounts.user;
+        let pool = &ctx.accounts.pool;
+        let clock = Clock::get()?;
+
+        user.bump = ctx.bumps.user;
+        user.amount = 0;
+        user.lock_type = 0;
+        user.lock_start_timestamp = 0;
+        user.lock_end_timestamp = 0;
+        user.bonus_multiplier = 10000;
+        user.last_reward_claim_timestamp = clock.unix_timestamp;
+
+        msg!("User account created for pool: {}", String::from_utf8_lossy(&pool.pool_id));
+        Ok(())
+    }
+
     /// Create a new staking pool
     pub fn create_pool(
         ctx: Context<CreatePool>,
@@ -45,8 +63,7 @@ pub mod wave_stake {
         global_state.pool_count += 1;
 
         msg!(
-            "Pool created: {} with reward rate: {} per second",
-            String::from_utf8_lossy(&pool_id),
+            "Pool created with reward rate: {} per second",
             reward_per_second
         );
         Ok(())
@@ -73,21 +90,27 @@ pub mod wave_stake {
         }
         pool.last_update_timestamp = clock.unix_timestamp;
 
-        // Update user stake
-        user.bump = ctx.bumps.user;
-        user.amount = user.amount.checked_add(amount).ok_or(ErrorCode::MathOverflow)?;
-        user.lock_type = lock_type;
+        // Check if this is a new user account (amount will be 0 if uninitialized)
+        // Only set bump and lock type on first stake
+        let is_new_user = user.amount == 0;
 
-        if lock_type == 1 {
-            // Locked staking
-            user.lock_start_timestamp = clock.unix_timestamp;
-            user.lock_end_timestamp = clock.unix_timestamp + pool.lock_duration as i64;
-            user.bonus_multiplier = 10000 + pool.lock_bonus_percentage; // 10000 = 1x (100%)
-        } else {
-            // Flexible staking
-            user.lock_start_timestamp = 0;
-            user.lock_end_timestamp = 0;
-            user.bonus_multiplier = 10000; // 1x
+        user.amount = user.amount.checked_add(amount).ok_or(ErrorCode::MathOverflow)?;
+
+        if is_new_user {
+            user.bump = ctx.bumps.user;
+            user.lock_type = lock_type;
+
+            if lock_type == 1 {
+                // Locked staking
+                user.lock_start_timestamp = clock.unix_timestamp;
+                user.lock_end_timestamp = clock.unix_timestamp + pool.lock_duration as i64;
+                user.bonus_multiplier = 10000 + pool.lock_bonus_percentage; // 10000 = 1x (100%)
+            } else {
+                // Flexible staking
+                user.lock_start_timestamp = 0;
+                user.lock_end_timestamp = 0;
+                user.bonus_multiplier = 10000; // 1x
+            }
         }
 
         user.last_reward_claim_timestamp = clock.unix_timestamp;
@@ -269,6 +292,30 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
+pub struct CreateUserAccount<'info> {
+    #[account(
+        mut,
+        seeds = [b"pool", pool.pool_id.as_ref()],
+        bump = pool.bump
+    )]
+    pub pool: Account<'info, Pool>,
+
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + User::LEN,
+        seeds = [b"user", pool.pool_id.as_ref(), payer.key().as_ref()],
+        bump
+    )]
+    pub user: Account<'info, User>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 #[instruction(pool_id: [u8; 32])]
 pub struct CreatePool<'info> {
     #[account(
@@ -306,9 +353,7 @@ pub struct Stake<'info> {
     pub pool: Account<'info, Pool>,
 
     #[account(
-        init,
-        payer = payer,
-        space = 8 + User::LEN,
+        mut,
         seeds = [b"user", pool.pool_id.as_ref(), payer.key().as_ref()],
         bump
     )]
