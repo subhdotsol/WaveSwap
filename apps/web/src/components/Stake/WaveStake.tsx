@@ -9,6 +9,7 @@ import { useWaveStake } from '@/hooks/useWaveStake'
 import { useWallet } from '@/hooks/useWalletAdapter'
 import { LockType } from '@/lib/staking-client'
 import { toast } from 'sonner'
+import { Connection, PublicKey } from '@solana/web3.js'
 
 interface WaveStakeProps {
   privacyMode: boolean
@@ -32,6 +33,7 @@ interface StakePool {
   userStaked?: string
   userRewards?: string
   userSecureBag?: string
+  userBalance?: string
 }
 
 interface StakingAction {
@@ -63,7 +65,91 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
   const [showComingSoonModal, setShowComingSoonModal] = useState(false)
   const [comingSoonAction, setComingSoonAction] = useState<string>('')
   const [isPoolDropdownOpen, setIsPoolDropdownOpen] = useState(false)
+  const [userBalances, setUserBalances] = useState<{ [key: string]: string }>({
+    wave: '0',
+    wealth: '0',
+    sol: '0'
+  })
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Fetch user token balances when wallet connects
+  useEffect(() => {
+    const fetchBalances = async () => {
+      console.log('[WaveStake] Fetching balances, connected:', connected, 'publicKey:', publicKey?.toString())
+
+      if (!connected || !publicKey) {
+        console.log('[WaveStake] No wallet connected, setting balances to 0')
+        setUserBalances({ wave: '0', wealth: '0', sol: '0' })
+        return
+      }
+
+      try {
+        const devnetConnection = new Connection('https://api.devnet.solana.com', 'confirmed')
+        const mainnetConnection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed')
+        const balances: { [key: string]: string } = { wave: '0', wealth: '0', sol: '0' }
+
+        // Fetch SOL balance from Devnet
+        try {
+          console.log('[WaveStake] Fetching SOL balance from devnet for wallet:', publicKey.toString())
+          const solBalance = await devnetConnection.getBalance(publicKey)
+          balances['sol'] = (solBalance / 1e9).toFixed(4)
+          console.log('[WaveStake] ✅ SOL balance fetched:', balances['sol'], '(raw:', solBalance, 'lamports)')
+        } catch (error) {
+          console.error('[WaveStake] ❌ Error fetching SOL balance:', error)
+          balances['sol'] = '0'
+        }
+
+        // Fetch WAVE and WEALTH from Mainnet
+        const tokenMints = {
+          wave: '4AGxpKxYnw7g1ofvYDs5Jq2a1ek5kB9jS2NTUaippump',
+          wealth: 'BSxPC3Vu3X6UCtEEAYyhxAEo3rvtS4dgzzrvnERDpump'
+        }
+
+        for (const [key, mint] of Object.entries(tokenMints)) {
+          try {
+            console.log(`[WaveStake] Fetching ${key.toUpperCase()} balance from mainnet...`)
+            const tokenAccounts = await mainnetConnection.getParsedTokenAccountsByOwner(
+              publicKey,
+              { mint: new PublicKey(mint) }
+            )
+
+            let balance = 0
+            for (const account of tokenAccounts.value) {
+              const parsedData = account.account.data.parsed
+              if (parsedData && parsedData.info.tokenAmount) {
+                balance += Number(parsedData.info.tokenAmount.amount) || 0
+              }
+            }
+
+            balances[key] = (balance / 1e6).toFixed(2)
+            console.log(`[WaveStake] ✅ ${key.toUpperCase()} balance:`, balances[key])
+          } catch (error: any) {
+            // Token doesn't exist or user has no balance
+            console.log(`[WaveStake] ℹ️ Token ${key}: No balance or token not found`)
+            balances[key] = '0'
+          }
+        }
+
+        console.log('[WaveStake] 🎯 Final balances to set:', balances)
+        console.log('[WaveStake] 📊 Calling setUserBalances with:', balances)
+        setUserBalances(balances)
+
+        // Verify the state was updated
+        setTimeout(() => {
+          console.log('[WaveStake] ⏱️ State update timeout check - balances should be updated now')
+        }, 100)
+      } catch (error) {
+        console.error('[WaveStake] ❌ Error fetching balances:', error)
+        setUserBalances({ wave: '0', wealth: '0', sol: '0' })
+      }
+    }
+
+    fetchBalances()
+
+    // Refresh balances every 10 seconds
+    const interval = setInterval(fetchBalances, 10000)
+    return () => clearInterval(interval)
+  }, [connected, publicKey])
 
   // Use the WaveStake hook for blockchain interactions
   const {
@@ -108,7 +194,8 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
       description: 'Native governance token with competitive yields',
       userStaked: privacyMode ? '****' : (userStakes['wave'] ? (Number(userStakes['wave']?.amount) / 1e6).toFixed(2) : '0'),
       userRewards: privacyMode ? '****' : '0',
-      userSecureBag: privacyMode ? '****' : '0'
+      userSecureBag: privacyMode ? '****' : '0',
+      userBalance: privacyMode ? '****' : userBalances['wave'] || '0'
     },
     {
       id: 'wealth',
@@ -124,7 +211,8 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
       description: 'High-yield wealth generation token',
       userStaked: privacyMode ? '****' : (userStakes['wealth'] ? (Number(userStakes['wealth']?.amount) / 1e6).toFixed(2) : '0'),
       userRewards: privacyMode ? '****' : '0',
-      userSecureBag: privacyMode ? '****' : '0'
+      userSecureBag: privacyMode ? '****' : '0',
+      userBalance: privacyMode ? '****' : userBalances['wealth'] || '0'
     },
     {
       id: 'sol',
@@ -140,9 +228,10 @@ export function WaveStake({ privacyMode, comingSoon = false }: WaveStakeProps) {
       description: 'Stake SOL and earn WAVE rewards',
       userStaked: privacyMode ? '****' : (userStakes['sol'] ? (Number(userStakes['sol']?.amount) / 1e9).toFixed(4) : '0'),
       userRewards: privacyMode ? '****' : '0',
-      userSecureBag: privacyMode ? '****' : '0'
+      userSecureBag: privacyMode ? '****' : '0',
+      userBalance: privacyMode ? '****' : userBalances['sol'] || '0'
     }
-  ], [pools, userStakes, privacyMode])
+  ], [pools, userStakes, privacyMode, userBalances])
 
   const currentPool = stakePools.find(pool => pool.id === selectedPool)
 
@@ -899,16 +988,24 @@ function StakeModal({
           {/* Content based on active tab */}
           {activeTab !== 'claim' && (
             <div className="space-y-3">
-              <label className="text-sm font-medium" style={{ color: theme.colors.textSecondary }}>
-                {activeTab === 'deposit' ? 'Amount to Deposit' : 'Amount to Withdraw'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium" style={{ color: theme.colors.textSecondary }}>
+                  {activeTab === 'deposit' ? 'Amount to Deposit' : 'Amount to Withdraw'}
+                </label>
+                <div className="text-sm" style={{ color: theme.colors.textSecondary }}>
+                  Balance: {privacyMode ? '****' : (
+                    activeTab === 'deposit' ? (pool.userBalance || '0').toString() : (pool.userStaked || '0').toString()
+                  )} {pool.symbol}
+                </div>
+              </div>
+
               <div className="relative">
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder=""
-                  className="w-full px-4 py-4 rounded-xl bg-transparent"
+                  placeholder="0.00"
+                  className="w-full px-4 py-4 pr-32 rounded-xl bg-transparent"
                   style={{
                     background: `${theme.colors.surface}40`,
                     borderWidth: '1px',
@@ -935,6 +1032,46 @@ function StakeModal({
                     {pool.symbol}
                   </span>
                 </div>
+              </div>
+
+              {/* Quick Select Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAmount(((activeTab === 'deposit' ? parseFloat(pool.userBalance || '0') : parseFloat(pool.userStaked || '0')) * 0.25).toString())}
+                  disabled={isProcessing || !connected}
+                  className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  style={{
+                    background: `${theme.colors.surface}60`,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.textPrimary
+                  }}
+                >
+                  25%
+                </button>
+                <button
+                  onClick={() => setAmount(((activeTab === 'deposit' ? parseFloat(pool.userBalance || '0') : parseFloat(pool.userStaked || '0')) * 0.5).toString())}
+                  disabled={isProcessing || !connected}
+                  className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  style={{
+                    background: `${theme.colors.surface}60`,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.textPrimary
+                  }}
+                >
+                  50%
+                </button>
+                <button
+                  onClick={() => setAmount((activeTab === 'deposit' ? pool.userBalance || '0' : pool.userStaked || '0').toString())}
+                  disabled={isProcessing || !connected}
+                  className="flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  style={{
+                    background: `${theme.colors.surface}60`,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.textPrimary
+                  }}
+                >
+                  MAX
+                </button>
               </div>
             </div>
           )}

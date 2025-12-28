@@ -187,6 +187,28 @@ export class WaveStakeClient {
     return new Transaction().add(ix)
   }
 
+  async createUserAccount(poolId: string): Promise<Transaction> {
+    const provider = this.ensureProvider()
+    const [pool] = getPoolPDA(poolId)
+    const [user] = getUserPDA(poolId, provider.wallet.publicKey)
+
+    // Build instruction data (no args for create_user_account)
+    const data = createDiscriminator('createUserAccount')
+
+    const ix = new TransactionInstruction({
+      keys: [
+        { pubkey: pool, isSigner: false, isWritable: true },
+        { pubkey: user, isSigner: false, isWritable: true },
+        { pubkey: provider.wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      programId: WAVE_STAKE_PROGRAM_ID,
+      data,
+    })
+
+    return new Transaction().add(ix)
+  }
+
   async stake(poolId: string, amount: number, lockType: LockType): Promise<Transaction> {
     const provider = this.ensureProvider()
     const [pool] = getPoolPDA(poolId)

@@ -2,8 +2,7 @@
 
 import { useMemo, useEffect, useState, useCallback } from 'react'
 import { useWallet } from '@/hooks/useWalletAdapter'
-import { PublicKey } from '@solana/web3.js'
-import { Connection, PublicKey as PK } from '@solana/web3.js'
+import { PublicKey, Transaction, Connection } from '@solana/web3.js'
 import {
   waveStakeClient,
   LockType,
@@ -200,10 +199,10 @@ export function useWaveStake() {
 
     try {
       console.log('[useWaveStake] Getting recent blockhash...')
-      const { recentBlockhash } = await connection.getLatestBlockhash()
+      const { blockhash } = await connection.getLatestBlockhash()
 
       console.log('[useWaveStake] Creating stake transaction...')
-      const transaction = await waveStakeClient.stake(
+      const tx = await waveStakeClient.stake(
         poolId,
         Math.floor(amount * 1e6), // Convert to smallest unit
         lockType
@@ -211,10 +210,15 @@ export function useWaveStake() {
 
       console.log('[useWaveStake] Stake transaction created successfully')
 
-      // Set blockhash and fee payer BEFORE signing
-      transaction.recentBlockhash = recentBlockhash
+      // Create a new transaction with the instructions and set blockhash immediately
+      const transaction = new Transaction()
+      transaction.recentBlockhash = blockhash
       transaction.feePayer = publicKey
 
+      // Add all instructions from the created transaction
+      tx.instructions.forEach(ix => transaction.add(ix))
+
+      console.log('[useWaveStake] Transaction prepared with blockhash:', blockhash)
       console.log('[useWaveStake] Signing transaction...')
       const signedTx = await signTransaction(transaction)
       console.log('[useWaveStake] Transaction signed')
@@ -257,20 +261,25 @@ export function useWaveStake() {
 
     try {
       console.log('[useWaveStake] Getting recent blockhash...')
-      const { recentBlockhash } = await connection.getLatestBlockhash()
+      const { blockhash } = await connection.getLatestBlockhash()
 
       console.log('[useWaveStake] Creating unstake transaction...')
-      const transaction = await waveStakeClient.unstake(
+      const tx = await waveStakeClient.unstake(
         poolId,
         Math.floor(amount * 1e6)
       )
 
       console.log('[useWaveStake] Unstake transaction created successfully')
 
-      // Set blockhash and fee payer BEFORE signing
-      transaction.recentBlockhash = recentBlockhash
+      // Create a new transaction with the instructions and set blockhash immediately
+      const transaction = new Transaction()
+      transaction.recentBlockhash = blockhash
       transaction.feePayer = publicKey
 
+      // Add all instructions from the created transaction
+      tx.instructions.forEach(ix => transaction.add(ix))
+
+      console.log('[useWaveStake] Transaction prepared with blockhash:', blockhash)
       console.log('[useWaveStake] Signing transaction...')
       const signedTx = await signTransaction(transaction)
       console.log('[useWaveStake] Transaction signed')
@@ -310,17 +319,22 @@ export function useWaveStake() {
 
     try {
       console.log('[useWaveStake] Getting recent blockhash...')
-      const { recentBlockhash } = await connection.getLatestBlockhash()
+      const { blockhash } = await connection.getLatestBlockhash()
 
       console.log('[useWaveStake] Creating claim rewards transaction...')
-      const transaction = await waveStakeClient.claimRewards(poolId)
+      const tx = await waveStakeClient.claimRewards(poolId)
 
       console.log('[useWaveStake] Claim rewards transaction created successfully')
 
-      // Set blockhash and fee payer BEFORE signing
-      transaction.recentBlockhash = recentBlockhash
+      // Create a new transaction with the instructions and set blockhash immediately
+      const transaction = new Transaction()
+      transaction.recentBlockhash = blockhash
       transaction.feePayer = publicKey
 
+      // Add all instructions from the created transaction
+      tx.instructions.forEach(ix => transaction.add(ix))
+
+      console.log('[useWaveStake] Transaction prepared with blockhash:', blockhash)
       console.log('[useWaveStake] Signing transaction...')
       const signedTx = await signTransaction(transaction)
       console.log('[useWaveStake] Transaction signed')
